@@ -15,6 +15,7 @@ use App\Repositories\CostCenterRepository;
 use App\Repositories\EmployeeRepository;
 use App\Repositories\LocationRepository;
 use App\Repositories\ManufacturerRepository;
+use App\Repositories\MovementRepository;
 use App\Repositories\SupplierRepository;
 use App\Security\CurrentUser;
 use App\Services\AssetService;
@@ -62,6 +63,7 @@ return static function (Container $c): void {
         $c->get(LocationRepository::class),
         $c->get(CostCenterRepository::class),
         $c->get(EmployeeRepository::class),
+        $c->get(MovementRepository::class),
         $c->get(AssetService::class)
     ));
     $c->singleton(SearchController::class, static fn (Container $c): SearchController => new SearchController(

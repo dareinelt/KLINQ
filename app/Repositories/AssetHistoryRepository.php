@@ -35,6 +35,12 @@ final class AssetHistoryRepository extends BaseRepository
         );
     }
 
+    /** Einträge, die durch eine Bewegung entstanden sind (für Storno). @return array<int,array<string,mixed>> */
+    public function forMovement(int $movementId): array
+    {
+        return $this->fetchAll('SELECT * FROM asset_history WHERE movement_id = :id ORDER BY id ASC', ['id' => $movementId]);
+    }
+
     /** @return array<int,array<string,mixed>> Letzte Änderungen über alle Assets (Dashboard). */
     public function recent(int $limit = 20): array
     {

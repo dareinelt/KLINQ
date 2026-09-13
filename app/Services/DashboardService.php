@@ -22,7 +22,7 @@ final class DashboardService
             'open_checkouts' => $this->count("SELECT COUNT(*) FROM movements WHERE type = 'checkout' AND status = 'open'"),
             'open_returns' => $this->count("SELECT COUNT(*) FROM movements WHERE type = 'return' AND status = 'open'"),
             'returns_overdue' => $this->count("SELECT COUNT(*) FROM assets WHERE expected_return_at IS NOT NULL AND expected_return_at < CURDATE() AND status_id IN (SELECT id FROM asset_statuses WHERE code IN ('issued','return_expected'))"),
-            'movements_today' => $this->count('SELECT COUNT(*) FROM movements WHERE movement_date = CURDATE()'),
+            'movements_today' => $this->count("SELECT COUNT(*) FROM movements WHERE movement_date = '" . date('Y-m-d') . "' AND status <> 'cancelled'"),
             'employees_active' => $this->count('SELECT COUNT(*) FROM employees WHERE is_active = 1'),
             'orders_open' => $this->count("SELECT COUNT(*) FROM purchase_orders WHERE status IN ('ordered','partially_delivered')"),
             'licenses_expiring' => $this->count('SELECT COUNT(*) FROM licenses WHERE expires_at IS NOT NULL AND expires_at BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 60 DAY)'),

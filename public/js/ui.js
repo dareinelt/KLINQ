@@ -131,7 +131,20 @@
             const form = el.closest("form");
             if (form) { form.requestSubmit ? form.requestSubmit() : form.submit(); }
         }
+        if (el.matches("[data-toggle-target]")) {
+            applyToggle(el);
+        }
     });
+
+    // Checkbox/Radio blendet abhängige Felder ein oder aus
+    function applyToggle(el) {
+        const target = document.querySelector(el.getAttribute("data-toggle-target"));
+        if (!target) { return; }
+        const on = el.type === "radio" ? el.checked && el.value === (el.getAttribute("data-toggle-value") || el.value) : el.checked;
+        target.hidden = !on;
+        target.querySelectorAll("[data-required-when-visible]").forEach(function (field) { field.required = on; });
+    }
+    document.querySelectorAll("[data-toggle-target]").forEach(applyToggle);
 
     window.AppUI = {
         toast: showToast,

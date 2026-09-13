@@ -6,9 +6,9 @@ $displayName = $row['name'] ?: ($row['article_name'] ?? $row['asset_type_name'])
 $eventLabels = [
     'created' => 'Angelegt', 'status_changed' => 'Statuswechsel', 'assignment_changed' => 'Zuordnung Mitarbeiter', 'location_changed' => 'Standortwechsel',
     'cost_center_changed' => 'Kostenstelle', 'field_changed' => 'Änderung', 'note' => 'Kommentar', 'checkout' => 'Entnahme', 'return' => 'Rückgabe',
-    'label_printed' => 'Etikett gedruckt', 'goods_receipt' => 'Wareneingang', 'import' => 'Import', 'license_assigned' => 'Lizenz zugewiesen', 'license_removed' => 'Lizenz entfernt',
+    'label_printed' => 'Etikett gedruckt', 'movement_completed' => 'Vorgang abgeschlossen', 'movement_cancelled' => 'Vorgang storniert', 'goods_receipt' => 'Wareneingang', 'import' => 'Import', 'license_assigned' => 'Lizenz zugewiesen', 'license_removed' => 'Lizenz entfernt',
 ];
-$eventClass = ['status_changed' => 'is-warning', 'created' => 'is-success', 'checkout' => 'is-warning', 'return' => 'is-success'];
+$eventClass = ['status_changed' => 'is-warning', 'created' => 'is-success', 'checkout' => 'is-warning', 'return' => 'is-success', 'movement_cancelled' => 'is-danger'];
 ?>
 <div class="page-header">
     <div>
@@ -91,6 +91,27 @@ $eventClass = ['status_changed' => 'is-warning', 'created' => 'is-success', 'che
                 <td><?= e($c['name'] ?: ($c['article_name'] ?? '–')) ?></td>
                 <td class="mono text-sm"><?= e($c['serial_number'] ?? '–') ?></td>
                 <td><?= badge($c['status_name'], $c['status_color']) ?></td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($movements)): ?>
+<div class="card card-flush mt-4" id="movements">
+    <div class="card-header"><h2>Bewegungen</h2><?php if ($can('movements.view')): ?><a class="btn btn-link btn-sm" href="/movements?range=all&q=<?= e(rawurlencode($row['inventory_number'])) ?>">Alle anzeigen</a><?php endif; ?></div>
+    <table class="table table-compact">
+        <thead><tr><th>Datum</th><th>Vorgang</th><th>Mitarbeiter</th><th>Standort</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        <?php foreach ($movements as $m): ?>
+            <tr class="<?= $can('movements.view') ? 'is-clickable' : '' ?><?= $m['status'] === 'cancelled' ? ' is-muted' : '' ?>"<?= $can('movements.view') ? ' data-href="/movements/' . (int) $m['id'] . '"' : '' ?>>
+                <td class="nowrap"><?= fmt_datetime($m['movement_at']) ?></td>
+                <td class="nowrap"><?= icon($m['type'] === 'checkout' ? 'checkout' : 'return', 'icon icon-muted') ?> <?= $m['type'] === 'checkout' ? 'Entnahme' : 'Rückgabe' ?></td>
+                <td><?= e($m['employee_name'] ?? '–') ?></td>
+                <td class="text-sm"><?= e($m['to_location_path'] ?? '–') ?></td>
+                <td><?= match ($m['status']) { 'open' => badge('Offen', 'warning'), 'completed' => badge('Abgeschlossen', 'success'), default => badge('Storniert', 'neutral') } ?></td>
+                <td class="table-actions text-muted text-sm"><?= e(App\Services\MovementService::SOURCES[$m['source']] ?? $m['source']) ?></td>
             </tr>
         <?php endforeach; ?>
         </tbody>

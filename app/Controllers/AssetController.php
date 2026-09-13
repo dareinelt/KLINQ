@@ -18,6 +18,7 @@ use App\Repositories\CostCenterRepository;
 use App\Repositories\EmployeeRepository;
 use App\Repositories\LocationRepository;
 use App\Repositories\ManufacturerRepository;
+use App\Repositories\MovementRepository;
 use App\Repositories\SupplierRepository;
 use App\Security\CurrentUser;
 use App\Services\AssetService;
@@ -39,6 +40,7 @@ final class AssetController extends BaseController
         private readonly LocationRepository $locations,
         private readonly CostCenterRepository $costCenters,
         private readonly EmployeeRepository $employees,
+        private readonly MovementRepository $movements,
         private readonly AssetService $service
     ) {
         parent::__construct($view, $currentUser);
@@ -79,6 +81,7 @@ final class AssetController extends BaseController
             'row' => $row,
             'history' => $this->history->forAsset((int) $row['id']),
             'children' => $this->assets->children((int) $row['id']),
+            'movements' => $this->movements->forAsset((int) $row['id'], 10),
             'statuses' => $this->statuses->all(true),
             'fieldLabels' => AssetService::FIELD_LABELS,
         ]);

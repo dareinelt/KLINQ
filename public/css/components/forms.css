@@ -141,3 +141,8 @@ input[aria-invalid="true"], .input-error, .has-error input, .has-error select { 
 .duplicate-hint ul { margin: var(--space-2) 0 0; padding-left: var(--space-4); }
 .alert-stacked { flex-direction: column; align-items: stretch; }
 .alert-compact { padding: var(--space-2) var(--space-3); }
+.picker-results .picker-empty { padding: var(--space-2) var(--space-3); color: var(--color-text-muted); font-size: var(--font-size-sm); }
+.picker-input[hidden], .picker-selected[hidden] { display: none; }
+.picker-selected-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.picker-selected-label { font-weight: var(--font-weight-medium); overflow-wrap: anywhere; }
+.picker-selected [data-picker-meta]:empty { display: none; }

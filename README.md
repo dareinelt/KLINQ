@@ -26,6 +26,7 @@ Anwendung: <http://localhost:8080> – Anmeldung mit `ADMIN_USERNAME` / `ADMIN_P
 - [AD-Synchronisation](docs/ad-sync.md)
 - [Assets & Inventarnummern](docs/assets.md)
 - [Etiketten & QR-Codes](docs/labels.md)
+- [Bestandsmanagement – Entnahme & Retoure](docs/movements.md)
 - [Backup & Wiederherstellung](docs/backup.md)
 
 ## Tests

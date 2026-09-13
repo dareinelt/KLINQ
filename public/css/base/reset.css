@@ -52,3 +52,6 @@ a { color: var(--color-primary); }
     white-space: nowrap;
     border: 0;
 }
+
+/* Standardgröße für Inline-Icons; Komponenten überschreiben bei Bedarf */
+.icon { width: 18px; height: 18px; display: inline-block; vertical-align: -3px; fill: currentColor; }

@@ -312,7 +312,7 @@ final class AssetService
      * @param array<string,mixed> $old
      * @param array<string,mixed> $new
      */
-    private function recordDiff(int $id, array $old, array $new, ?string $note = null): void
+    public function recordDiff(int $id, array $old, array $new, ?string $note = null, ?int $movementId = null): void
     {
         foreach (self::FIELD_LABELS as $field => [, $labelColumn]) {
             if (!array_key_exists($field, $new)) {
@@ -331,13 +331,20 @@ final class AssetService
                 self::stringify($new[$labelColumn] ?? null),
                 $isId && $oldRaw !== null ? (int) $oldRaw : null,
                 $isId && $newRaw !== null ? (int) $newRaw : null,
-                $note
+                $note,
+                $movementId
             ));
         }
     }
 
+    /** Historieneintrag mit Bezug zu einer Bewegung (Entnahme/Retoure). */
+    public function addMovementEvent(int $assetId, int $movementId, string $eventType, ?string $old, ?string $new, ?string $note = null): void
+    {
+        $this->history->add($assetId, $this->entry($eventType, null, $old, $new, null, null, $note, $movementId));
+    }
+
     /** @return array<string,mixed> */
-    private function entry(string $type, ?string $field, ?string $old, ?string $new, ?int $oldId = null, ?int $newId = null, ?string $note = null): array
+    private function entry(string $type, ?string $field, ?string $old, ?string $new, ?int $oldId = null, ?int $newId = null, ?string $note = null, ?int $movementId = null): array
     {
         return [
             'event_type' => $type,
@@ -346,6 +353,7 @@ final class AssetService
             'new_value' => $new,
             'old_id' => $oldId,
             'new_id' => $newId,
+            'movement_id' => $movementId,
             'user_id' => $this->currentUser->id(),
             'actor_name' => $this->currentUser->displayName(),
             'note' => $note,
