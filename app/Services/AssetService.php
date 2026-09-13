@@ -178,6 +178,8 @@ final class AssetService
             ->date('purchase_date', 'Kaufdatum')
             ->id('supplier_id', 'Lieferant')
             ->id('purchase_order_id', 'Bestellung')
+            ->id('purchase_order_item_id', 'Bestellposition')
+            ->id('goods_receipt_id', 'Wareneingang')
             ->decimal('purchase_price', 'Anschaffungskosten', false, 0.0)
             ->date('warranty_until', 'Garantieende')
             ->id('location_id', 'Standort')
@@ -341,6 +343,12 @@ final class AssetService
     public function addMovementEvent(int $assetId, int $movementId, string $eventType, ?string $old, ?string $new, ?string $note = null): void
     {
         $this->history->add($assetId, $this->entry($eventType, null, $old, $new, null, null, $note, $movementId));
+    }
+
+    /** Freier Historieneintrag ohne Feldbezug (z. B. Wareneingang, Etikettendruck). */
+    public function addEvent(int $assetId, string $eventType, ?string $new = null, ?string $note = null, ?int $newId = null): void
+    {
+        $this->history->add($assetId, $this->entry($eventType, null, null, $new, null, $newId, $note));
     }
 
     /** @return array<string,mixed> */

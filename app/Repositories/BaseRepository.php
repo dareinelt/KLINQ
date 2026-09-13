@@ -114,7 +114,20 @@ abstract class BaseRepository
     public function transaction(callable $callback): mixed
     {
         if ($this->pdo->inTransaction()) {
-            return $callback();
+            // Verschachtelt: Savepoint, damit ein Fehler nur den inneren Block zurückrollt
+            $savepoint = 'sp_' . str_replace('.', '_', uniqid('', true));
+            $this->pdo->exec("SAVEPOINT {$savepoint}");
+            try {
+                $result = $callback();
+                $this->pdo->exec("RELEASE SAVEPOINT {$savepoint}");
+
+                return $result;
+            } catch (\Throwable $e) {
+                if ($this->pdo->inTransaction()) {
+                    $this->pdo->exec("ROLLBACK TO SAVEPOINT {$savepoint}");
+                }
+                throw $e;
+            }
         }
 
         $this->pdo->beginTransaction();
