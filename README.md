@@ -23,6 +23,7 @@ Anwendung: <http://localhost:8080> – Anmeldung mit `ADMIN_USERNAME` / `ADMIN_P
 - [Installation & Betrieb](docs/installation.md)
 - [Architektur](docs/architektur.md)
 - [Datenmodell](docs/datenmodell.md)
+- [AD-Synchronisation](docs/ad-sync.md)
 - [Backup & Wiederherstellung](docs/backup.md)
 
 ## Tests

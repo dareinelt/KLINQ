@@ -64,6 +64,14 @@ final class LocationRepository extends BaseRepository
         return $this->fetchOne('SELECT * FROM locations WHERE full_path = :p LIMIT 1', ['p' => $fullPath]);
     }
 
+    /** Liefert den Standort nur, wenn Name oder Kürzel eindeutig passen. @return array<string,mixed>|null */
+    public function findUniqueByNameOrCode(string $term): ?array
+    {
+        $rows = $this->fetchAll('SELECT * FROM locations WHERE is_active = 1 AND (name = :t OR code = :t) LIMIT 2', ['t' => $term]);
+
+        return count($rows) === 1 ? $rows[0] : null;
+    }
+
     /** @return array<string,mixed>|null */
     public function findSibling(?int $parentId, string $name, ?int $excludeId = null): ?array
     {

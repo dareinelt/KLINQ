@@ -59,3 +59,4 @@ a.stat-card:hover { border-color: var(--color-primary); box-shadow: var(--shadow
 .card-form { max-width: 760px; }
 .card-form-narrow { max-width: 680px; }
 .card-form-wide { max-width: 860px; }
+.detail-list-compact dt, .detail-list-compact dd { padding-top: 2px; padding-bottom: 2px; }

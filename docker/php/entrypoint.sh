@@ -19,4 +19,9 @@ fi
 mkdir -p storage/uploads storage/logs storage/tmp
 chown -R www-data:www-data storage
 
+# Zeitgesteuerte AD-Synchronisation als Hintergrundprozess (nur wenn konfiguriert)
+if [ "${AD_ENABLED:-false}" = "true" ] && [ "${AD_SYNC_INTERVAL_MINUTES:-0}" != "0" ]; then
+    su -s /bin/sh www-data -c "/usr/local/bin/app-scheduler" &
+fi
+
 exec "$@"

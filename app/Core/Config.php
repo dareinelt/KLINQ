@@ -25,6 +25,25 @@ final class Config
         return $config;
     }
 
+    /** Liefert eine Kopie mit überschriebenen Werten (Punktnotation), z. B. für Tests. @param array<string,mixed> $overrides */
+    public function with(array $overrides): self
+    {
+        $copy = clone $this;
+        foreach ($overrides as $key => $value) {
+            $ref = &$copy->items;
+            foreach (explode('.', $key) as $segment) {
+                if (!isset($ref[$segment]) || !is_array($ref[$segment])) {
+                    $ref[$segment] = [];
+                }
+                $ref = &$ref[$segment];
+            }
+            $ref = $value;
+            unset($ref);
+        }
+
+        return $copy;
+    }
+
     public function get(string $key, mixed $default = null): mixed
     {
         $current = $this->items;

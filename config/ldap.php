@@ -6,6 +6,9 @@ use App\Core\Env;
 
 return [
     'enabled' => Env::bool('AD_ENABLED', false),
+    'driver' => Env::get('AD_DRIVER', 'ldap'),
+    'fake_file' => Env::get('AD_FAKE_FILE', 'database/fixtures/fake-ad-users.json'),
+    'sync_interval_minutes' => Env::int('AD_SYNC_INTERVAL_MINUTES', 0),
     'host' => Env::get('AD_HOST', ''),
     'port' => Env::int('AD_PORT', 636),
     'base_dn' => Env::get('AD_BASE_DN', ''),

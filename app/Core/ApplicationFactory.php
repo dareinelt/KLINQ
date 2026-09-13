@@ -22,6 +22,7 @@ use App\Services\AuditLogService;
 use App\Services\AuthService;
 use App\Services\DashboardService;
 use App\Services\Ldap\LdapAuthenticator;
+use App\Services\Ldap\FakeLdapClient;
 use App\Services\Ldap\LdapClient;
 use App\Services\Ldap\LdapClientInterface;
 use App\Services\SettingsService;
@@ -123,6 +124,11 @@ final class ApplicationFactory
         $c->singleton(DashboardService::class, static fn (Container $c): DashboardService => new DashboardService($c->get(PDO::class)));
         $c->singleton(LdapClientInterface::class, static function (Container $c): LdapClientInterface {
             $config = $c->get(Config::class);
+            if ($config->get('ldap.driver') === 'fake') {
+                $file = (string) $config->get('ldap.fake_file');
+
+                return new FakeLdapClient(str_starts_with($file, '/') ? $file : $c->get('basePath') . '/' . $file);
+            }
 
             return new LdapClient((string) $config->get('ldap.host'), (int) $config->get('ldap.port', 636), (int) $config->get('ldap.page_size', 500));
         });

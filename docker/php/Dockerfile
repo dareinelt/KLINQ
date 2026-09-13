@@ -11,7 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/zz-app.ini
 COPY docker/php/apache-vhost.conf /etc/apache2/sites-available/000-default.conf
 COPY docker/php/entrypoint.sh /usr/local/bin/app-entrypoint
-RUN chmod +x /usr/local/bin/app-entrypoint
+COPY docker/php/scheduler.sh /usr/local/bin/app-scheduler
+RUN chmod +x /usr/local/bin/app-entrypoint /usr/local/bin/app-scheduler
 
 WORKDIR /var/www/html
 COPY . /var/www/html
