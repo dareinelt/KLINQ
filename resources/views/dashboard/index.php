@@ -117,7 +117,7 @@
         <?php if (!$returnsDueSoon): ?>
             <div class="table-empty">Keine Rückgaben geplant.</div>
         <?php else: ?>
-        <ul class="task-list" style="padding: 0 var(--space-4);">
+        <ul class="task-list" >
             <?php foreach ($returnsDueSoon as $a): $overdue = $a['expected_return_at'] < date('Y-m-d'); ?>
                 <li>
                     <div>

@@ -15,21 +15,58 @@ abstract class BaseRepository
         return $this->pdo;
     }
 
-    /** @param array<int|string,mixed> $params @return array<int,array<string,mixed>> */
-    protected function fetchAll(string $sql, array $params = []): array
+    /**
+     * Bereitet ein Statement vor und führt es aus. Da native Prepares (ohne Emulation) keine
+     * mehrfach verwendeten benannten Platzhalter erlauben, werden Wiederholungen wie ":q … :q"
+     * automatisch zu ":q, :q__1, :q__2" expandiert und die Werte entsprechend dupliziert.
+     *
+     * @param array<int|string,mixed> $params
+     */
+    protected function run(string $sql, array $params = []): \PDOStatement
     {
+        if ($params !== [] && !array_is_list($params)) {
+            [$sql, $params] = self::expandRepeatedPlaceholders($sql, $params);
+        }
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
 
-        return $stmt->fetchAll();
+        return $stmt;
+    }
+
+    /**
+     * @param array<string,mixed> $params
+     * @return array{0:string,1:array<string,mixed>}
+     */
+    public static function expandRepeatedPlaceholders(string $sql, array $params): array
+    {
+        $counts = [];
+        $out = [];
+        $sql = (string) preg_replace_callback('/(?<![:\w]):([A-Za-z_][A-Za-z0-9_]*)/', static function (array $m) use (&$counts, &$out, $params): string {
+            $name = $m[1];
+            $key = array_key_exists($name, $params) ? $name : (array_key_exists(':' . $name, $params) ? ':' . $name : null);
+            if ($key === null) {
+                return $m[0];
+            }
+            $n = $counts[$name] = ($counts[$name] ?? -1) + 1;
+            $alias = $n === 0 ? $name : $name . '__' . $n;
+            $out[$alias] = $params[$key];
+
+            return ':' . $alias;
+        }, $sql);
+
+        return [$sql, $out === [] ? $params : $out];
+    }
+
+    /** @param array<int|string,mixed> $params @return array<int,array<string,mixed>> */
+    protected function fetchAll(string $sql, array $params = []): array
+    {
+        return $this->run($sql, $params)->fetchAll();
     }
 
     /** @param array<int|string,mixed> $params @return array<string,mixed>|null */
     protected function fetchOne(string $sql, array $params = []): ?array
     {
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
-        $row = $stmt->fetch();
+        $row = $this->run($sql, $params)->fetch();
 
         return $row === false ? null : $row;
     }
@@ -37,9 +74,7 @@ abstract class BaseRepository
     /** @param array<int|string,mixed> $params */
     protected function fetchValue(string $sql, array $params = []): mixed
     {
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
-        $value = $stmt->fetchColumn();
+        $value = $this->run($sql, $params)->fetchColumn();
 
         return $value === false ? null : $value;
     }
@@ -47,10 +82,7 @@ abstract class BaseRepository
     /** @param array<int|string,mixed> $params */
     protected function execute(string $sql, array $params = []): int
     {
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
-
-        return $stmt->rowCount();
+        return $this->run($sql, $params)->rowCount();
     }
 
     /** @param array<string,mixed> $data */

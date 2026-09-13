@@ -168,3 +168,54 @@ if (!function_exists('missing_labels')) {
         return array_map(static fn (string $key): string => $labels[$key] ?? $key, $missing ?? []);
     }
 }
+
+if (!function_exists('form_value')) {
+    /** Formularwert: zuerst alte Eingabe, sonst Datensatz, sonst Standard. */
+    function form_value(?array $row, string $key, mixed $default = ''): string
+    {
+        $old = $_SESSION['_old_input'] ?? [];
+        if (array_key_exists($key, $old)) {
+            return is_scalar($old[$key]) ? (string) $old[$key] : '';
+        }
+        $value = $row[$key] ?? $default;
+
+        return is_scalar($value) ? (string) $value : '';
+    }
+}
+
+if (!function_exists('form_checked')) {
+    /** Checkbox-Zustand: alte Eingabe, sonst Datensatz, sonst Standard (bei neuen Datensätzen). */
+    function form_checked(?array $row, string $key, bool $default = true): string
+    {
+        $old = $_SESSION['_old_input'] ?? [];
+        if ($old !== []) {
+            return checked($old[$key] ?? false);
+        }
+        if ($row === null) {
+            return $default ? ' checked' : '';
+        }
+
+        return checked($row[$key] ?? false);
+    }
+}
+
+if (!function_exists('active_badge')) {
+    function active_badge(mixed $isActive): string
+    {
+        return (int) $isActive === 1 ? badge('Aktiv', 'success') : badge('Inaktiv', 'neutral');
+    }
+}
+
+if (!function_exists('sort_link')) {
+    /** Sortierbarer Spaltenkopf. */
+    function sort_link(string $path, array $query, string $column, string $label): string
+    {
+        $current = $query['sort'] ?? '';
+        $dir = ($query['dir'] ?? 'asc') === 'asc' ? 'asc' : 'desc';
+        $isActive = $current === $column;
+        $nextDir = $isActive && $dir === 'asc' ? 'desc' : 'asc';
+        $arrow = $isActive ? ($dir === 'asc' ? ' ▲' : ' ▼') : '';
+
+        return '<a href="' . e(query_url($path, $query, ['sort' => $column, 'dir' => $nextDir, 'page' => null])) . '">' . e($label) . $arrow . '</a>';
+    }
+}

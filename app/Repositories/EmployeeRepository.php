@@ -10,7 +10,7 @@ final class EmployeeRepository extends BaseRepository
     public function find(int $id): ?array
     {
         return $this->fetchOne(
-            'SELECT e.*, l.full_path AS location_path, c.number AS cost_center_number, c.name AS cost_center_name
+            'SELECT e.*, l.full_path AS location_path, c.number AS cost_center_number, c.description AS cost_center_name
              FROM employees e
              LEFT JOIN locations l ON l.id = e.location_id
              LEFT JOIN cost_centers c ON c.id = e.cost_center_id

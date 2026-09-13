@@ -34,6 +34,7 @@ foreach ($dirs as $dir) {
 sort($files);
 
 $passed = $failed = $skipped = 0;
+$skips = [];
 $failures = [];
 $start = microtime(true);
 
@@ -64,6 +65,7 @@ foreach ($files as $file) {
             echo "\033[32m.\033[0m";
         } catch (SkippedTest $e) {
             $skipped++;
+            $skips[$e->getMessage()] = true;
             echo "\033[33mS\033[0m";
         } catch (AssertionFailed $e) {
             $failed++;
@@ -85,6 +87,9 @@ foreach ($failures as $i => [$name, $message, $trace]) {
         echo "   " . str_replace("\n", "\n   ", $trace) . "\n";
     }
     echo "\n";
+}
+if ($skips !== []) {
+    echo "Übersprungen: " . implode(" | ", array_keys($skips)) . "\n";
 }
 echo "Tests: " . ($passed + $failed + $skipped) . ", Bestanden: {$passed}, Fehlgeschlagen: {$failed}, Übersprungen: {$skipped} ({$duration}s)\n";
 exit($failed > 0 ? 1 : 0);

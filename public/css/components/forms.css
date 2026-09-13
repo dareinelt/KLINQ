@@ -139,3 +139,5 @@ input[aria-invalid="true"], .input-error, .has-error input, .has-error select { 
 
 .duplicate-hint { margin-top: var(--space-2); }
 .duplicate-hint ul { margin: var(--space-2) 0 0; padding-left: var(--space-4); }
+.alert-stacked { flex-direction: column; align-items: stretch; }
+.alert-compact { padding: var(--space-2) var(--space-3); }
