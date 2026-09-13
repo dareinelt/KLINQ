@@ -35,6 +35,12 @@ final class SettingsService
         return $this->cache;
     }
 
+    /** Cache verwerfen (z. B. nach externen Änderungen an der Tabelle). */
+    public function refresh(): void
+    {
+        $this->cache = null;
+    }
+
     public function set(string $key, string $value, ?int $userId = null): void
     {
         $this->repository->set($key, $value, $userId);

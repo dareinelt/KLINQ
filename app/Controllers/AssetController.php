@@ -237,7 +237,8 @@ final class AssetController extends BaseController
     }
 
     /** @return array<string,mixed> */
-    private function filters(Request $request): array
+    /** Listenfilter aus der Query (auch für den Etikettendruck der gefilterten Menge). @return array<string,mixed> */
+    public function filters(Request $request): array
     {
         $filters = [
             'q' => trim($request->queryString('q')),

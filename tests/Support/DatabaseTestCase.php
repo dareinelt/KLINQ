@@ -7,6 +7,7 @@ namespace Tests\Support;
 use App\Core\ApplicationFactory;
 use App\Core\Config;
 use App\Core\Container;
+use App\Services\SettingsService;
 use PDO;
 
 /**
@@ -32,6 +33,9 @@ abstract class DatabaseTestCase extends TestCase
     {
         if (isset($this->pdo) && $this->pdo->inTransaction()) {
             $this->pdo->rollBack();
+        }
+        if (isset($this->c)) {
+            $this->c->get(SettingsService::class)->refresh(); // Cache überlebt sonst den Rollback
         }
     }
 

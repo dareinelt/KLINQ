@@ -19,6 +19,9 @@ $appName = $appName ?? 'Assetverwaltung';
     <link rel="icon" href="/img/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/img/icon-192.png">
     <link rel="stylesheet" href="<?= e(asset_url('/css/app.css')) ?>">
+<?php foreach (($extraStyles ?? []) as $style): ?>
+    <link rel="stylesheet" href="<?= e($style) ?>" id="<?= e('style-' . preg_replace('/[^a-z0-9]+/i', '-', trim(parse_url($style, PHP_URL_PATH) ?: $style, '/'))) ?>">
+<?php endforeach; ?>
 </head>
 <body class="<?= e($bodyClass ?? '') ?>">
 <?php include __DIR__ . '/icons.php'; ?>

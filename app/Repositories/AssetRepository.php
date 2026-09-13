@@ -220,6 +220,10 @@ final class AssetRepository extends BaseRepository
             $params['q'] = $this->like($term);
             $params['qn'] = $this->like($normalized !== '' ? $normalized : $term);
         }
+        if (!empty($filters['ids']) && is_array($filters['ids'])) {
+            $ids = array_values(array_filter(array_map('intval', $filters['ids']), static fn (int $i): bool => $i > 0));
+            $clauses[] = $ids === [] ? '1 = 0' : 'a.id IN (' . implode(',', $ids) . ')';
+        }
         foreach (['asset_type_id', 'asset_category_id', 'status_id', 'manufacturer_id', 'article_id', 'supplier_id', 'cost_center_id', 'employee_id', 'purchase_order_id', 'parent_asset_id'] as $col) {
             if (!empty($filters[$col])) {
                 $clauses[] = "a.{$col} = :{$col}";
