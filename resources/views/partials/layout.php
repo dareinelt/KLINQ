@@ -18,14 +18,14 @@ $appName = $appName ?? 'Assetverwaltung';
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="icon" href="/img/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/img/icon-192.png">
-    <link rel="stylesheet" href="/css/app.css">
+    <link rel="stylesheet" href="<?= e(asset_url('/css/app.css')) ?>">
 </head>
 <body class="<?= e($bodyClass ?? '') ?>">
 <?php include __DIR__ . '/icons.php'; ?>
 <?= $content ?? '' ?>
-<script src="/js/ui.js"></script>
+<script src="<?= e(asset_url('/js/ui.js')) ?>"></script>
 <?php foreach (($scripts ?? []) as $script): ?>
-    <script src="<?= e($script) ?>"></script>
+    <script src="<?= e(asset_url($script)) ?>"></script>
 <?php endforeach; ?>
 </body>
 </html>

@@ -90,8 +90,8 @@ final class Validator
 
             return $this;
         }
-        $normalized = str_replace([' ', '.', ','], ['', '', '.'], preg_replace('/\.(?=\d{3}(\D|$))/', '', $raw) ?? $raw);
-        if (!is_numeric($normalized)) {
+        $normalized = self::normalizeDecimal($raw);
+        if ($normalized === null || !is_numeric($normalized)) {
             $this->errors[$field] = "{$label} muss eine Zahl sein.";
             $this->clean[$field] = null;
 
@@ -231,6 +231,42 @@ final class Validator
         }
 
         return $this->clean;
+    }
+
+    /**
+     * Akzeptiert deutsche („1.299,50“, „1299,5“), englische („1,299.50“, „1299.50“) und technische
+     * Schreibweisen („1299.5“). Regel: Das letzte Trennzeichen ist der Dezimaltrenner, außer es ist ein
+     * Punkt mit genau drei Folgeziffern ohne weiteres Trennzeichen – dann Tausenderpunkt („1.299“).
+     */
+    public static function normalizeDecimal(string $raw): ?string
+    {
+        $raw = str_replace([' ', "\u{a0}", '€', 'EUR'], '', trim($raw));
+        if ($raw === '' || !preg_match('/^[-+]?[\d.,]+$/', $raw)) {
+            return null;
+        }
+        $lastComma = strrpos($raw, ',');
+        $lastDot = strrpos($raw, '.');
+        if ($lastComma === false && $lastDot === false) {
+            return $raw;
+        }
+        if ($lastComma !== false && $lastDot !== false) {
+            $decimalPos = max($lastComma, $lastDot);
+        } elseif ($lastComma !== false) {
+            $decimalPos = substr_count($raw, ',') === 1 ? $lastComma : null;
+        } else {
+            $afterDot = substr($raw, $lastDot + 1);
+            $decimalPos = substr_count($raw, '.') === 1 && strlen($afterDot) !== 3 ? $lastDot : null;
+        }
+        if ($decimalPos === null) {
+            return preg_replace('/[.,]/', '', $raw);
+        }
+        $intPart = preg_replace('/[.,]/', '', substr($raw, 0, $decimalPos)) ?? '';
+        $fraction = substr($raw, $decimalPos + 1);
+        if (!ctype_digit($fraction) && $fraction !== '') {
+            return null;
+        }
+
+        return ($intPart === '' || $intPart === '-' || $intPart === '+' ? $intPart . '0' : $intPart) . '.' . ($fraction === '' ? '0' : $fraction);
     }
 
     /** Akzeptiert ISO (YYYY-MM-DD) und deutsches Format (TT.MM.JJJJ). */

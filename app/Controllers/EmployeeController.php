@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\View;
+use App\Repositories\AssetRepository;
 use App\Repositories\CostCenterRepository;
 use App\Repositories\EmployeeRepository;
 use App\Repositories\LocationRepository;
@@ -22,7 +23,8 @@ final class EmployeeController extends CrudController
         private readonly EmployeeRepository $employees,
         private readonly LocationRepository $locations,
         private readonly CostCenterRepository $costCenters,
-        private readonly EmployeeService $service
+        private readonly EmployeeService $service,
+        private readonly AssetRepository $assets
     ) {
         parent::__construct($view, $currentUser);
     }
@@ -75,6 +77,7 @@ final class EmployeeController extends CrudController
             'title' => $row['display_name'],
             'activeNav' => 'employees',
             'row' => $row,
+            'assets' => $this->assets->forEmployee((int) $row['id']),
         ]);
     }
 

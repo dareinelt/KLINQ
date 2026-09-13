@@ -113,4 +113,22 @@ final class ValidatorTest extends TestCase
             $this->assertTrue(isset($e->errors()['a']) && isset($e->errors()['b']));
         }
     }
+
+    public function testDecimalAcceptsGermanEnglishAndTechnicalFormats(): void
+    {
+        $this->assertSame('1299.00', Validator::normalizeDecimal('1.299,00'));
+        $this->assertSame('1299.00', Validator::normalizeDecimal('1299.00'));
+        $this->assertSame('1299.50', Validator::normalizeDecimal('1,299.50'));
+        $this->assertSame('1299', Validator::normalizeDecimal('1.299'));
+        $this->assertSame('749.90', Validator::normalizeDecimal('749,90 €'));
+        $this->assertSame('12.5', Validator::normalizeDecimal('12.5'));
+        $this->assertSame('1234567.89', Validator::normalizeDecimal('1.234.567,89'));
+        $this->assertNull(Validator::normalizeDecimal('abc'));
+
+        $data = (new Validator(['p' => '1.299,00']))->decimal('p', 'Preis', false, 0.0)->validated();
+        $this->assertSame(1299.0, $data['p']);
+        $this->assertThrows(ValidationException::class, static function (): void {
+            (new Validator(['p' => '-5']))->decimal('p', 'Preis', false, 0.0)->validated();
+        });
+    }
 }

@@ -219,3 +219,22 @@ if (!function_exists('sort_link')) {
         return '<a href="' . e(query_url($path, $query, ['sort' => $column, 'dir' => $nextDir, 'page' => null])) . '">' . e($label) . $arrow . '</a>';
     }
 }
+
+if (!function_exists('asset_url')) {
+    /** Statische Datei mit Cache-Busting-Parameter (mtime des Baums für CSS wegen @import). */
+    function asset_url(string $path): string
+    {
+        static $cssVersion = null;
+        $file = dirname(__DIR__, 3) . '/public' . $path;
+        if (str_ends_with($path, '.css')) {
+            if ($cssVersion === null) {
+                $cssVersion = 0;
+                foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator(dirname($file), FilesystemIterator::SKIP_DOTS)) as $f) {
+                    $cssVersion = max($cssVersion, $f->getMTime());
+                }
+            }
+            return $path . '?v=' . $cssVersion;
+        }
+        return $path . '?v=' . (is_file($file) ? filemtime($file) : 0);
+    }
+}

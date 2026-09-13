@@ -24,6 +24,7 @@ Anwendung: <http://localhost:8080> – Anmeldung mit `ADMIN_USERNAME` / `ADMIN_P
 - [Architektur](docs/architektur.md)
 - [Datenmodell](docs/datenmodell.md)
 - [AD-Synchronisation](docs/ad-sync.md)
+- [Assets & Inventarnummern](docs/assets.md)
 - [Backup & Wiederherstellung](docs/backup.md)
 
 ## Tests

@@ -7,7 +7,8 @@
 .table tbody tr:last-child td { border-bottom: none; }
 .table tbody tr:hover { background: var(--color-surface-alt); }
 .table tr.is-clickable { cursor: pointer; }
-.table .table-actions { display: flex; gap: var(--space-2); justify-content: flex-end; }
+.table .table-actions { text-align: right; white-space: nowrap; width: 1%; }
+.table .table-actions .btn + .btn { margin-left: var(--space-1); }
 .table .num { text-align: right; font-variant-numeric: tabular-nums; }
 .table td.nowrap, .table th.nowrap { white-space: nowrap; }
 .table-empty { padding: var(--space-6); text-align: center; color: var(--color-text-muted); }
