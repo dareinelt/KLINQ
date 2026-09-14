@@ -22,7 +22,9 @@ final class DashboardController extends BaseController
         return $this->render('dashboard.index', [
             'title' => 'Dashboard',
             'activeNav' => 'dashboard',
-            'stats' => $this->dashboard->stats(),
+            'stats' => $stats = $this->dashboard->stats(),
+            'openTasks' => $this->dashboard->openTasks($stats, fn (string $p): bool => $this->currentUser->can($p)),
+            'expectedDeliveries' => $this->currentUser->can('orders.view') ? $this->dashboard->expectedDeliveries(8) : [],
             'recentMovements' => $this->currentUser->can('movements.view') ? $this->dashboard->recentMovements(10) : [],
             'recentHistory' => $this->currentUser->can('assets.view') ? $this->dashboard->recentAssetHistory(10) : [],
             'returnsDueSoon' => $this->currentUser->can('movements.view') ? $this->dashboard->returnsDueSoon(10) : [],

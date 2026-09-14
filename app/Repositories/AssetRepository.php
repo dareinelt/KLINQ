@@ -292,6 +292,12 @@ final class AssetRepository extends BaseRepository
                     break;
             }
         }
+        if (!empty($filters['missing'])) {
+            $missingColumns = ['location' => 'a.location_id', 'cost_center' => 'a.cost_center_id', 'serial' => 'a.serial_number', 'purchase_date' => 'a.purchase_date', 'purchase_price' => 'a.purchase_price'];
+            if (isset($missingColumns[$filters['missing']])) {
+                $clauses[] = $missingColumns[$filters['missing']] . ' IS NULL';
+            }
+        }
         if (isset($filters['legacy']) && $filters['legacy'] !== '') {
             $clauses[] = 'a.is_legacy = :legacy';
             $params['legacy'] = (int) $filters['legacy'];

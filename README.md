@@ -30,6 +30,7 @@ Anwendung: <http://localhost:8080> – Anmeldung mit `ADMIN_USERNAME` / `ADMIN_P
 - [Einkauf – Bestellungen & Wareneingang](docs/einkauf.md)
 - [Lizenzen – Verwaltung & Assetzuordnung](docs/lizenzen.md)
 - [Offline-Betrieb – PWA, Warteschlange & Synchronisation](docs/offline.md)
+- [Berichte & Dashboard – Auswertungen & CSV-Export](docs/berichte.md)
 - [Backup & Wiederherstellung](docs/backup.md)
 
 ## Tests

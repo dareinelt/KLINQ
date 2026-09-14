@@ -11,7 +11,32 @@
     <?php endif; ?>
 </div>
 
-<section class="grid grid-4" aria-label="Kennzahlen">
+<section class="card open-tasks<?= $openTasks ? '' : ' is-empty' ?>" aria-labelledby="open-tasks-title">
+    <div class="card-header">
+        <h2 id="open-tasks-title"><?= icon('warning') ?> Offene Aufgaben<?php if ($openTasks): ?> <span class="badge badge-warning"><?= count($openTasks) ?></span><?php endif; ?></h2>
+        <?php if ($can('reports.view')): ?><a class="btn btn-link btn-sm" href="/reports">Berichte</a><?php endif; ?>
+    </div>
+    <?php if (!$openTasks): ?>
+        <div class="table-empty"><?= icon('check') ?> Keine offenen Aufgaben – alles erledigt.</div>
+    <?php else: ?>
+    <ul class="open-tasks-list">
+        <?php foreach ($openTasks as $t): ?>
+        <li>
+            <a class="open-task is-<?= e($t['level']) ?>" href="<?= e($t['href']) ?>">
+                <span class="open-task-count"><?= (int) $t['count'] ?></span>
+                <span class="open-task-body">
+                    <span class="open-task-label"><?= e($t['label']) ?></span>
+                    <span class="open-task-hint"><?= e($t['hint']) ?></span>
+                </span>
+                <?= icon('chevron-right', 'icon open-task-arrow') ?>
+            </a>
+        </li>
+        <?php endforeach; ?>
+    </ul>
+    <?php endif; ?>
+</section>
+
+<section class="grid grid-4 mt-4" aria-label="Kennzahlen">
     <?php if ($can('assets.view')): ?>
     <a class="card stat-card" href="/assets">
         <span class="stat-value"><?= (int) $stats['assets_total'] ?></span>
@@ -25,9 +50,13 @@
         <span class="stat-value"><?= (int) $stats['assets_issued'] ?></span>
         <span class="stat-label">Ausgegeben</span>
     </a>
-    <a class="card stat-card <?= $stats['assets_defective'] > 0 ? 'is-warning' : '' ?>" href="/assets?status=defective">
+    <a class="card stat-card <?= $stats['assets_defective'] > 0 ? 'is-danger' : '' ?>" href="/assets?status=defective">
         <span class="stat-value"><?= (int) $stats['assets_defective'] ?></span>
-        <span class="stat-label">Defekt / Reparatur</span>
+        <span class="stat-label">Defekt</span>
+    </a>
+    <a class="card stat-card <?= $stats['assets_repair'] > 0 ? 'is-warning' : '' ?>" href="/assets?status=repair">
+        <span class="stat-value"><?= (int) $stats['assets_repair'] ?></span>
+        <span class="stat-label">In Reparatur</span>
     </a>
     <?php endif; ?>
     <?php if ($can('movements.view')): ?>
@@ -53,17 +82,15 @@
         <span class="stat-value"><?= (int) $stats['orders_open'] ?></span>
         <span class="stat-label">Offene Bestellungen</span>
     </a>
+    <a class="card stat-card <?= $stats['deliveries_overdue'] > 0 ? 'is-danger' : ($stats['deliveries_expected'] > 0 ? 'is-info' : '') ?>" href="/orders?status=<?= $stats['deliveries_overdue'] > 0 ? 'overdue' : 'open' ?>">
+        <span class="stat-value"><?= (int) $stats['deliveries_expected'] ?></span>
+        <span class="stat-label">Erwartete Lieferungen (14 Tage)<?= $stats['deliveries_overdue'] > 0 ? ' · ' . (int) $stats['deliveries_overdue'] . ' überfällig' : '' ?></span>
+    </a>
     <?php endif; ?>
     <?php if ($can('licenses.view')): ?>
     <a class="card stat-card <?= $stats['licenses_expiring'] > 0 ? 'is-warning' : '' ?>" href="/licenses?expiring=60">
         <span class="stat-value"><?= (int) $stats['licenses_expiring'] ?></span>
         <span class="stat-label">Lizenzen laufen ab (60 Tage)</span>
-    </a>
-    <?php endif; ?>
-    <?php if ($can('employees.view')): ?>
-    <a class="card stat-card" href="/employees">
-        <span class="stat-value"><?= (int) $stats['employees_active'] ?></span>
-        <span class="stat-label">Aktive Mitarbeiter</span>
     </a>
     <?php endif; ?>
 </section>
@@ -129,6 +156,23 @@
             <?php endforeach; ?>
         </ul>
         <?php endif; ?>
+    </section>
+    <?php endif; ?>
+
+    <?php if ($can('orders.view') && $expectedDeliveries): ?>
+    <section class="card card-flush col-span-12">
+        <div class="card-header"><h2>Erwartete Lieferungen</h2><a class="btn btn-link btn-sm" href="/orders?status=open">Alle offenen Bestellungen</a></div>
+        <ul class="task-list">
+            <?php foreach ($expectedDeliveries as $o): $late = $o['expected_delivery_date'] < date('Y-m-d'); ?>
+                <li>
+                    <div>
+                        <div class="task-title"><a href="/orders/<?= (int) $o['id'] ?>"><?= e($o['order_number']) ?></a> · <?= e($o['supplier_name']) ?></div>
+                        <div class="task-meta"><?= (int) $o['open_quantity'] ?> Positionen offen · erwartet <?= fmt_date($o['expected_delivery_date']) ?></div>
+                    </div>
+                    <div class="task-actions"><?= $late ? badge('Überfällig', 'danger') : ($o['status'] === 'partially_delivered' ? badge('Teilgeliefert', 'info') : badge('Bestellt', 'neutral')) ?></div>
+                </li>
+            <?php endforeach; ?>
+        </ul>
     </section>
     <?php endif; ?>
 
