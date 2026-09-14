@@ -48,6 +48,10 @@ $inv = rawurlencode($asset['inventory_number']);
         </div>
     </details>
 
+    <?php if ($mailEnabled ?? false): ?>
+    <label class="checkbox-field"><input type="checkbox" name="send_email" value="1"<?= !empty($old['send_email']) ? ' checked' : '' ?>> Entnahmenachweis per E-Mail an den Mitarbeiter senden</label>
+    <?php endif; ?>
+
     <div class="m-actions">
         <button type="submit" class="btn btn-primary btn-xl btn-block"><?= icon('check') ?> Entnahme speichern</button>
         <a class="btn btn-ghost btn-block" href="/m/asset/<?= $inv ?>">Abbrechen</a>

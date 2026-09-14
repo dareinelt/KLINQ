@@ -18,6 +18,7 @@ use App\Repositories\LocationRepository;
 use App\Repositories\MovementRepository;
 use App\Security\CurrentUser;
 use App\Services\DocumentService;
+use App\Services\MailClient;
 use App\Services\MovementService;
 
 /**
@@ -35,7 +36,8 @@ final class MobileController extends BaseController
         private readonly DocumentService $documents,
         private readonly EmployeeRepository $employees,
         private readonly LocationRepository $locations,
-        private readonly CostCenterRepository $costCenters
+        private readonly CostCenterRepository $costCenters,
+        private readonly MailClient $mail
     ) {
         parent::__construct($view, $currentUser);
     }
@@ -112,6 +114,7 @@ final class MobileController extends BaseController
             'costCenterId' => $costCenterId,
             'costCenters' => $this->costCenters->activeForSelect(),
             'today' => date('Y-m-d'),
+            'mailEnabled' => $this->mail->enabled(),
         ]);
     }
 
@@ -160,6 +163,7 @@ final class MobileController extends BaseController
             'returnTargets' => MovementService::RETURN_TARGETS,
             'canRetire' => $this->currentUser->can('assets.retire'),
             'today' => date('Y-m-d'),
+            'mailEnabled' => $this->mail->enabled(),
         ]);
     }
 

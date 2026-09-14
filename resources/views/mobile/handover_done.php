@@ -8,6 +8,13 @@
     <?php else: ?>
         <p class="text-warning mb-0">Das PDF konnte gerade nicht erzeugt werden (PDF-Dienst nicht erreichbar). Unterschrift und Inhalt sind gespeichert; das PDF kann am Desktop nachträglich erzeugt werden.</p>
     <?php endif; ?>
+    <?php if (!empty($protocol['notify_email'])): ?>
+        <?php if (!empty($protocol['email_sent_at'])): ?>
+            <p class="text-muted mb-0"><?= icon('mail') ?> Protokoll wurde an <?= e($protocol['email_sent_to']) ?> gesendet.</p>
+        <?php else: ?>
+            <p class="text-warning mb-0"><?= icon('mail') ?> Protokoll konnte nicht per E-Mail versendet werden (Dienst nicht erreichbar oder keine E-Mail-Adresse hinterlegt).</p>
+        <?php endif; ?>
+    <?php endif; ?>
 </div>
 <div class="m-actions">
     <a class="btn btn-primary btn-xl btn-block" href="/m/handover"><?= icon('signature') ?> Weitere Protokolle</a>

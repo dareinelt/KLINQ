@@ -12,6 +12,13 @@ $inv = rawurlencode($movement['inventory_number']);
     <?php else: ?>
         <p class="mb-0">Neuer Status: <?= badge($movement['asset_status_name'], $movement['asset_status_color']) ?><?= $movement['to_location_path'] ? ' · ' . e($movement['to_location_path']) : '' ?></p>
     <?php endif; ?>
+    <?php if (!empty($movement['notify_email'])): ?>
+        <?php if (!empty($movement['email_sent_at'])): ?>
+            <p class="text-muted mb-0"><?= icon('mail') ?> Nachweis wurde an <?= e($movement['email_sent_to']) ?> gesendet.</p>
+        <?php else: ?>
+            <p class="text-warning mb-0"><?= icon('mail') ?> Nachweis konnte nicht per E-Mail versendet werden (Dienst nicht erreichbar oder keine E-Mail-Adresse hinterlegt).</p>
+        <?php endif; ?>
+    <?php endif; ?>
 </div>
 <div class="m-actions">
     <a class="btn btn-primary btn-xl btn-block" href="/m"><?= icon('qr') ?> Nächstes Asset scannen</a>

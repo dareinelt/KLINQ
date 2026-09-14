@@ -13,7 +13,7 @@ final class MovementRepository extends BaseRepository
             t.name AS asset_type_name, t.code AS asset_type_code, t.icon AS asset_type_icon,
             mf.name AS manufacturer_name, ar.name AS article_name,
             s.code AS asset_status_code, s.name AS asset_status_name, s.color AS asset_status_color,
-            e.display_name AS employee_name, e.department AS employee_department, e.username AS employee_username,
+            e.display_name AS employee_name, e.department AS employee_department, e.username AS employee_username, e.email AS employee_email,
             lf.full_path AS from_location_path, lt.full_path AS to_location_path,
             cc.number AS cost_center_number, cc.description AS cost_center_name,
             u.display_name AS completed_by_name,

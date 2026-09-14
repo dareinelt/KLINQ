@@ -13,6 +13,8 @@ services:
         condition: service_healthy
       pdf:
         condition: service_started
+      mail:
+        condition: service_started
     volumes:
       - assets_uploads:/var/www/html/storage/uploads
       - assets_logs:/var/www/html/storage/logs
@@ -27,6 +29,26 @@ services:
     container_name: assets-pdf
     expose:
       - "8000"
+    restart: unless-stopped
+
+  # E-Mail-Versand (SMTP-Relay) für Entnahme-/Retourennachweise und Übergabeprotokolle;
+  # nur im internen Netz erreichbar, Anbindung an einen echten Mailserver über SMTP_*.
+  mail:
+    build:
+      context: .
+      dockerfile: docker/mail/Dockerfile
+    container_name: assets-mail
+    environment:
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_ENCRYPTION: ${SMTP_ENCRYPTION:-starttls}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_TIMEOUT: ${SMTP_TIMEOUT:-10}
+      SMTP_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-}
+      SMTP_FROM_NAME: ${MAIL_FROM_NAME:-}
+    expose:
+      - "8025"
     restart: unless-stopped
 
   mysql:

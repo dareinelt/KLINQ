@@ -15,6 +15,7 @@ use App\Security\CurrentUser;
 use App\Services\DocumentService;
 use App\Services\HandoverRenderer;
 use App\Services\HandoverService;
+use App\Services\MailClient;
 use App\Services\PdfClient;
 
 /** Übergabeprotokolle: Desktop-Übersicht, Mitarbeiterstand, Versionen, mobile Unterschrift, Vorlagen-Baukasten. */
@@ -27,6 +28,7 @@ final class HandoverController extends BaseController
         private readonly HandoverRepository $protocols,
         private readonly DocumentService $documents,
         private readonly PdfClient $pdf,
+        private readonly MailClient $mail,
     ) {
         parent::__construct($view, $currentUser);
     }
@@ -212,6 +214,7 @@ final class HandoverController extends BaseController
             'html' => $this->service->html($protocol, true),
             'errors' => $_SESSION['_errors'] ?? [],
             'backHref' => '/m/handover',
+            'mailEnabled' => $this->mail->enabled(),
         ]);
     }
 
@@ -219,13 +222,15 @@ final class HandoverController extends BaseController
     {
         $protocol = $this->protocolOrFail($request);
         $confirmations = $request->all()['confirmations'] ?? [];
+        $notifyEmail = !empty($request->all()['notify_email']);
         try {
             $result = $this->service->sign(
                 (int) $protocol['id'],
                 $request->string('signature_data'),
                 is_array($confirmations) ? array_map('intval', $confirmations) : [],
                 $request->userAgent(),
-                $request->ip()
+                $request->ip(),
+                $notifyEmail
             );
         } catch (ValidationException $e) {
             $_SESSION['_errors'] = $e->errors();
