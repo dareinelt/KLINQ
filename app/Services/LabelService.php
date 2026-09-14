@@ -332,6 +332,30 @@ final class LabelService
         return $name;
     }
 
+    /** SVG ohne Skripte, Event-Handler, externe Referenzen oder eingebettete Fremdinhalte (gesamte Datei). */
+    private function isSafeSvg(string $path): bool
+    {
+        $svg = (string) file_get_contents($path);
+        if (strlen($svg) > 2 * 1024 * 1024) {
+            return false;
+        }
+        $lower = strtolower($svg);
+        foreach (['<script', '<foreignobject', '<iframe', '<embed', '<object', '<!entity', 'javascript:', 'data:text/html'] as $needle) {
+            if (str_contains($lower, $needle)) {
+                return false;
+            }
+        }
+        // on*-Attribute (onload, onclick …) und externe href/xlink:href
+        if (preg_match('/\son[a-z]+\s*=/i', $svg) === 1) {
+            return false;
+        }
+        if (preg_match('/(?:xlink:)?href\s*=\s*["\']\s*(?!#|data:image\/)/i', $svg) === 1) {
+            return false;
+        }
+
+        return true;
+    }
+
     private function detectMime(string $path): ?string
     {
         $head = (string) file_get_contents($path, false, null, 0, 512);
@@ -344,7 +368,7 @@ final class LabelService
         if (str_starts_with($head, 'RIFF') && substr($head, 8, 4) === 'WEBP') {
             return 'image/webp';
         }
-        if (stripos($head, '<svg') !== false && stripos($head, '<script') === false) {
+        if (stripos($head, '<svg') !== false && $this->isSafeSvg($path)) {
             return 'image/svg+xml';
         }
 

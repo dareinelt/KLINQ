@@ -9,6 +9,7 @@ use App\Core\Response;
 use App\Core\View;
 use App\Exceptions\NotFoundException;
 use App\Security\CurrentUser;
+use App\Support\Url;
 
 abstract class BaseController
 {
@@ -63,9 +64,12 @@ abstract class BaseController
         $referer = $request->header('Referer');
         if ($referer !== null) {
             $path = parse_url($referer, PHP_URL_PATH);
-            if (is_string($path) && str_starts_with($path, '/')) {
+            if (is_string($path)) {
                 $query = parse_url($referer, PHP_URL_QUERY);
-                return $path . ($query ? '?' . $query : '');
+                $candidate = Url::safeLocalPath($path . ($query ? '?' . $query : ''));
+                if ($candidate !== '') {
+                    return $candidate;
+                }
             }
         }
 

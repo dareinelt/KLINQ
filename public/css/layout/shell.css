@@ -131,7 +131,8 @@
 .topbar-spacer { flex: 1; }
 .topbar-search { max-width: 520px; flex: 1; }
 
-.topbar-user { display: flex; align-items: center; gap: var(--space-3); font-size: var(--font-size-sm); white-space: nowrap; }
+.topbar-user { display: flex; align-items: center; gap: var(--space-3); font-size: var(--font-size-sm); white-space: nowrap; color: inherit; text-decoration: none; border-radius: var(--radius-md); padding: 2px var(--space-2); }
+.topbar-user:hover { background: var(--color-primary-soft); color: var(--color-primary); }
 
 .topbar-user .avatar {
     width: 36px;

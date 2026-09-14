@@ -21,11 +21,12 @@ final class CsrfMiddleware
         if (in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
             $token = $request->header('X-CSRF-Token') ?? (string) $request->input('_csrf', '');
             if (!$this->csrf->validate($token)) {
+                // 403 statt 419: Apache kennt 419 nicht und würde die Statuszeile als 500 ausliefern
                 if ($request->wantsJson()) {
-                    return Response::json(['error' => 'CSRF-Token ungültig oder Sitzung abgelaufen.', 'code' => 'csrf'], 419);
+                    return Response::json(['error' => 'CSRF-Token ungültig oder Sitzung abgelaufen.', 'code' => 'csrf'], 403);
                 }
 
-                return Response::html('<h1>419 – Sitzung abgelaufen</h1><p>Bitte Seite neu laden und erneut versuchen.</p>', 419);
+                return Response::html('<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Sitzung abgelaufen</title></head><body><h1>403 – Sitzung abgelaufen oder ungültiges Formular-Token</h1><p>Bitte Seite neu laden und erneut versuchen.</p></body></html>', 403);
             }
         }
 

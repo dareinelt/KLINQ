@@ -19,6 +19,7 @@ use App\Security\CurrentUser;
 use App\Services\DocumentService;
 use App\Services\LicenseService;
 use App\Support\Paginator;
+use App\Support\Url;
 
 /** Lizenzverwaltung: Liste, Detail, Zuordnung zu Assets, Dokumente. */
 final class LicenseController extends BaseController
@@ -181,7 +182,7 @@ final class LicenseController extends BaseController
         }
         $back = $request->string('back');
 
-        return $this->redirect($back !== '' && str_starts_with($back, '/') ? $back : '/licenses/' . $id . '#assignments');
+        return $this->redirect(Url::safeLocalPath($back, '/licenses/' . $id . '#assignments'));
     }
 
     // ------------------------------------------------------------------ Dokumente

@@ -8,6 +8,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Exceptions\ValidationException;
 use App\Support\Paginator;
+use App\Support\Url;
 
 /**
  * Gemeinsamer Ablauf für Stammdaten: Liste mit Filter/Paginierung, Anlegen,
@@ -155,6 +156,6 @@ abstract class CrudController extends BaseController
 
     protected function safeReturn(string $url): string
     {
-        return str_starts_with($url, '/') && !str_starts_with($url, '//') ? $url : '';
+        return Url::safeLocalPath($url);
     }
 }

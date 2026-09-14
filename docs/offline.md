@@ -96,7 +96,7 @@ Bei einem **Versionskonflikt** zeigt der Eintrag die Meldung und den aktuellen S
 - **Erneut senden** – unverändert noch einmal versuchen.
 - **Verwerfen** – Eintrag nach Rückfrage löschen.
 
-Nicht angemeldet (`401`) oder abgelaufene Sitzung (`403`/`419`): die Warteschlange bleibt vollständig erhalten, der Nutzer erhält einen Hinweis und die Übertragung startet nach der Anmeldung automatisch.
+Nicht angemeldet (`401`) oder abgelaufene Sitzung bzw. ungültiges CSRF-Token (`403`): die Warteschlange bleibt vollständig erhalten, der Nutzer erhält einen Hinweis und die Übertragung startet nach der Anmeldung automatisch.
 
 ## API
 

@@ -87,10 +87,10 @@ ob_start();
         </div>
         <div class="topbar-spacer"></div>
         <span class="offline-indicator" id="offline-indicator" hidden><?= icon('offline') ?> Offline</span>
-        <div class="topbar-user">
+        <a class="topbar-user" href="/profile/password" title="Passwort ändern">
             <span class="topbar-user-name"><?= e($user['display_name'] ?? $user['username'] ?? '') ?> · <?= e($roleLabels[$user['role'] ?? ''] ?? ($user['role'] ?? '')) ?></span>
             <span class="avatar" aria-hidden="true"><?= e(mb_substr((string) ($user['display_name'] ?? $user['username'] ?? '?'), 0, 1)) ?></span>
-        </div>
+        </a>
     </header>
     <main class="main-content" id="main">
         <?php include __DIR__ . '/flash.php'; ?>

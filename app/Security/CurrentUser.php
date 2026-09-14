@@ -32,6 +32,19 @@ final class CurrentUser
         unset($_SESSION[self::SESSION_KEY]);
     }
 
+    /**
+     * Übernimmt geänderte Stammdaten (Rolle, Anzeigename) aus der Datenbank in die Sitzung,
+     * damit Rollenwechsel ohne Neuanmeldung wirken. @param array<string,mixed> $user
+     */
+    public function refresh(array $user): void
+    {
+        if (!$this->isAuthenticated()) {
+            return;
+        }
+        $_SESSION[self::SESSION_KEY]['role'] = (string) $user['role'];
+        $_SESSION[self::SESSION_KEY]['display_name'] = (string) ($user['display_name'] ?? $user['username']);
+    }
+
     public function isAuthenticated(): bool
     {
         return is_array($_SESSION[self::SESSION_KEY] ?? null);

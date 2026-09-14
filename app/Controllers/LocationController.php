@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\View;
+use App\Support\Url;
 use App\Exceptions\ValidationException;
 use App\Repositories\LocationRepository;
 use App\Security\CurrentUser;
@@ -68,7 +69,7 @@ final class LocationController extends BaseController
         $this->flash('success', 'Standort wurde angelegt.');
         $return = $request->string('return');
 
-        return $this->redirect(str_starts_with($return, '/') && !str_starts_with($return, '//') ? $return : '/locations/' . $id);
+        return $this->redirect(Url::safeLocalPath($return, '/locations/' . $id));
     }
 
     public function edit(Request $request): Response

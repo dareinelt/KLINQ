@@ -29,7 +29,8 @@ $all = [
     'users.manage',
 ];
 
-$readOnly = array_values(array_filter($all, static fn (string $p): bool => str_ends_with($p, '.view')));
+// Alle Leserechte – außer dem Audit-Log (enthält Benutzer- und IP-Daten; nur Admin und Assetmanagement)
+$readOnly = array_values(array_filter($all, static fn (string $p): bool => str_ends_with($p, '.view') && $p !== 'audit.view'));
 
 return [
     'all' => $all,
@@ -42,7 +43,7 @@ return [
             'locations.manage', 'costcenters.manage',
             'manufacturers.manage', 'articles.manage',
             'documents.manage', 'licenses.manage',
-            'reports.export', 'imports.manage',
+            'reports.export', 'imports.manage', 'audit.view',
         ]))),
         'lager' => array_values(array_unique(array_merge($readOnly, [
             'labels.print',

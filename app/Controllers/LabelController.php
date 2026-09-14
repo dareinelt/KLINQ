@@ -91,7 +91,9 @@ final class LabelController extends BaseController
             throw new NotFoundException('Kein Logo hinterlegt.');
         }
 
-        return Response::file($path, $mime, basename($path), true);
+        // Logo nur als Bild darstellen: keine Skripte, kein Zugriff auf die Anwendung (auch bei SVG)
+        return Response::file($path, $mime, basename($path), true)
+            ->withHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; sandbox");
     }
 
     // ---------------------------------------------------------------- Administration

@@ -87,4 +87,10 @@ final class Router
     {
         return $this->matched;
     }
+
+    /** Alle registrierten Routen (für Tests/Inventur). @return list<Route> */
+    public function routes(): array
+    {
+        return array_merge(...array_values($this->routes ?: [[]]));
+    }
 }

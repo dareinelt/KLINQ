@@ -16,7 +16,7 @@ if [ "${SKIP_MIGRATIONS:-0}" != "1" ]; then
     php bin/migrate.php
 fi
 
-mkdir -p storage/uploads storage/logs storage/tmp
+mkdir -p storage/uploads storage/logs storage/labels storage/tmp
 chown -R www-data:www-data storage
 
 # Zeitgesteuerte AD-Synchronisation als Hintergrundprozess (nur wenn konfiguriert)

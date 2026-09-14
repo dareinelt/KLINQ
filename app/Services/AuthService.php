@@ -39,7 +39,7 @@ final class AuthService
             return null;
         }
 
-        if ($user !== null && $user['locked_until'] !== null && strtotime((string) $user['locked_until']) > time()) {
+        if ($user !== null && (int) ($user['is_locked'] ?? 0) === 1) {
             $this->logger->warning('Login für gesperrten Benutzer abgelehnt', ['username' => $username]);
             return null;
         }

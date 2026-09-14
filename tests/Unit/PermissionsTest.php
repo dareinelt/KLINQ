@@ -32,6 +32,9 @@ final class PermissionsTest extends TestCase
             $this->assertTrue(str_ends_with($permission, '.view'), "readonly darf {$permission} nicht haben");
         }
         $this->assertFalse($this->permissions->roleHas('readonly', 'assets.manage'));
+        $this->assertFalse($this->permissions->roleHas('readonly', 'audit.view'), 'Audit-Log enthält Benutzer-/IP-Daten');
+        $this->assertFalse($this->permissions->roleHas('lager', 'audit.view'));
+        $this->assertTrue($this->permissions->roleHas('assetmanagement', 'audit.view'));
     }
 
     public function testLagerCanCheckoutButNotManageSettings(): void

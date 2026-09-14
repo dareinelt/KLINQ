@@ -43,6 +43,16 @@ final class AuditLogRepository extends BaseRepository
         );
     }
 
+    /** @return list<string> */
+    public function distinctValues(string $column): array
+    {
+        if (!in_array($column, ['action', 'object_type', 'username'], true)) {
+            throw new \InvalidArgumentException('Ungültige Spalte.');
+        }
+
+        return array_map('strval', array_column($this->fetchAll("SELECT DISTINCT {$column} AS v FROM audit_logs ORDER BY {$column}"), 'v'));
+    }
+
     /** @param array<string,mixed> $filters @return array{0:string,1:array<int,mixed>} */
     private function buildWhere(array $filters): array
     {
@@ -57,15 +67,36 @@ final class AuditLogRepository extends BaseRepository
             $clauses[] = 'object_type = ?';
             $params[] = $filters['object_type'];
         }
+        if (!empty($filters['object_id'])) {
+            $clauses[] = 'object_id = ?';
+            $params[] = (int) $filters['object_id'];
+        }
+        if (!empty($filters['action'])) {
+            $clauses[] = 'action = ?';
+            $params[] = $filters['action'];
+        }
+        if (!empty($filters['username'])) {
+            $clauses[] = 'username = ?';
+            $params[] = $filters['username'];
+        }
+        // Datumsgrenzen (lokale Zeitzone) → UTC, da created_at in UTC gespeichert ist
         if (!empty($filters['from'])) {
             $clauses[] = 'created_at >= ?';
-            $params[] = $filters['from'] . ' 00:00:00';
+            $params[] = self::toUtc($filters['from'] . ' 00:00:00');
         }
         if (!empty($filters['to'])) {
             $clauses[] = 'created_at <= ?';
-            $params[] = $filters['to'] . ' 23:59:59';
+            $params[] = self::toUtc($filters['to'] . ' 23:59:59');
         }
 
         return [$clauses === [] ? '' : 'WHERE ' . implode(' AND ', $clauses), $params];
+    }
+
+    private static function toUtc(string $local): string
+    {
+        $dt = date_create($local) ?: date_create('1970-01-01');
+        $dt->setTimezone(new \DateTimeZone('UTC'));
+
+        return $dt->format('Y-m-d H:i:s');
     }
 }

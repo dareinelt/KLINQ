@@ -8,6 +8,7 @@
                 <p class="text-muted text-sm mb-0"><?= e($companyName ?? '') ?></p>
             </div>
         </div>
+        <?php include __DIR__ . '/../partials/flash.php'; ?>
         <?php if (!empty($error)): ?>
             <div class="alert alert-error" role="alert"><?= e($error) ?></div>
         <?php endif; ?>

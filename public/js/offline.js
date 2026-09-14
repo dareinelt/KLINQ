@@ -228,7 +228,7 @@
                 body: JSON.stringify(body)
             }).then(function (r) {
                 if (r.status === 401) { throw Object.assign(new Error("Nicht angemeldet – bitte anmelden, danach werden die Vorgänge übertragen."), { code: "unauthenticated" }); }
-                if (r.status === 419 || r.status === 403) { throw Object.assign(new Error("Sitzung abgelaufen – Seite neu laden und erneut senden."), { code: "csrf" }); }
+                if (r.status === 403) { throw Object.assign(new Error("Sitzung abgelaufen – Seite neu laden und erneut senden."), { code: "csrf" }); }
                 if (!r.ok) { throw new Error("Synchronisation fehlgeschlagen (" + r.status + ")."); }
                 return r.json();
             }).then(function (data) {

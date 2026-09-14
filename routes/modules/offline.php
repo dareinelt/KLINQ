@@ -14,5 +14,6 @@ return static function (Router $router, Container $c): void {
     // Stammdaten-Cache für die Offline-Erfassung
     $router->get('/api/offline/bootstrap', static fn (Request $r): Response => $ctl()->bootstrap($r), 'assets.view');
     // Synchronisation offline erfasster Vorgänge; die Rechte je Vorgang prüft der MovementService
-    $router->post('/api/offline/sync', static fn (Request $r): Response => $ctl()->sync($r));
+    // Basisrecht; Entnahme/Retoure/Ausmusterung werden je Vorgang im MovementService geprüft
+    $router->post('/api/offline/sync', static fn (Request $r): Response => $ctl()->sync($r), 'movements.view');
 };

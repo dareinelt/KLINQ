@@ -18,6 +18,12 @@ final class Permissions
         return $roles[$role] ?? [];
     }
 
+    /** Alle bekannten Rechte. @return array<int,string> */
+    public function all(): array
+    {
+        return $this->config->get('permissions.all', []);
+    }
+
     public function roleHas(string $role, string $permission): bool
     {
         return in_array($permission, $this->forRole($role), true);

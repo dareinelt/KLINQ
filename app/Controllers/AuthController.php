@@ -12,6 +12,7 @@ use App\Security\CsrfTokenManager;
 use App\Security\CurrentUser;
 use App\Services\AuditLogService;
 use App\Services\AuthService;
+use App\Support\Url;
 
 final class AuthController extends BaseController
 {
@@ -75,11 +76,6 @@ final class AuthController extends BaseController
 
     private function safeRedirect(string $target): string
     {
-        // Nur relative Pfade ohne Protokoll/Host zulassen (Open-Redirect-Schutz)
-        if ($target === '' || !str_starts_with($target, '/') || str_starts_with($target, '//') || str_contains($target, "\n")) {
-            return '';
-        }
-
-        return $target;
+        return Url::safeLocalPath($target);
     }
 }
