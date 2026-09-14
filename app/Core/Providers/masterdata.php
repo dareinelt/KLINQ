@@ -23,6 +23,7 @@ use App\Services\ArticleService;
 use App\Services\AuditLogService;
 use App\Services\CostCenterService;
 use App\Services\EmployeeService;
+use App\Services\HandoverService;
 use App\Services\LocationService;
 use App\Services\ManufacturerService;
 use App\Services\SupplierService;
@@ -47,5 +48,5 @@ return static function (Container $c): void {
     $c->singleton(SupplierController::class, static fn (Container $c) => new SupplierController($c->get(View::class), $c->get(CurrentUser::class), $c->get(SupplierRepository::class), $c->get(SupplierService::class)));
     $c->singleton(CostCenterController::class, static fn (Container $c) => new CostCenterController($c->get(View::class), $c->get(CurrentUser::class), $c->get(CostCenterRepository::class), $c->get(LocationRepository::class), $c->get(CostCenterService::class)));
     $c->singleton(LocationController::class, static fn (Container $c) => new LocationController($c->get(View::class), $c->get(CurrentUser::class), $c->get(LocationRepository::class), $c->get(LocationService::class)));
-    $c->singleton(EmployeeController::class, static fn (Container $c) => new EmployeeController($c->get(View::class), $c->get(CurrentUser::class), $c->get(EmployeeRepository::class), $c->get(LocationRepository::class), $c->get(CostCenterRepository::class), $c->get(EmployeeService::class), $c->get(AssetRepository::class)));
+    $c->singleton(EmployeeController::class, static fn (Container $c) => new EmployeeController($c->get(View::class), $c->get(CurrentUser::class), $c->get(EmployeeRepository::class), $c->get(LocationRepository::class), $c->get(CostCenterRepository::class), $c->get(EmployeeService::class), $c->get(AssetRepository::class), $c->get(HandoverService::class)));
 };

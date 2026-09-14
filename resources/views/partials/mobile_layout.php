@@ -29,6 +29,7 @@ ob_start();
     <nav class="m-tabbar" aria-label="Mobile Navigation">
         <?= $tab('scan', '/m', 'qr', 'Scannen') ?>
         <?php if ($can('movements.view')): ?><?= $tab('open', '/m/open', 'clock', 'Offen') ?><?php endif; ?>
+        <?php if ($can('handover.sign')): ?><?= $tab('handover', '/m/handover', 'signature', 'Protokolle') ?><?php endif; ?>
         <?= $tab('desktop', '/dashboard', 'laptop', 'Desktop') ?>
     </nav>
 </div>

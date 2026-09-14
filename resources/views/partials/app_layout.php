@@ -40,6 +40,9 @@ ob_start();
                 <?= $navItem('open-checkouts', '/movements/open', 'warning', 'Offene Vorgänge', ($openCounts['checkouts'] ?? 0) + ($openCounts['returns'] ?? 0)) ?>
                 <?= $navItem('movements', '/movements', 'swap', 'Bewegungen') ?>
             <?php endif; ?>
+            <?php if ($can('handover.view')): ?>
+                <?= $navItem('handover', '/handover', 'signature', 'Übergabeprotokolle') ?>
+            <?php endif; ?>
             <?php if ($can('licenses.view')): ?>
                 <?= $navItem('licenses', '/licenses', 'key', 'Lizenzen') ?>
             <?php endif; ?>

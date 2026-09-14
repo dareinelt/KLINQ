@@ -112,7 +112,7 @@ final class PurchaseOrderController extends BaseController
             'documents' => $this->documents->forEntity('purchase_order', $id),
             'articles' => $this->articles->activeForSelect(),
             'types' => $this->types->all(true),
-            'documentTypes' => DocumentService::DOCUMENT_TYPES,
+            'documentTypes' => DocumentService::UPLOAD_TYPES,
             'statuses' => PurchaseOrderService::STATUSES,
             'statusColors' => PurchaseOrderService::STATUS_COLORS,
         ]);
@@ -308,7 +308,7 @@ final class PurchaseOrderController extends BaseController
         $row = $this->findOrFail($this->orders->find($id), 'Bestellung nicht gefunden');
         $this->currentUser->require('documents.manage');
         $type = $request->string('document_type', 'other');
-        if (!isset(DocumentService::DOCUMENT_TYPES[$type])) {
+        if (!isset(DocumentService::UPLOAD_TYPES[$type])) {
             $type = 'other';
         }
         $file = $request->file('file');

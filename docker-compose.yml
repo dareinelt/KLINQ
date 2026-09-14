@@ -11,10 +11,22 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      pdf:
+        condition: service_started
     volumes:
       - assets_uploads:/var/www/html/storage/uploads
       - assets_logs:/var/www/html/storage/logs
       - assets_labels:/var/www/html/storage/labels
+    restart: unless-stopped
+
+  # HTML→PDF (WeasyPrint) für Übergabeprotokolle; nur im internen Netz erreichbar
+  pdf:
+    build:
+      context: .
+      dockerfile: docker/pdf/Dockerfile
+    container_name: assets-pdf
+    expose:
+      - "8000"
     restart: unless-stopped
 
   mysql:
