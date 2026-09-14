@@ -11,7 +11,7 @@ Die Anwendung läuft vollständig in Docker: ein **App-Container** (PHP 8.4 + Ap
 ## Erstinstallation
 
 ```bash
-git clone [<repository>](https://github.com/dareinelt/assets) assets && cd assets
+git clone https://github.com/dareinelt/assets assets && cd assets
 cp .env.example .env
 ```
 
