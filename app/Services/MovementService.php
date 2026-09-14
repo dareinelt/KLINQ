@@ -13,6 +13,7 @@ use App\Repositories\CostCenterRepository;
 use App\Repositories\EmployeeRepository;
 use App\Repositories\LocationRepository;
 use App\Repositories\MovementRepository;
+use App\Core\Logger;
 use App\Security\CurrentUser;
 use App\Support\Validator;
 
@@ -41,7 +42,12 @@ final class MovementService
         private readonly AssetHistoryRepository $history,
         private readonly AssetService $assetService,
         private readonly AuditLogService $audit,
-        private readonly CurrentUser $currentUser
+        private readonly CurrentUser $currentUser,
+        private readonly DocumentService $documents,
+        private readonly PdfClient $pdf,
+        private readonly MailClient $mail,
+        private readonly SettingsService $settings,
+        private readonly Logger $logger
     ) {}
 
     /**
@@ -94,6 +100,7 @@ final class MovementService
             ->date('movement_date', 'Entnahmedatum')
             ->date('expected_return_at', 'Rückgabe erwartet bis')
             ->text('note', 'Bemerkung', false, 2000)
+            ->bool('send_email')
             ->string('client_transaction_id', 'Transaktions-ID', false, 36);
         $data = $v->validated();
 
@@ -125,7 +132,7 @@ final class MovementService
         $movementDate = $data['movement_date'] ?? date('Y-m-d');
         $issued = $this->statuses->requireByCode('issued');
 
-        return $this->movements->transaction(function () use ($asset, $employee, $location, $costCenter, $missing, $movementDate, $data, $source, $issued): array {
+        $movement = $this->movements->transaction(function () use ($asset, $employee, $location, $costCenter, $missing, $movementDate, $data, $source, $issued): array {
             $movementId = $this->movements->create([
                 'type' => 'checkout',
                 'status' => $missing === [] ? 'completed' : 'open',
@@ -140,6 +147,7 @@ final class MovementService
                 'note' => $data['note'],
                 'client_transaction_id' => $data['client_transaction_id'] ?: null,
                 'source' => $source,
+                'notify_email' => $data['send_email'] ? 1 : 0,
                 'created_by' => $this->currentUser->id(),
                 'created_by_name' => $this->currentUser->displayName(),
                 'completed_by' => $missing === [] ? $this->currentUser->id() : null,
@@ -165,6 +173,9 @@ final class MovementService
 
             return $this->movements->find($movementId) ?? [];
         });
+        $this->maybeSendReceiptEmail($movement);
+
+        return $movement;
     }
 
     /**
@@ -193,6 +204,7 @@ final class MovementService
             ->in('target_status_code', 'Zielstatus', array_keys(self::RETURN_TARGETS))
             ->date('movement_date', 'Rückgabedatum')
             ->text('note', 'Bemerkung', false, 2000)
+            ->bool('send_email')
             ->string('client_transaction_id', 'Transaktions-ID', false, 36);
         if (!empty($input['has_damage']) && trim((string) ($input['damage_description'] ?? '')) === '') {
             $v->addError('damage_description', 'Bitte den Schaden kurz beschreiben.');
@@ -213,7 +225,7 @@ final class MovementService
         $missing = $location === null ? ['location'] : [];
         $movementDate = $data['movement_date'] ?? date('Y-m-d');
 
-        return $this->movements->transaction(function () use ($asset, $location, $costCenter, $target, $missing, $movementDate, $data, $source): array {
+        $movement = $this->movements->transaction(function () use ($asset, $location, $costCenter, $target, $missing, $movementDate, $data, $source): array {
             $movementId = $this->movements->create([
                 'type' => 'return',
                 'status' => $missing === [] ? 'completed' : 'open',
@@ -234,6 +246,7 @@ final class MovementService
                 'note' => $data['note'],
                 'client_transaction_id' => $data['client_transaction_id'] ?: null,
                 'source' => $source,
+                'notify_email' => $data['send_email'] ? 1 : 0,
                 'created_by' => $this->currentUser->id(),
                 'created_by_name' => $this->currentUser->displayName(),
                 'completed_by' => $missing === [] ? $this->currentUser->id() : null,
@@ -260,6 +273,9 @@ final class MovementService
 
             return $this->movements->find($movementId) ?? [];
         });
+        $this->maybeSendReceiptEmail($movement);
+
+        return $movement;
     }
 
     /**
@@ -432,6 +448,44 @@ final class MovementService
         });
 
         return $this->movements->find($id) ?? $movement;
+    }
+
+    /**
+     * Sendet – falls im Workflow per Opt-in-Checkbox angefordert – den Entnahme-/Retourennachweis
+     * als PDF per E-Mail an den betroffenen Mitarbeiter. Fehler (kein Mail-Dienst, keine
+     * E-Mail-Adresse, SMTP-Fehler) werden nur geloggt und dürfen den Workflow nicht unterbrechen.
+     * @param array<string,mixed> $movement
+     */
+    private function maybeSendReceiptEmail(array $movement): void
+    {
+        if (empty($movement['notify_email']) || $movement['status'] !== 'completed' || !empty($movement['email_sent_at'])) {
+            return;
+        }
+        $email = trim((string) ($movement['employee_email'] ?? ''));
+        if ($email === '' || !$this->mail->enabled()) {
+            return;
+        }
+        try {
+            $html = MovementReceiptRenderer::renderDocument($movement, $this->settings->companyName());
+            $pdf = $this->pdf->render($html);
+            $subject = ($movement['type'] === 'checkout' ? 'Entnahmenachweis' : 'Retourennachweis') . ' ' . $movement['inventory_number'];
+            $attachments = [];
+            if ($pdf !== null) {
+                $this->documents->storeGenerated('movement', (int) $movement['id'], 'movement_receipt', $pdf, $subject . '.pdf', 'Automatisch per E-Mail versendet');
+                $attachments[] = ['filename' => $subject . '.pdf', 'content' => $pdf, 'mime_type' => 'application/pdf'];
+            }
+            $body = '<p>Hallo ' . htmlspecialchars((string) ($movement['employee_name'] ?? ''), ENT_QUOTES, 'UTF-8') . ',</p>'
+                . '<p>im Anhang finden Sie Ihren ' . ($movement['type'] === 'checkout' ? 'Entnahmenachweis' : 'Retourennachweis')
+                . ' für ' . htmlspecialchars((string) $movement['inventory_number'], ENT_QUOTES, 'UTF-8') . '.</p>'
+                . '<p>Diese E-Mail wurde automatisch von der Assetverwaltung erzeugt.</p>';
+            $sent = $this->mail->send($email, $subject, $body, $attachments);
+            if ($sent) {
+                $this->movements->update((int) $movement['id'], ['email_sent_at' => gmdate('Y-m-d H:i:s'), 'email_sent_to' => $email]);
+                $this->audit->log('email', 'movement', (int) $movement['id'], $subject, null, ['to' => $email]);
+            }
+        } catch (\Throwable $e) {
+            $this->logger->warning('Nachweis konnte nicht per E-Mail versendet werden', ['movement_id' => $movement['id'], 'error' => $e->getMessage()]);
+        }
     }
 
     /** @param array<string,mixed> $movement @return array<int,string> Fehlende Angaben als Labels */

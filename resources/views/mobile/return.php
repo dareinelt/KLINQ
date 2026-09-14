@@ -75,6 +75,10 @@ $condition = $old['condition_code'] ?? 'ok';
     <div class="alert alert-info"><?= icon('info') ?> <?= count($children) ?> zugehörige Assets (z. B. Zubehör) bleiben zugeordnet – bei Bedarf separat zurücknehmen.</div>
     <?php endif; ?>
 
+    <?php if ($mailEnabled ?? false): ?>
+    <label class="checkbox-field"><input type="checkbox" name="send_email" value="1"<?= !empty($old['send_email']) ? ' checked' : '' ?>> Retourennachweis per E-Mail an den Mitarbeiter senden</label>
+    <?php endif; ?>
+
     <div class="m-actions">
         <button type="submit" class="btn btn-primary btn-xl btn-block"><?= icon('check') ?> Rückgabe speichern</button>
         <a class="btn btn-ghost btn-block" href="/m/asset/<?= $inv ?>">Abbrechen</a>

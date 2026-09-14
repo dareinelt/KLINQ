@@ -21,7 +21,11 @@ use App\Security\CurrentUser;
 use App\Services\AssetService;
 use App\Services\AuditLogService;
 use App\Services\DocumentService;
+use App\Services\MailClient;
 use App\Services\MovementService;
+use App\Services\PdfClient;
+use App\Services\SettingsService;
+use App\Core\Logger;
 
 return static function (Container $c): void {
     $c->singleton(MovementRepository::class, static fn (Container $c): MovementRepository => new MovementRepository($c->get(PDO::class)));
@@ -33,6 +37,8 @@ return static function (Container $c): void {
         $c->get(CurrentUser::class),
         $c->get(AuditLogService::class)
     ));
+    $c->singleton(PdfClient::class, static fn (Container $c): PdfClient => new PdfClient($c->get(Config::class), $c->get(Logger::class)));
+    $c->singleton(MailClient::class, static fn (Container $c): MailClient => new MailClient($c->get(Config::class), $c->get(Logger::class)));
     $c->singleton(MovementService::class, static fn (Container $c): MovementService => new MovementService(
         $c->get(MovementRepository::class),
         $c->get(AssetRepository::class),
@@ -43,7 +49,12 @@ return static function (Container $c): void {
         $c->get(AssetHistoryRepository::class),
         $c->get(AssetService::class),
         $c->get(AuditLogService::class),
-        $c->get(CurrentUser::class)
+        $c->get(CurrentUser::class),
+        $c->get(DocumentService::class),
+        $c->get(PdfClient::class),
+        $c->get(MailClient::class),
+        $c->get(SettingsService::class),
+        $c->get(Logger::class)
     ));
 
     $c->singleton(DocumentController::class, static fn (Container $c): DocumentController => new DocumentController(
@@ -73,6 +84,7 @@ return static function (Container $c): void {
         $c->get(DocumentService::class),
         $c->get(EmployeeRepository::class),
         $c->get(LocationRepository::class),
-        $c->get(CostCenterRepository::class)
+        $c->get(CostCenterRepository::class),
+        $c->get(MailClient::class)
     ));
 };

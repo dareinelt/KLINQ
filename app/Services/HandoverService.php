@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Core\Logger;
 use App\Exceptions\ConflictException;
 use App\Exceptions\ValidationException;
+use App\Repositories\DocumentRepository;
 use App\Repositories\EmployeeRepository;
 use App\Repositories\HandoverRepository;
 use App\Security\CurrentUser;
@@ -34,11 +35,13 @@ final class HandoverService
         private readonly HandoverRepository $protocols,
         private readonly EmployeeRepository $employees,
         private readonly DocumentService $documents,
+        private readonly DocumentRepository $documentRepository,
         private readonly PdfClient $pdf,
         private readonly SettingsService $settings,
         private readonly AuditLogService $audit,
         private readonly CurrentUser $currentUser,
         private readonly Logger $logger,
+        private readonly MailClient $mail,
     ) {
     }
 
@@ -176,7 +179,7 @@ final class HandoverService
      *
      * @param list<int> $confirmations Indizes der bestätigten Checkboxen
      */
-    public function sign(int $id, string $signatureDataUrl, array $confirmations, string $device, string $ip): array
+    public function sign(int $id, string $signatureDataUrl, array $confirmations, string $device, string $ip, bool $notifyEmail = false): array
     {
         $protocol = $this->requireStatus($id, 'draft');
         $png = self::decodeSignature($signatureDataUrl);
@@ -201,6 +204,7 @@ final class HandoverService
             'signed_ip' => mb_substr($ip, 0, 45),
             'signature_document_id' => $signatureDocId,
             'rendered_html' => $html,
+            'notify_email' => $notifyEmail ? 1 : 0,
         ]);
         $superseded = $this->protocols->supersedeOthers((int) $protocol['employee_id'], $id);
         $this->audit->log('sign', 'handover', $id, 'Übergabeprotokoll ' . $protocol['protocol_number'], null, [
@@ -210,8 +214,49 @@ final class HandoverService
         ]);
 
         $pdfCreated = $this->generatePdf($id) !== null;
+        if ($notifyEmail) {
+            $this->maybeSendEmail((int) $id);
+        }
 
         return ['id' => $id, 'pdf' => $pdfCreated];
+    }
+
+    /**
+     * Sendet – falls beim Unterschreiben per Opt-in-Checkbox angefordert – das signierte
+     * Übergabeprotokoll als PDF per E-Mail an den Mitarbeiter. Fehler werden nur geloggt.
+     */
+    private function maybeSendEmail(int $id): void
+    {
+        $protocol = $this->protocols->find($id);
+        if ($protocol === null || empty($protocol['pdf_document_id'])) {
+            return;
+        }
+        $email = trim((string) (($protocol['employee_snapshot'] ?? [])['email'] ?? ''));
+        if ($email === '' || !$this->mail->enabled()) {
+            return;
+        }
+        try {
+            $document = $this->documentRepository->find((int) $protocol['pdf_document_id']);
+            $path = $document !== null ? $this->documents->path($document) : null;
+            $pdf = $path !== null && is_file($path) ? (string) file_get_contents($path) : null;
+            if ($pdf === null) {
+                return;
+            }
+            $subject = 'Übergabeprotokoll ' . $protocol['protocol_number'];
+            $employeeName = (string) (($protocol['employee_snapshot'] ?? [])['display_name'] ?? '');
+            $body = '<p>Hallo ' . htmlspecialchars($employeeName, ENT_QUOTES, 'UTF-8') . ',</p>'
+                . '<p>im Anhang finden Sie Ihr unterschriebenes Übergabeprotokoll ' . htmlspecialchars((string) $protocol['protocol_number'], ENT_QUOTES, 'UTF-8') . '.</p>'
+                . '<p>Diese E-Mail wurde automatisch von der Assetverwaltung erzeugt.</p>';
+            $sent = $this->mail->send($email, $subject, $body, [
+                ['filename' => $protocol['protocol_number'] . '.pdf', 'content' => $pdf, 'mime_type' => 'application/pdf'],
+            ]);
+            if ($sent) {
+                $this->protocols->update($id, ['email_sent_at' => date('Y-m-d H:i:s'), 'email_sent_to' => $email]);
+                $this->audit->log('email', 'handover', $id, $subject, null, ['to' => $email]);
+            }
+        } catch (\Throwable $e) {
+            $this->logger->warning('Übergabeprotokoll konnte nicht per E-Mail versendet werden', ['handover_id' => $id, 'error' => $e->getMessage()]);
+        }
     }
 
     /** Erzeugt (oder erneuert) das archivierte PDF; null wenn der Dienst nicht erreichbar ist. */

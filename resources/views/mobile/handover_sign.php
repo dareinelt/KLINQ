@@ -23,6 +23,10 @@ $errorText = trim($errorText);
         <?= $html ?>
     </div>
 
+    <?php if ($mailEnabled ?? false): ?>
+    <label class="checkbox-field"><input type="checkbox" name="notify_email" value="1"> Übergabeprotokoll per E-Mail an den Mitarbeiter senden</label>
+    <?php endif; ?>
+
     <div class="m-actions">
         <button class="btn btn-primary btn-xl btn-block" type="submit" id="signature-submit"><?= icon('check') ?> Unterschrift bestätigen</button>
         <a class="btn btn-ghost btn-block" href="/m/handover">Abbrechen</a>
