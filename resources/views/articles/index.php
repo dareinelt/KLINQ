@@ -21,6 +21,14 @@ ob_start(); ?>
             <?php foreach ($assetTypes as $t): ?><option value="<?= (int) $t['id'] ?>"<?= selected($filters['asset_type_id'], $t['id']) ?>><?= e($t['name']) ?></option><?php endforeach; ?>
         </select>
     </div>
+    <div class="form-group">
+        <label for="filter-handover">Übergabeprotokoll</label>
+        <select id="filter-handover" name="handover" data-autosubmit>
+            <option value="">Alle</option>
+            <option value="1"<?= selected($filters['handover'], '1') ?>>Nur relevante</option>
+            <option value="0"<?= selected($filters['handover'], '0') ?>>Nicht relevante</option>
+        </select>
+    </div>
 <?php $extraFilters = ob_get_clean(); $placeholder = 'Bezeichnung, Artikelnummer, Hersteller …'; include __DIR__ . '/../partials/filter_bar.php'; ?>
 <div class="card card-flush">
     <?php if (!$rows): ?>
@@ -28,7 +36,7 @@ ob_start(); ?>
     <?php else: ?>
     <div class="table-wrapper">
     <table class="table">
-        <thead><tr><th>Hersteller</th><th>Bezeichnung</th><th>Artikelnummer</th><th>Typ</th><th>Kategorie</th><th class="num">Assets</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Hersteller</th><th>Bezeichnung</th><th>Artikelnummer</th><th>Typ</th><th>Kategorie</th><th>Protokoll</th><th class="num">Assets</th><th>Status</th><th></th></tr></thead>
         <tbody>
         <?php foreach ($rows as $r): ?>
             <tr class="<?= (int) $r['is_active'] ? '' : 'is-muted' ?>">
@@ -37,6 +45,7 @@ ob_start(); ?>
                 <td class="mono"><?= e($r['article_number'] ?? '–') ?></td>
                 <td><?= e($r['asset_type_name']) ?></td>
                 <td><?= e($r['category_name'] ?? '–') ?></td>
+                <td><?= (int) ($r['is_handover_relevant'] ?? 0) ? badge('Übergabe', 'info') : '<span class="text-muted">–</span>' ?></td>
                 <td class="num"><a href="/assets?article_id=<?= (int) $r['id'] ?>"><?= (int) $r['asset_count'] ?></a></td>
                 <td><?= active_badge($r['is_active']) ?></td>
                 <td class="table-actions">

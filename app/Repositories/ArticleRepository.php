@@ -53,6 +53,33 @@ final class ArticleRepository extends BaseRepository
         return $this->fetchAll($sql . ' ORDER BY m.name, a.name', $params);
     }
 
+    /**
+     * Autovervollständigung für das Asset-Formular: nur aktive Artikel, optional auf einen Assettyp beschränkt.
+     * @return array<int,array<string,mixed>>
+     */
+    public function searchForPicker(string $term, ?int $assetTypeId = null, int $limit = 15): array
+    {
+        $sql = 'SELECT a.id, a.name, a.article_number, a.asset_type_id, a.asset_category_id, a.manufacturer_id, a.is_handover_relevant,
+                       m.name AS manufacturer_name, t.name AS asset_type_name, c.name AS category_name
+                FROM articles a
+                JOIN manufacturers m ON m.id = a.manufacturer_id
+                JOIN asset_types t ON t.id = a.asset_type_id
+                LEFT JOIN asset_categories c ON c.id = a.asset_category_id
+                WHERE a.is_active = 1';
+        $params = [];
+        if ($term !== '') {
+            $sql .= ' AND (a.name LIKE :q OR a.article_number LIKE :q OR m.name LIKE :q OR CONCAT(m.name, \' \', a.name) LIKE :q)';
+            $params['q'] = $this->like($term);
+        }
+        if ($assetTypeId !== null) {
+            $sql .= ' AND a.asset_type_id = :type';
+            $params['type'] = $assetTypeId;
+        }
+        $limit = max(1, min($limit, 50));
+
+        return $this->fetchAll($sql . " ORDER BY m.name, a.name LIMIT {$limit}", $params);
+    }
+
     /** @return array<string,mixed>|null */
     public function findDuplicate(int $manufacturerId, string $name, ?int $excludeId = null): ?array
     {
@@ -64,6 +91,59 @@ final class ArticleRepository extends BaseRepository
         }
 
         return $this->fetchOne($sql . ' LIMIT 1', $params);
+    }
+
+    /** Exakter Treffer über den normalisierten Namen (Schreibweise egal) innerhalb eines Herstellers. */
+    public function findByNormalizedName(int $manufacturerId, string $normalizedName, ?int $excludeId = null): ?array
+    {
+        $params = ['m' => $manufacturerId, 'nn' => $normalizedName];
+        $sql = 'SELECT id, name, article_number, is_active FROM articles WHERE manufacturer_id = :m AND normalized_name = :nn';
+        if ($excludeId !== null) {
+            $sql .= ' AND id <> :exclude';
+            $params['exclude'] = $excludeId;
+        }
+
+        return $this->fetchOne($sql . ' LIMIT 1', $params);
+    }
+
+    /** Artikel über die Artikelnummer innerhalb eines Herstellers. @return array<string,mixed>|null */
+    public function findByArticleNumber(int $manufacturerId, string $articleNumber): ?array
+    {
+        if (trim($articleNumber) === '') {
+            return null;
+        }
+
+        return $this->fetchOne('SELECT id, name, article_number, is_active FROM articles WHERE manufacturer_id = :m AND LOWER(article_number) = LOWER(:an) LIMIT 1', ['m' => $manufacturerId, 'an' => trim($articleNumber)]);
+    }
+
+    /**
+     * Kandidaten für die phonetische Dublettenprüfung (herstellerübergreifend, damit auch
+     * „gleicher Artikel bei falschem Hersteller“ auffällt): gleicher phonetischer Schlüssel,
+     * gleicher Normalname, Teilstring oder gleiche Artikelnummer.
+     * @return array<int,array<string,mixed>>
+     */
+    public function findCandidates(string $phoneticKey, string $normalizedName, ?string $articleNumber = null, ?int $excludeId = null): array
+    {
+        $params = ['pk' => $phoneticKey, 'nn' => $normalizedName, 'like' => $this->like($normalizedName)];
+        $sql = 'SELECT a.id, a.name, a.article_number, a.is_active, a.phonetic_key, a.normalized_name, a.manufacturer_id, m.name AS manufacturer_name
+                FROM articles a JOIN manufacturers m ON m.id = a.manufacturer_id
+                WHERE (a.phonetic_key = :pk OR a.normalized_name = :nn OR a.normalized_name LIKE :like';
+        $words = array_values(array_filter(explode(' ', $phoneticKey), static fn (string $w): bool => strlen($w) >= 2));
+        foreach ($words as $i => $word) {
+            $sql .= " OR a.phonetic_key LIKE :w{$i}";
+            $params["w{$i}"] = '%' . $word . '%';
+        }
+        if ($articleNumber !== null && $articleNumber !== '') {
+            $sql .= ' OR LOWER(a.article_number) = LOWER(:an)';
+            $params['an'] = $articleNumber;
+        }
+        $sql .= ')';
+        if ($excludeId !== null) {
+            $sql .= ' AND a.id <> :exclude';
+            $params['exclude'] = $excludeId;
+        }
+
+        return $this->fetchAll($sql . ' ORDER BY a.name LIMIT 30', $params);
     }
 
     /** @param array<string,mixed> $data */
@@ -94,6 +174,10 @@ final class ArticleRepository extends BaseRepository
         if (!empty($filters['asset_type_id'])) {
             $clauses[] = 'a.asset_type_id = :asset_type_id';
             $params['asset_type_id'] = (int) $filters['asset_type_id'];
+        }
+        if (isset($filters['handover']) && $filters['handover'] !== '' && $filters['handover'] !== null) {
+            $clauses[] = 'a.is_handover_relevant = :handover';
+            $params['handover'] = (int) $filters['handover'];
         }
         if (isset($filters['active']) && $filters['active'] !== '') {
             $clauses[] = 'a.is_active = :active';

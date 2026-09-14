@@ -18,6 +18,7 @@ use App\Repositories\ManufacturerRepository;
 use App\Repositories\SupplierRepository;
 use App\Security\CurrentUser;
 use App\Services\AssetService;
+use App\Services\ArticleService;
 use App\Services\AuditLogService;
 use App\Services\ImportService;
 use App\Services\ManufacturerService;
@@ -34,6 +35,7 @@ return static function (Container $c): void {
         $c->get(ManufacturerRepository::class),
         $c->get(ManufacturerService::class),
         $c->get(ArticleRepository::class),
+        $c->get(ArticleService::class),
         $c->get(EmployeeRepository::class),
         $c->get(LocationRepository::class),
         $c->get(CostCenterRepository::class),

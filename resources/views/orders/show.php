@@ -113,10 +113,10 @@ $showItemForm = $editable && ($editing !== null || $old !== null || $items === [
                 <div class="form-group<?= has_error('article_id') ? ' has-error' : '' ?>">
                     <label for="i-article">Artikel</label>
                     <select id="i-article" name="article_id" data-article-select>
-                        <option value="">– frei (ohne Artikel) –</option>
+                        <option value="">– frei (nur für Positionen ohne Asset) –</option>
                         <?php foreach ($articles as $a): ?><option value="<?= (int) $a['id'] ?>" data-type="<?= (int) $a['asset_type_id'] ?>" data-label="<?= e($a['manufacturer_name'] . ' ' . $a['name']) ?>"<?= selected($itemVal('article_id'), $a['id']) ?>><?= e($a['manufacturer_name']) ?> <?= e($a['name']) ?><?= $a['article_number'] ? ' · ' . e($a['article_number']) : '' ?></option><?php endforeach; ?>
                     </select>
-                    <p class="form-hint">Mit Artikel werden Assettyp, Hersteller und Bezeichnung übernommen.</p>
+                    <p class="form-hint">Positionen, die Assets erzeugen, benötigen einen Stammartikel; Assettyp, Hersteller und Bezeichnung werden übernommen.</p>
                     <?= field_error('article_id') ?>
                 </div>
                 <div class="form-group<?= has_error('description') ? ' has-error' : '' ?>">

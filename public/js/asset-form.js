@@ -5,11 +5,14 @@
     if (!form) { return; }
 
     const typeField = form.querySelector("[name=asset_type_id]");
-    const articleSelect = form.querySelector("[data-article-select]");
-    const manufacturerSelect = form.querySelector("[name=manufacturer_id]");
+    const articlePicker = form.querySelector("[data-article-picker]");
+    const articleValue = articlePicker ? articlePicker.querySelector("[data-picker-value]") : null;
+    const manufacturerDisplay = form.querySelector("[data-manufacturer-display]");
+    const manufacturerId = form.querySelector("[data-manufacturer-id]");
     const categorySelect = form.querySelector("[name=asset_category_id]");
     const checkUrl = form.getAttribute("data-check-url");
     const assetId = form.getAttribute("data-asset-id");
+    const baseSearchUrl = articlePicker ? articlePicker.getAttribute("data-search-url") : "";
 
     function selectedTypeOption() {
         if (typeField.tagName === "SELECT") { return typeField.options[typeField.selectedIndex] || null; }
@@ -30,36 +33,38 @@
             const input = group.querySelector("input");
             group.hidden = !flags[key] && !(input && input.value.trim() !== "");
         });
-        // Artikel-Liste auf Typ einschränken
-        if (articleSelect) {
+        // Artikel-Suche auf den gewählten Typ einschränken; passt der gewählte Artikel nicht mehr, Auswahl aufheben
+        if (articlePicker) {
             const type = typeField.value;
-            Array.prototype.forEach.call(articleSelect.options, function (o) {
-                if (!o.value) { return; }
-                const visible = !type || o.getAttribute("data-type") === type;
-                o.hidden = !visible;
-                o.disabled = !visible;
-                if (o.selected && !visible) { articleSelect.value = ""; }
-            });
+            articlePicker.setAttribute("data-search-url", baseSearchUrl + (type ? "?asset_type_id=" + encodeURIComponent(type) : ""));
+            const articleType = articleValue.getAttribute("data-type");
+            if (type && articleValue.value && articleType && articleType !== type) {
+                const clear = articlePicker.querySelector("[data-picker-clear]");
+                if (clear) { clear.click(); }
+            }
         }
     }
 
-    /* Artikel gewählt → Typ, Hersteller, Kategorie übernehmen (nur leere Felder) */
-    function applyArticle() {
-        const o = articleSelect.options[articleSelect.selectedIndex];
-        if (!o || !o.value) { return; }
-        if (typeField.tagName === "SELECT" && !typeField.value) {
-            typeField.value = o.getAttribute("data-type");
+    /* Artikel gewählt → Typ, Hersteller, Kategorie übernehmen */
+    function applyArticle(item) {
+        if (!item) {
+            if (manufacturerDisplay) { manufacturerDisplay.value = ""; }
+            if (manufacturerId) { manufacturerId.value = ""; }
+            articleValue.removeAttribute("data-type");
+            return;
+        }
+        articleValue.setAttribute("data-type", String(item.asset_type_id));
+        if (typeField.tagName === "SELECT" && typeField.value !== String(item.asset_type_id)) {
+            typeField.value = String(item.asset_type_id);
             typeField.dispatchEvent(new Event("change"));
         }
-        if (manufacturerSelect && !manufacturerSelect.value) {
-            manufacturerSelect.value = o.getAttribute("data-manufacturer");
-        }
-        const cat = o.getAttribute("data-category");
-        if (categorySelect && !categorySelect.value && cat && cat !== "0") {
-            categorySelect.value = cat;
+        if (manufacturerDisplay) { manufacturerDisplay.value = item.manufacturer_name || ""; }
+        if (manufacturerId) { manufacturerId.value = item.manufacturer_id || ""; }
+        if (categorySelect && item.asset_category_id) {
+            categorySelect.value = String(item.asset_category_id);
         }
         const nameInput = form.querySelector("[name=name]");
-        if (nameInput && !nameInput.value) { nameInput.placeholder = o.getAttribute("data-name"); }
+        if (nameInput && !nameInput.value) { nameInput.placeholder = item.name; }
     }
 
     /* Live-Dublettenprüfung für Seriennummer / MAC / IMEI */
@@ -122,7 +127,7 @@
     }
 
     typeField.addEventListener("change", applyTypeFields);
-    if (articleSelect) { articleSelect.addEventListener("change", applyArticle); }
+    if (articlePicker) { articlePicker.addEventListener("picker:change", function (e) { applyArticle(e.detail); }); }
     Array.prototype.forEach.call(form.querySelectorAll("[data-check]"), bindCheck);
     bindParent();
     applyTypeFields();

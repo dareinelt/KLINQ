@@ -36,6 +36,8 @@ return static function (Router $router, Container $c): void {
     }
 
     $router->get('/api/manufacturers/check', static fn (Request $r): Response => $c->get(ManufacturerController::class)->checkDuplicates($r), 'manufacturers.view');
+    $router->get('/api/articles/check', static fn (Request $r): Response => $c->get(ArticleController::class)->checkDuplicates($r), 'articles.view');
+    $router->get('/api/articles/search', static fn (Request $r): Response => $c->get(ArticleController::class)->search($r), 'articles.view');
     $router->get('/api/employees/search', static fn (Request $r): Response => $c->get(EmployeeController::class)->search($r), 'employees.view');
     $router->get('/api/locations/search', static fn (Request $r): Response => $c->get(LocationController::class)->search($r), 'locations.view');
 

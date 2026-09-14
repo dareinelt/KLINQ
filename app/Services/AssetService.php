@@ -209,19 +209,24 @@ final class AssetService
             $data['asset_type_id'] = (int) $existing['asset_type_id'];
         }
 
-        // Artikel: Typ/Hersteller/Kategorie übernehmen, wenn leer; Typ muss passen
-        if ($data['article_id'] !== null) {
-            $article = $this->articles->find((int) $data['article_id']);
-            if ($article === null) {
-                throw ValidationException::single('article_id', 'Artikel nicht gefunden.');
-            }
-            $data['asset_type_id'] ??= (int) $article['asset_type_id'];
-            if ((int) $article['asset_type_id'] !== (int) $data['asset_type_id']) {
-                throw ValidationException::single('article_id', 'Der Artikel gehört zum Assettyp „' . $article['asset_type_name'] . '“ und passt nicht zum gewählten Assettyp.');
-            }
-            $data['manufacturer_id'] ??= (int) $article['manufacturer_id'];
-            $data['asset_category_id'] ??= $article['asset_category_id'] !== null ? (int) $article['asset_category_id'] : null;
+        // Artikel ist Pflicht (Stammdaten): Typ und Hersteller werden vom Artikel abgeleitet, Kategorie wenn leer
+        if ($data['article_id'] === null) {
+            throw ValidationException::single('article_id', 'Bitte einen Artikel aus den Stammdaten wählen. Fehlt der Artikel, muss er zuerst unter „Artikel“ angelegt werden.');
         }
+        $article = $this->articles->find((int) $data['article_id']);
+        if ($article === null) {
+            throw ValidationException::single('article_id', 'Artikel nicht gefunden. Bitte einen vorhandenen Artikel aus den Stammdaten wählen.');
+        }
+        $keepsArticle = $existing !== null && (int) ($existing['article_id'] ?? 0) === (int) $article['id'];
+        if ((int) $article['is_active'] !== 1 && !$keepsArticle) {
+            throw ValidationException::single('article_id', 'Der Artikel „' . $article['name'] . '“ ist inaktiv und kann nicht mehr verwendet werden.');
+        }
+        $data['asset_type_id'] ??= (int) $article['asset_type_id'];
+        if ((int) $article['asset_type_id'] !== (int) $data['asset_type_id']) {
+            throw ValidationException::single('article_id', 'Der Artikel gehört zum Assettyp „' . $article['asset_type_name'] . '“ und passt nicht zum gewählten Assettyp.');
+        }
+        $data['manufacturer_id'] = (int) $article['manufacturer_id'];
+        $data['asset_category_id'] ??= $article['asset_category_id'] !== null ? (int) $article['asset_category_id'] : null;
         if ($data['asset_type_id'] === null) {
             throw ValidationException::single('asset_type_id', 'Assettyp ist erforderlich.');
         }

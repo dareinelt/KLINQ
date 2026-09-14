@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../partials/helpers.php'; ob_start(); $isNew = $row === null;
+<?php require_once __DIR__ . '/../partials/helpers.php'; ob_start(); $isNew = $row === null; $duplicates = $duplicates ?? [];
 $presetManufacturer = $isNew ? ($_GET['manufacturer_id'] ?? '') : '';
 $selectedType = form_value($row, 'asset_type_id');
 ?>
@@ -10,13 +10,25 @@ $selectedType = form_value($row, 'asset_type_id');
     <?php if (!$manufacturers): ?>
         <div class="alert alert-warning"><?= icon('warning') ?> Es ist noch kein aktiver Hersteller vorhanden. <a href="/manufacturers/new">Zuerst Hersteller anlegen</a>.</div>
     <?php endif; ?>
+    <?php if ($duplicates): ?>
+    <div class="alert alert-warning alert-stacked" role="alert">
+        <div class="flex gap-1"><?= icon('warning') ?> <strong>Mögliche Dubletten gefunden.</strong> Bitte prüfen Sie, ob der Artikel bereits existiert.</div>
+        <ul class="duplicate-hint">
+            <?php foreach ($duplicates as $d): ?>
+                <li><a href="/articles/<?= (int) $d['id'] ?>/edit"><?= e(($d['manufacturer_name'] ?? '') !== '' ? $d['manufacturer_name'] . ' ' : '') ?><?= e($d['name']) ?></a><?= !empty($d['article_number']) ? ' <span class="mono">(' . e($d['article_number']) . ')</span>' : '' ?> – <?= e($d['reason']) ?><?= (int) $d['is_active'] ? '' : ' · inaktiv' ?></li>
+            <?php endforeach; ?>
+        </ul>
+        <p class="mb-0 text-sm mt-2">Wenn es sich trotzdem um einen neuen Artikel handelt, bestätigen Sie unten mit „Trotzdem speichern“.</p>
+    </div>
+    <?php endif; ?>
     <form method="post" action="<?= e($isNew ? '/articles' : '/articles/' . (int) $row['id']) ?>" novalidate>
         <?= csrf_field() ?>
         <input type="hidden" name="return" value="<?= e($returnTo ?? '') ?>">
+        <?php if ($duplicates): ?><input type="hidden" name="ignore_duplicates" value="1"><?php endif; ?>
         <div class="form-row">
             <div class="form-group">
                 <label for="f-manufacturer">Hersteller *</label>
-                <select id="f-manufacturer" name="manufacturer_id" required>
+                <select id="f-manufacturer" name="manufacturer_id" required data-duplicate-context="manufacturer_id">
                     <option value="">Bitte wählen</option>
                     <?php foreach ($manufacturers as $m): ?><option value="<?= (int) $m['id'] ?>"<?= selected(form_value($row, 'manufacturer_id', $presetManufacturer), $m['id']) ?>><?= e($m['name']) ?></option><?php endforeach; ?>
                 </select>
@@ -34,12 +46,13 @@ $selectedType = form_value($row, 'asset_type_id');
         <div class="form-row">
             <div class="form-group">
                 <label for="f-name">Bezeichnung *</label>
-                <input id="f-name" name="name" value="<?= e(form_value($row, 'name')) ?>" required maxlength="200" placeholder="z. B. ThinkPad T14 Gen 5">
+                <input id="f-name" name="name" value="<?= e(form_value($row, 'name')) ?>" required maxlength="200" placeholder="z. B. ThinkPad T14 Gen 5" data-duplicate-check="/api/articles/check<?= $isNew ? '' : '?exclude=' . (int) $row['id'] ?>" data-duplicate-entity="articles" <?= has_error('name') ? 'aria-invalid="true"' : '' ?>>
                 <?= field_error('name') ?>
+                <div id="duplicate-live" class="duplicate-hint" hidden></div>
             </div>
             <div class="form-group">
                 <label for="f-number">Artikelnummer</label>
-                <input id="f-number" name="article_number" value="<?= e(form_value($row, 'article_number')) ?>" maxlength="100" class="mono">
+                <input id="f-number" name="article_number" value="<?= e(form_value($row, 'article_number')) ?>" maxlength="100" class="mono" data-duplicate-context="article_number">
                 <?= field_error('article_number') ?>
             </div>
         </div>
@@ -57,10 +70,12 @@ $selectedType = form_value($row, 'asset_type_id');
             <textarea id="f-desc" name="description" rows="3"><?= e(form_value($row, 'description')) ?></textarea>
         </div>
         <label class="checkbox-field"><input type="checkbox" name="is_active" value="1"<?= form_checked($row, 'is_active') ?>> <span>Aktiv</span></label>
+        <label class="checkbox-field"><input type="checkbox" name="is_handover_relevant" value="1"<?= form_checked($row, 'is_handover_relevant', false) ?>> <span>Relevant für Übergabeprotokoll</span></label>
+        <span class="form-hint">Assets dieses Artikels erscheinen im Übergabeprotokoll des Mitarbeiters (z. B. Notebook, Smartphone – nicht Kabel oder Verbrauchsmaterial).</span>
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary"><?= icon('check') ?> Speichern</button>
+            <button type="submit" class="btn <?= $duplicates ? 'btn-warning' : 'btn-primary' ?>"><?= icon('check') ?> <?= $duplicates ? 'Trotzdem speichern' : 'Speichern' ?></button>
             <a class="btn btn-ghost" href="/articles">Abbrechen</a>
         </div>
     </form>
 </div>
-<?php $innerContent = ob_get_clean(); $scripts = ['/js/category-filter.js']; include __DIR__ . '/../partials/app_layout.php'; ?>
+<?php $innerContent = ob_get_clean(); $scripts = ['/js/category-filter.js', '/js/duplicate-check.js']; include __DIR__ . '/../partials/app_layout.php'; ?>

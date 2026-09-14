@@ -16,6 +16,7 @@ use App\Core\Config;
 use App\Core\Database;
 use App\Core\Env;
 use App\Security\PasswordHasher;
+use App\Support\ColognePhonetic;
 
 $basePath = dirname(__DIR__);
 Env::load($basePath . '/.env');
@@ -54,6 +55,20 @@ foreach ($files as $migration) {
     echo "Migration: {$name}\n";
     $pdo->exec((string) file_get_contents($migration));
     $insert->execute([$name]);
+}
+
+// Backfill: phonetische Schlüssel für Artikel, die vor Migration 005 angelegt wurden
+$missing = $pdo->query("SELECT id, name FROM articles WHERE normalized_name = '' OR phonetic_key = ''")->fetchAll(PDO::FETCH_ASSOC);
+if ($missing !== []) {
+    $update = $pdo->prepare('UPDATE articles SET normalized_name = ?, phonetic_key = ? WHERE id = ?');
+    foreach ($missing as $row) {
+        $update->execute([
+            mb_substr(ColognePhonetic::normalizedArticleName((string) $row['name']), 0, 200),
+            mb_substr(ColognePhonetic::encode((string) $row['name']), 0, 120),
+            (int) $row['id'],
+        ]);
+    }
+    echo 'Artikel-Phonetik nachgetragen: ' . count($missing) . "\n";
 }
 
 if (!isset($options['no-seed'])) {

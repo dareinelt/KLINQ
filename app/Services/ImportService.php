@@ -42,8 +42,8 @@ final class ImportService
         'asset_type' => ['Assettyp', ['assettyp', 'typ', 'asset_type', 'type', 'geraetetyp'], true, 'Code (PC, MD, NET, ZUB) oder Name; leer, wenn aus der Inventarnummer ableitbar', 'PC'],
         'category' => ['Kategorie', ['kategorie', 'category'], false, 'Name innerhalb des Assettyps', 'Notebook'],
         'name' => ['Bezeichnung', ['bezeichnung', 'name', 'modell', 'model', 'geraet'], false, '', 'ThinkPad T14 Gen 3'],
-        'manufacturer' => ['Hersteller', ['hersteller', 'manufacturer'], false, 'Name; unbekannte Hersteller werden optional angelegt', 'Lenovo'],
-        'article' => ['Artikel', ['artikel', 'article'], false, 'Artikelname des Herstellers (optional)', ''],
+        'manufacturer' => ['Hersteller', ['hersteller', 'manufacturer'], true, 'Name; unbekannte Hersteller werden optional angelegt', 'Lenovo'],
+        'article' => ['Artikel', ['artikel', 'article', 'artikelnummer', 'article_number'], true, 'Name oder Artikelnummer eines vorhandenen Stammartikels des Herstellers', 'ThinkPad T14 Gen 3'],
         'serial_number' => ['Seriennummer', ['seriennummer', 'seriennr', 'serial', 'serial_number', 'sn', 's_n'], false, 'Eindeutig je Assettyp', 'PF3ABC12'],
         'mac_address' => ['MAC-Adresse', ['mac_adresse', 'mac', 'mac_address'], false, '12 Hexadezimalzeichen', '00:1A:2B:3C:4D:5E'],
         'imei' => ['IMEI', ['imei'], false, '14–16 Ziffern', ''],
@@ -76,6 +76,7 @@ final class ImportService
         private readonly ManufacturerRepository $manufacturers,
         private readonly ManufacturerService $manufacturerService,
         private readonly ArticleRepository $articles,
+        private readonly ArticleService $articleService,
         private readonly EmployeeRepository $employees,
         private readonly LocationRepository $locations,
         private readonly CostCenterRepository $costCenters,
@@ -307,12 +308,25 @@ final class ImportService
                 }
             }
         }
-        if (($v['article'] ?? '') !== '') {
-            $article = $manufacturer !== null ? $this->articles->findDuplicate((int) $manufacturer['id'], trim($v['article'])) : null;
-            if ($article !== null) {
-                $input['article_id'] = (string) $article['id'];
+        // Artikel ist Pflicht: nur vorhandene Stammartikel des Herstellers (Name oder Artikelnummer), inaktive nicht erlaubt
+        $articleValue = trim((string) ($v['article'] ?? ''));
+        if ($articleValue === '') {
+            $add('error', 'article', 'Artikel ist erforderlich – bitte einen in den Stammdaten vorhandenen Artikel angeben.');
+        } elseif ($manufacturer === null) {
+            $add('error', 'article', 'Artikel „' . $articleValue . '“ kann ohne vorhandenen Hersteller nicht zugeordnet werden.');
+        } else {
+            $article = $this->findArticle((int) $manufacturer['id'], $articleValue);
+            if ($article === null) {
+                $similar = $this->articleService->findDuplicates($articleValue, (int) $manufacturer['id'], $articleValue);
+                $hint = $similar !== [] ? ' Ähnlich: ' . implode(', ', array_map(static fn (array $d): string => '„' . $d['name'] . '“', array_slice($similar, 0, 3))) . '.' : '';
+                $add('error', 'article', 'Artikel „' . $articleValue . '“ beim Hersteller ' . $manufacturer['name'] . ' nicht gefunden – bitte zuerst als Stammartikel anlegen.' . $hint);
+            } elseif ((int) $article['is_active'] !== 1) {
+                $add('error', 'article', 'Artikel „' . $article['name'] . '“ ist inaktiv.');
             } else {
-                $add('warning', 'article', 'Artikel „' . $v['article'] . '“ nicht gefunden – wird ignoriert.');
+                $input['article_id'] = (string) $article['id'];
+                if ($type !== null && (int) $article['asset_type_id'] !== (int) $type['id']) {
+                    $add('error', 'article', 'Artikel „' . $article['name'] . '“ gehört zum Assettyp ' . $article['asset_type_name'] . ', nicht zu ' . $type['name'] . '.');
+                }
             }
         }
         if (($v['category'] ?? '') !== '' && $type !== null) {
@@ -586,6 +600,7 @@ final class ImportService
         $second[2] = 'Smartphone';
         $second[3] = 'iPhone 13';
         $second[4] = 'Apple';
+        $second[5] = 'iPhone 13';
         $second[6] = 'F2LXYZ123';
         $second[7] = '';
         $second[8] = '356789012345678';
@@ -755,6 +770,20 @@ final class ImportService
         $this->cache['manufacturers'][$key] ??= $this->manufacturers->findByNormalizedName($key) ?? false;
 
         return $this->cache['manufacturers'][$key] ?: null;
+    }
+
+    /** Stammartikel des Herstellers über Name (Schreibweise egal) oder Artikelnummer. @return array<string,mixed>|null */
+    private function findArticle(int $manufacturerId, string $term): ?array
+    {
+        $key = $manufacturerId . '|' . mb_strtolower(trim($term));
+        if (!array_key_exists($key, $this->cache['articles'] ?? [])) {
+            $hit = $this->articles->findDuplicate($manufacturerId, trim($term))
+                ?? $this->articles->findByNormalizedName($manufacturerId, ColognePhonetic::normalizedArticleName($term))
+                ?? $this->articles->findByArticleNumber($manufacturerId, trim($term));
+            $this->cache['articles'][$key] = $hit !== null ? ($this->articles->find((int) $hit['id']) ?? false) : false;
+        }
+
+        return $this->cache['articles'][$key] ?: null;
     }
 
     /** @return array<string,mixed>|null */

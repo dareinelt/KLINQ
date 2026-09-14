@@ -41,21 +41,41 @@
             </div>
         </div>
         <div class="form-row">
-            <div class="form-group">
-                <label for="f-article">Artikel</label>
-                <select id="f-article" name="article_id" data-article-select>
-                    <option value="">Kein Artikel / freie Erfassung</option>
-                    <?php foreach ($articles as $a): ?><option value="<?= (int) $a['id'] ?>" data-type="<?= (int) $a['asset_type_id'] ?>" data-manufacturer="<?= (int) $a['manufacturer_id'] ?>" data-category="<?= (int) ($a['asset_category_id'] ?? 0) ?>" data-name="<?= e($a['name']) ?>"<?= selected(form_value($row, 'article_id'), $a['id']) ?>><?= e($a['manufacturer_name']) ?> <?= e($a['name']) ?><?= $a['article_number'] ? ' (' . e($a['article_number']) . ')' : '' ?></option><?php endforeach; ?>
-                </select>
+            <?php
+            $articleId = form_value($row, 'article_id');
+            $selectedArticle = null;
+            if ($articleId !== '' && $articleId !== null) {
+                foreach ($articles as $a) {
+                    if ((int) $a['id'] === (int) $articleId) {
+                        $selectedArticle = ['id' => $a['id'], 'name' => $a['manufacturer_name'] . ' ' . $a['name'], 'meta' => implode(' · ', array_filter([$a['article_number'], $a['asset_type_name'] ?? null])), 'data' => $a];
+                        break;
+                    }
+                }
+                if ($selectedArticle === null && !$isNew && (int) $row['article_id'] === (int) $articleId) {
+                    $selectedArticle = ['id' => $row['article_id'], 'name' => trim(($row['manufacturer_name'] ?? '') . ' ' . ($row['article_name'] ?? '')), 'meta' => '', 'data' => ['asset_type_id' => $row['asset_type_id'], 'manufacturer_id' => $row['manufacturer_id'], 'manufacturer_name' => $row['manufacturer_name'] ?? '', 'asset_category_id' => null]];
+                }
+            }
+            ?>
+            <div class="form-group picker<?= has_error('article_id') ? ' has-error' : '' ?>" data-picker data-picker-browse data-search-url="/api/articles/search" data-article-picker>
+                <label for="f-article">Artikel <span class="required">*</span></label>
+                <input type="hidden" name="article_id" value="<?= e((string) ($selectedArticle['id'] ?? '')) ?>" data-picker-value
+                    <?php if ($selectedArticle): ?> data-type="<?= (int) $selectedArticle['data']['asset_type_id'] ?>" data-manufacturer="<?= (int) $selectedArticle['data']['manufacturer_id'] ?>" data-manufacturer-name="<?= e((string) $selectedArticle['data']['manufacturer_name']) ?>" data-category="<?= (int) ($selectedArticle['data']['asset_category_id'] ?? 0) ?>"<?php endif; ?>>
+                <div class="picker-selected" data-picker-selected<?= $selectedArticle ? '' : ' hidden' ?>>
+                    <span class="picker-selected-text">
+                        <span class="picker-selected-label" data-picker-label><?= e($selectedArticle['name'] ?? '') ?></span>
+                        <span class="text-muted text-sm" data-picker-meta><?= e($selectedArticle['meta'] ?? '') ?></span>
+                    </span>
+                    <button type="button" class="btn btn-ghost btn-sm picker-clear" data-picker-clear aria-label="Auswahl entfernen"><?= icon('x') ?></button>
+                </div>
+                <input id="f-article" type="search" class="picker-input" placeholder="Artikel suchen (Hersteller, Bezeichnung, Artikelnummer) …" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" data-picker-input<?= $selectedArticle ? ' hidden' : '' ?>>
+                <ul class="picker-results" role="listbox" hidden data-picker-results></ul>
                 <?= field_error('article_id') ?>
-                <span class="form-hint">Übernimmt Hersteller und Kategorie, wenn diese leer sind.</span>
+                <span class="form-hint">Nur Artikel aus den Stammdaten sind wählbar. Assettyp, Hersteller und Kategorie werden übernommen.<?php if ($can('articles.manage')): ?> Fehlt ein Artikel? <a href="/articles/new" target="_blank" rel="noopener">Artikel anlegen</a>.<?php endif; ?></span>
             </div>
             <div class="form-group">
                 <label for="f-manufacturer">Hersteller</label>
-                <select id="f-manufacturer" name="manufacturer_id">
-                    <option value="">Kein Hersteller</option>
-                    <?php foreach ($manufacturers as $m): ?><option value="<?= (int) $m['id'] ?>"<?= selected(form_value($row, 'manufacturer_id'), $m['id']) ?>><?= e($m['name']) ?></option><?php endforeach; ?>
-                </select>
+                <input id="f-manufacturer" value="<?= e($selectedArticle['data']['manufacturer_name'] ?? '') ?>" readonly placeholder="wird vom Artikel übernommen" data-manufacturer-display>
+                <input type="hidden" name="manufacturer_id" value="<?= e((string) ($selectedArticle['data']['manufacturer_id'] ?? '')) ?>" data-manufacturer-id>
                 <?= field_error('manufacturer_id') ?>
             </div>
         </div>
@@ -197,4 +217,4 @@
         </div>
     </form>
 </div>
-<?php $innerContent = ob_get_clean(); $scripts = ['/js/category-filter.js', '/js/asset-form.js']; include __DIR__ . '/../partials/app_layout.php'; ?>
+<?php $innerContent = ob_get_clean(); $scripts = ['/js/category-filter.js', '/js/picker.js', '/js/asset-form.js']; include __DIR__ . '/../partials/app_layout.php'; ?>
