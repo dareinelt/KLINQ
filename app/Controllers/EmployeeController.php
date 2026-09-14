@@ -13,6 +13,7 @@ use App\Repositories\EmployeeRepository;
 use App\Repositories\LocationRepository;
 use App\Security\CurrentUser;
 use App\Services\EmployeeService;
+use App\Services\HandoverService;
 use App\Services\LocationService;
 
 final class EmployeeController extends CrudController
@@ -24,7 +25,8 @@ final class EmployeeController extends CrudController
         private readonly LocationRepository $locations,
         private readonly CostCenterRepository $costCenters,
         private readonly EmployeeService $service,
-        private readonly AssetRepository $assets
+        private readonly AssetRepository $assets,
+        private readonly HandoverService $handover
     ) {
         parent::__construct($view, $currentUser);
     }
@@ -78,6 +80,7 @@ final class EmployeeController extends CrudController
             'activeNav' => 'employees',
             'row' => $row,
             'assets' => $this->assets->forEmployee((int) $row['id']),
+            'handover' => $this->currentUser->can('handover.view') ? $this->handover->statusFor((int) $row['id']) : null,
         ]);
     }
 

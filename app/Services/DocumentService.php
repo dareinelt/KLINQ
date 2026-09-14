@@ -15,8 +15,14 @@ use App\Security\CurrentUser;
  */
 final class DocumentService
 {
-    public const ENTITY_TYPES = ['asset', 'purchase_order', 'license', 'movement', 'supplier', 'import'];
+    public const ENTITY_TYPES = ['asset', 'purchase_order', 'license', 'movement', 'supplier', 'import', 'handover'];
     public const DOCUMENT_TYPES = [
+        'order' => 'Bestellung', 'order_confirmation' => 'Auftragsbestätigung', 'delivery_note' => 'Lieferschein',
+        'invoice' => 'Rechnung', 'license' => 'Lizenz', 'photo' => 'Foto', 'signature' => 'Unterschrift',
+        'handover_protocol' => 'Übergabeprotokoll', 'other' => 'Sonstiges',
+    ];
+    /** Typen, die Benutzer manuell hochladen dürfen (ohne systemerzeugte Unterschrift/Protokoll). */
+    public const UPLOAD_TYPES = [
         'order' => 'Bestellung', 'order_confirmation' => 'Auftragsbestätigung', 'delivery_note' => 'Lieferschein',
         'invoice' => 'Rechnung', 'license' => 'Lizenz', 'photo' => 'Foto', 'other' => 'Sonstiges',
     ];
@@ -90,6 +96,30 @@ final class DocumentService
         $this->audit->log('upload', 'document', $id, $originalName, null, ['entity_type' => $entityType, 'entity_id' => $entityId, 'document_type' => $documentType]);
 
         return $id;
+    }
+
+    /**
+     * Legt serverseitig erzeugte Inhalte (PDF, Unterschrift-PNG) wie einen Upload ab.
+     * Der MIME-Typ wird aus dem Inhalt bestimmt; Endung muss zu den erlaubten Typen passen.
+     */
+    public function storeGenerated(string $entityType, int $entityId, string $documentType, string $content, string $fileName, ?string $note = null): int
+    {
+        $tmp = tempnam(sys_get_temp_dir(), 'gen');
+        if ($tmp === false || file_put_contents($tmp, $content) === false) {
+            throw new \RuntimeException('Temporäre Datei konnte nicht geschrieben werden.');
+        }
+        try {
+            return $this->store($entityType, $entityId, $documentType, [
+                'name' => $fileName,
+                'tmp_name' => $tmp,
+                'size' => strlen($content),
+                'error' => UPLOAD_ERR_OK,
+            ], $note, ['pdf', 'png']);
+        } finally {
+            if (is_file($tmp)) {
+                @unlink($tmp);
+            }
+        }
     }
 
     /** @param array<string,mixed> $document */

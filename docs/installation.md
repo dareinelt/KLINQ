@@ -1,6 +1,6 @@
 # Installation & Betrieb
 
-Die Anwendung läuft vollständig in Docker: ein **App-Container** (PHP 8.4 + Apache, Image aus `docker/php/Dockerfile`) und ein **MySQL 8.4**-Container. Es werden keine externen Laufzeitabhängigkeiten, kein Composer, kein Node und keine CDNs benötigt – alles Notwendige liegt im Repository.
+Die Anwendung läuft vollständig in Docker: ein **App-Container** (PHP 8.4 + Apache, Image aus `docker/php/Dockerfile`), ein **MySQL 8.4**-Container und ein **PDF-Container** (`docker/pdf/Dockerfile`, Python + WeasyPrint, nur intern erreichbar; erzeugt die PDFs der [Übergabeprotokolle](uebergabeprotokoll.md), konfiguriert über `PDF_SERVICE_URL`/`PDF_SERVICE_TIMEOUT`). Es werden keine externen Laufzeitabhängigkeiten, kein Composer, kein Node und keine CDNs benötigt – alles Notwendige liegt im Repository.
 
 ## Voraussetzungen
 

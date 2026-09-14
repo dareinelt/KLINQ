@@ -107,7 +107,7 @@ final class LicenseController extends BaseController
             'row' => $row,
             'assignments' => $this->licenses->assignments($id),
             'documents' => $this->documents->forEntity('license', $id),
-            'documentTypes' => DocumentService::DOCUMENT_TYPES,
+            'documentTypes' => DocumentService::UPLOAD_TYPES,
             'expiryLabels' => LicenseService::EXPIRY_LABELS,
             'expiryColors' => LicenseService::EXPIRY_COLORS,
             'showKey' => $request->queryString('show_key') === '1',
@@ -193,7 +193,7 @@ final class LicenseController extends BaseController
         $row = $this->findOrFail($this->licenses->find($id), 'Lizenz nicht gefunden');
         $this->currentUser->require('documents.manage');
         $type = $request->string('document_type', 'license');
-        if (!isset(DocumentService::DOCUMENT_TYPES[$type])) {
+        if (!isset(DocumentService::UPLOAD_TYPES[$type])) {
             $type = 'license';
         }
         $file = $request->file('file');

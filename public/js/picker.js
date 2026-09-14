@@ -3,7 +3,6 @@
     "use strict";
 
     function initPicker(root) {
-        const url = root.getAttribute("data-search-url");
         const value = root.querySelector("[data-picker-value]");
         const input = root.querySelector("[data-picker-input]");
         const results = root.querySelector("[data-picker-results]");
@@ -41,7 +40,9 @@
         function search(term) {
             if (controller) { controller.abort(); }
             controller = new AbortController();
-            fetch(url + "?q=" + encodeURIComponent(term), { headers: { Accept: "application/json" }, signal: controller.signal })
+            // URL bei jeder Suche lesen – Formulare dürfen sie (z. B. mit Filterparametern) nachträglich ändern
+            const url = root.getAttribute("data-search-url");
+            fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + "q=" + encodeURIComponent(term), { headers: { Accept: "application/json" }, signal: controller.signal })
                 .then(function (r) { return r.ok ? r.json() : { items: [] }; })
                 .then(function (data) { items = data.items || []; active = items.length ? 0 : -1; render(); })
                 .catch(function () { /* abgebrochen oder offline */ });
@@ -70,10 +71,14 @@
         input.addEventListener("input", function () {
             window.clearTimeout(timer);
             const term = input.value.trim();
-            if (term.length < 1) { items = []; render(); return; }
+            if (term.length < 1 && !root.hasAttribute("data-picker-browse")) { items = []; render(); return; }
             timer = window.setTimeout(function () { search(term); }, 180);
         });
-        input.addEventListener("focus", function () { if (items.length) { render(); } });
+        input.addEventListener("focus", function () {
+            if (items.length) { render(); return; }
+            // data-picker-browse: Liste schon beim Fokus anzeigen (kleine Stammdatenlisten)
+            if (root.hasAttribute("data-picker-browse")) { search(input.value.trim()); }
+        });
         input.addEventListener("keydown", function (e) {
             if (results.hidden) { return; }
             if (e.key === "ArrowDown") { e.preventDefault(); active = Math.min(active + 1, items.length - 1); render(); }

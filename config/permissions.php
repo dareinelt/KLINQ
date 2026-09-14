@@ -13,6 +13,7 @@ $all = [
     'assets.view', 'assets.manage', 'assets.retire',
     'labels.print',
     'movements.view', 'movements.checkout', 'movements.return', 'movements.complete',
+    'handover.view', 'handover.manage', 'handover.sign', 'handover.template',
     'employees.view', 'employees.manage', 'employees.sync',
     'locations.view', 'locations.manage',
     'costcenters.view', 'costcenters.manage',
@@ -39,6 +40,7 @@ return [
         'assetmanagement' => array_values(array_unique(array_merge($readOnly, [
             'assets.manage', 'assets.retire', 'labels.print',
             'movements.checkout', 'movements.return', 'movements.complete',
+            'handover.manage', 'handover.sign',
             'employees.manage', 'employees.sync',
             'locations.manage', 'costcenters.manage',
             'manufacturers.manage', 'articles.manage',
@@ -48,6 +50,7 @@ return [
         'lager' => array_values(array_unique(array_merge($readOnly, [
             'labels.print',
             'movements.checkout', 'movements.return', 'movements.complete',
+            'handover.manage', 'handover.sign',
             'orders.receive', 'assets.manage', 'documents.manage',
         ]))),
         'einkauf' => array_values(array_unique(array_merge($readOnly, [

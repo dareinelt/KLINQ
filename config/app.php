@@ -12,6 +12,9 @@ return [
     'url' => rtrim((string) Env::get('APP_URL', 'http://localhost:8080'), '/'),
     'timezone' => Env::get('APP_TIMEZONE', 'Europe/Berlin'),
     'log_level' => Env::get('LOG_LEVEL', 'info'),
+    // HTML→PDF-Dienst (Container "pdf"); leer = keine PDF-Erzeugung
+    'pdf_service_url' => rtrim((string) Env::get('PDF_SERVICE_URL', 'http://pdf:8000'), '/'),
+    'pdf_service_timeout' => Env::int('PDF_SERVICE_TIMEOUT', 30),
     'admin' => [
         'username' => Env::get('ADMIN_USERNAME', 'admin'),
         'password' => Env::get('ADMIN_PASSWORD', ''),

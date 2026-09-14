@@ -461,6 +461,9 @@ final class PurchaseOrderService
         if ($data['asset_type_id'] !== null && $this->types->find((int) $data['asset_type_id']) === null) {
             throw ValidationException::single('asset_type_id', 'Assettyp nicht gefunden.');
         }
+        if ((int) $data['creates_assets'] === 1 && $data['article_id'] === null) {
+            throw ValidationException::single('article_id', 'Positionen, die Assets erzeugen, benötigen einen Stammartikel – bitte einen Artikel wählen oder zuerst anlegen.');
+        }
         if ((int) $data['creates_assets'] === 1 && $data['asset_type_id'] === null) {
             throw ValidationException::single('asset_type_id', 'Positionen, die Assets erzeugen, benötigen einen Assettyp (oder einen Artikel).');
         }

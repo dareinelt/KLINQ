@@ -41,6 +41,12 @@ final class ColognePhonetic
         return trim((string) preg_replace('/\s+/', ' ', $text));
     }
 
+    /** Vergleichsname für Artikel: normalisiert, ohne Sonderzeichen und Mehrfachleerzeichen (Rechtsformen bleiben erhalten). */
+    public static function normalizedArticleName(string $text): string
+    {
+        return trim((string) preg_replace('/\s+/', ' ', self::normalize($text)));
+    }
+
     public static function encodeWord(string $word): string
     {
         $word = preg_replace('/[^a-z]/', '', strtolower($word)) ?? '';

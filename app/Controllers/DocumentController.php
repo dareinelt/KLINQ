@@ -22,6 +22,7 @@ final class DocumentController extends BaseController
         'license' => ['licenses.view', 'licenses.manage'],
         'supplier' => ['suppliers.view', 'suppliers.manage'],
         'import' => ['imports.manage', 'imports.manage'],
+        'handover' => ['handover.view', 'handover.manage'],
     ];
 
     public function __construct(

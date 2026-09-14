@@ -39,6 +39,28 @@
         </dl>
     </div>
 </div>
+<?php if (!empty($handover)): $h = $handover; $tone = match ($h['state']) { 'ok' => 'success', 'outdated' => 'warning', 'draft' => 'info', 'missing' => 'danger', default => 'neutral' }; ?>
+<div class="card mt-4">
+    <div class="card-header"><h2>Übergabeprotokoll <?= badge($h['state_label'], $tone) ?></h2><a class="btn btn-link btn-sm" href="/handover/employee/<?= (int) $row['id'] ?>">Details &amp; Versionen</a></div>
+    <div class="cluster cluster-between">
+        <div class="text-sm">
+            <?php if ($h['current'] !== null): ?>
+                Gültig: <a href="/handover/<?= (int) $h['current']['id'] ?>">Version <?= (int) $h['current']['version'] ?></a> vom <?= fmt_datetime($h['current']['signed_at']) ?> mit <?= (int) $h['current']['item_count'] ?> Arbeitsmitteln<?= $h['current']['pdf_document_id'] ? ' · <a href="/handover/' . (int) $h['current']['id'] . '/pdf">PDF</a>' : '' ?>.
+            <?php else: ?>
+                Noch kein unterschriebenes Protokoll.
+            <?php endif; ?>
+            Aktuell <?= count($h['items']) ?> protokollrelevante Arbeitsmittel.
+        </div>
+        <div class="cluster">
+            <?php if ($h['draft'] !== null): ?>
+                <a class="btn btn-sm btn-primary" href="/handover/<?= (int) $h['draft']['id'] ?>"><?= icon('pen') ?> Entwurf v<?= (int) $h['draft']['version'] ?></a>
+            <?php elseif ($can('handover.manage') && in_array($h['state'], ['missing', 'outdated'], true)): ?>
+                <form method="post" action="/handover/employee/<?= (int) $row['id'] ?>/draft" class="inline-form"><?= csrf_field() ?><button class="btn btn-sm btn-primary" type="submit"><?= icon('plus') ?> Protokoll erstellen</button></form>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 <div class="card card-flush mt-4">
     <div class="card-header"><h2>Zugeordnete Assets</h2><a class="btn btn-link btn-sm" href="/assets?employee_id=<?= (int) $row['id'] ?>">Alle anzeigen</a></div>
     <?php if (!$assets): ?>

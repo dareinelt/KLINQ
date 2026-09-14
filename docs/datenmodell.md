@@ -64,7 +64,7 @@ erDiagram
 | `asset_categories` | je Typ: `name`, `sort_order` |
 | `asset_statuses` | `code`, `name`, `color`, `is_available`, `is_final` |
 | `manufacturers` | `name` (eindeutig), `short_name`, `website`, `contact`, `phonetic_key` (Kölner Phonetik) und `normalized_name` für die Dublettenwarnung |
-| `articles` | `manufacturer_id`, `asset_type_id`, `asset_category_id`, `name`, `article_number` |
+| `articles` | `manufacturer_id`, `asset_type_id`, `asset_category_id`, `name`, `article_number`, `normalized_name`/`phonetic_key` (Dublettenwarnung), `is_handover_relevant` (Asset erscheint im Übergabeprotokoll) |
 | `suppliers` | Firma, Anschrift, Kontakt, `customer_number` |
 | `locations` | Baum über `parent_id`; `type` (`site|building|floor|room|workplace|warehouse|other`), `code`, materialisierter `full_path` und `depth` für schnelle Anzeige/Suche |
 | `cost_centers` | `number` (eindeutig), `description`, optional `location_id` |
@@ -83,7 +83,12 @@ Alle Stammdaten werden **deaktiviert statt gelöscht** (`is_active`), damit Hist
 
 ### Dokumente
 
-`documents`: polymorph über `entity_type` (`asset|purchase_order|license|movement|supplier|import`) und `entity_id`; `document_type` (`order|order_confirmation|delivery_note|invoice|license|photo|other`), `original_name`, `stored_name` (UUID-basiert, eindeutig), `mime_type`, `size_bytes`, `sha256`, Hochladender. Die Dateien liegen unter `storage/uploads/JJJJ/MM/` außerhalb des Webroots.
+`documents`: polymorph über `entity_type` (`asset|purchase_order|license|movement|supplier|import|handover`) und `entity_id`; `document_type` (`order|order_confirmation|delivery_note|invoice|license|photo|signature|handover_protocol|other`), `original_name`, `stored_name` (UUID-basiert, eindeutig), `mime_type`, `size_bytes`, `sha256`, Hochladender. Die Dateien liegen unter `storage/uploads/JJJJ/MM/` außerhalb des Webroots.
+
+### Übergabeprotokolle
+
+- `handover_templates`: Vorlage des Baukastens – `name`, `blocks` (JSON-Liste der Blöcke), `is_default`, `updated_by`.
+- `handover_protocols`: je Mitarbeiter fortlaufend versioniert (`employee_id` + `version` eindeutig). `protocol_number` (eindeutig, `UP-<Personalnr.>-<Version>`), `status` (`draft → signed → superseded`, alternativ `cancelled`), eingefrorene Snapshots `template_snapshot`, `employee_snapshot`, `items` (JSON) und `rendered_html`, `item_count`, `asset_fingerprint` (SHA-256 der sortierten Asset-IDs zum Erkennen von Bestandsänderungen), Signaturdaten `signed_at`/`signed_device`/`signed_ip`, Verweise `signature_document_id` (PNG) und `pdf_document_id` (archiviertes PDF), `issuer_*`, `cancelled_at`/`cancel_reason`. Das zuletzt unterschriebene Protokoll gilt; ältere werden beim Unterschreiben der Folgeversion auf `superseded` gesetzt. Details: [Übergabeprotokoll](uebergabeprotokoll.md).
 
 ### Import
 
