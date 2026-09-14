@@ -28,9 +28,10 @@ final class LabelController extends BaseController
     /** Druckansicht: /labels?ids=1,2,3 oder /labels?<Listenfilter> */
     public function print(Request $request): Response
     {
-        $ids = $this->idsFromRequest($request);
-        $filters = $ids === [] ? $this->assetController->filters($request) : [];
-        $rows = $this->labels->assetsFor($ids, $filters);
+        $dummy = $request->bool('dummy');
+        $ids = $dummy ? [] : $this->idsFromRequest($request);
+        $filters = !$dummy && $ids === [] ? $this->assetController->filters($request) : [];
+        $rows = $dummy ? [$this->labels->dummyAsset()] : $this->labels->assetsFor($ids, $filters);
         $layout = $this->labels->layout();
         $labels = array_map(fn (array $row): array => $this->labels->labelFor($row, $layout), $rows);
         $copies = max(1, min(20, $request->int('copies', 1) ?? 1));
@@ -41,9 +42,10 @@ final class LabelController extends BaseController
             'labels' => $labels,
             'layout' => $layout,
             'copies' => $copies,
-            'ids' => array_map(static fn (array $l): int => $l['id'], $labels),
+            'ids' => $dummy ? [] : array_map(static fn (array $l): int => $l['id'], $labels),
             'backUrl' => $this->backUrl($request, $ids !== [] && count($ids) === 1 ? '/assets/' . $ids[0] : '/assets'),
-            'limitHit' => count($rows) >= 500,
+            'limitHit' => !$dummy && count($rows) >= 500,
+            'autoprint' => $dummy && $request->bool('autoprint'),
         ]);
     }
 

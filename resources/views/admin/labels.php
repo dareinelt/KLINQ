@@ -9,7 +9,7 @@ $val = static fn (string $key): string => (string) ($old[$key] ?? $layout[$key] 
         <p class="text-muted mb-0">Inhalt und Maße der Inventaretiketten. Änderungen wirken sofort auf alle künftigen Ausdrucke.</p>
     </div>
     <div class="page-actions">
-        <a class="btn btn-secondary" href="/labels?status=all&amp;per_page=1"><?= icon('print') ?> Testdruck</a>
+        <a class="btn btn-secondary" href="/labels?dummy=1&amp;autoprint=1"><?= icon('print') ?> Testdruck</a>
     </div>
 </div>
 
