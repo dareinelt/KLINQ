@@ -37,6 +37,7 @@
             if (recorded) { return; }
             recorded = true;
             const ids = (sheet.getAttribute("data-ids") || "").split(",").filter(Boolean).map(Number);
+            if (ids.length === 0) { return; } // Testdruck mit Dummy-Etikett: nichts zu protokollieren
             AppUI.api("/api/labels/printed", { method: "POST", body: { ids: ids } })
                 .then(function (res) { if (res && res.ok) { AppUI.toast("Druck protokolliert (" + res.count + " Asset" + (res.count === 1 ? "" : "s") + ").", "success"); } })
                 .catch(function () { AppUI.toast("Druck konnte nicht protokolliert werden.", "error"); });
@@ -54,6 +55,11 @@
             });
         }
         // Tastenkürzel Strg/Cmd+P löst den normalen Browserdruck aus → afterprint greift ebenfalls
+
+        // Testdruck (Administration → Etikettenlayout): Druckdialog sofort nach dem Laden öffnen
+        if (sheet.getAttribute("data-autoprint") === "1") {
+            window.addEventListener("load", function () { window.print(); });
+        }
     }
 
     // ---- Einstellungen: Live-Vorschau --------------------------------------

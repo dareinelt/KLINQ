@@ -66,7 +66,7 @@ Ablauf:
 | `label.extra_field` / `label.extra_text` | leer | Zusatzfeld bzw. fester Text |
 | `label.show_logo` / `label.logo_file` | 0 / leer | Logo (Datei liegt unter `storage/labels/`) |
 
-Die **Vorschau** rechts aktualisiert sich beim Tippen (`POST /api/labels/preview` + `/labels/style.css?…` mit den Formularwerten) und verwendet ein echtes Asset aus dem Bestand. Der Testdruck-Button druckt dieses Asset mit dem gespeicherten Layout.
+Die **Vorschau** rechts aktualisiert sich beim Tippen (`POST /api/labels/preview` + `/labels/style.css?…` mit den Formularwerten) und verwendet ein echtes Asset aus dem Bestand, sofern vorhanden. Der Testdruck-Button (`/labels?dummy=1&autoprint=1`) druckt dagegen immer einen festen Dummy-Datensatz mit dem gespeicherten Layout, unabhängig vom tatsächlichen Bestand, und öffnet den Druckdialog des Browsers sofort nach dem Laden der Seite – ohne weiteren Klick. Der Testdruck wird nicht in der Assethistorie protokolliert.
 
 Hochgeladene Logos werden anhand der Dateisignatur geprüft (nicht anhand der Endung), auf 512 KB begrenzt und unter `storage/labels/logo.{png|jpg|svg|webp}` gespeichert; `/labels/logo` liefert die Datei aus.
 

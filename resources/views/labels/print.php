@@ -24,7 +24,7 @@ $styleQuery = http_build_query(array_intersect_key($_GET, ['copies' => 1]));
 <?php else: ?>
 <?php if ($limitHit): ?><div class="alert alert-warning no-print"><?= icon('warning') ?> Es werden höchstens 500 Etiketten pro Druckauftrag ausgegeben. Bitte die Auswahl weiter einschränken.</div><?php endif; ?>
 <div class="alert alert-info no-print"><?= icon('info') ?> Druckereinstellungen: Papierformat <?= e($layout['width_mm']) ?> × <?= e($layout['height_mm']) ?> mm (Etikettendrucker) bzw. „Tatsächliche Größe“ ohne Skalierung; Ränder auf 0 setzen. Jedes Etikett wird auf einer eigenen Seite ausgegeben. Der Druck wird in der Assethistorie protokolliert.</div>
-<div class="label-sheet" id="label-sheet" data-ids="<?= e(implode(',', $ids)) ?>">
+<div class="label-sheet" id="label-sheet" data-ids="<?= e(implode(',', $ids)) ?>" data-autoprint="<?= !empty($autoprint) ? '1' : '0' ?>">
     <?php foreach ($labels as $label): for ($i = 0; $i < $copies; $i++) { include __DIR__ . '/../partials/label.php'; } endforeach; ?>
 </div>
 <?php endif; ?>

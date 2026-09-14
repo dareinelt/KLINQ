@@ -276,7 +276,13 @@ final class LabelService
     /** Beispieldatensatz für die Vorschau in den Einstellungen. @return array<string,mixed> */
     public function sampleAsset(): array
     {
-        return $this->assets->search(['status' => 'all'], 1)[0] ?? [
+        return $this->assets->search(['status' => 'all'], 1)[0] ?? $this->dummyAsset();
+    }
+
+    /** Fester Dummy-Datensatz für den Testdruck (unabhängig vom tatsächlichen Bestand). @return array<string,mixed> */
+    public function dummyAsset(): array
+    {
+        return [
             'id' => 0, 'inventory_number' => 'PC' . date('y') . '001', 'name' => 'Notebook Vertrieb', 'manufacturer_name' => 'Lenovo',
             'article_name' => 'ThinkPad T14', 'serial_number' => 'PF3AB12X', 'asset_type_name' => 'PC / Endgerät', 'location_path' => 'Peine / IT-Lager',
             'cost_center_number' => '12345', 'purchase_date' => date('Y-m-d'),
