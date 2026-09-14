@@ -159,6 +159,16 @@ final class AssetService
     }
 
     /**
+     * Prüft Eingaben für ein neues Asset ohne zu schreiben (Importvorschau). Liefert die bereinigten Daten.
+     * @param array<string,mixed> $input
+     * @return array<string,mixed>
+     */
+    public function validateNew(array $input): array
+    {
+        return $this->validate($input, null);
+    }
+
+    /**
      * @param array<string,mixed> $input
      * @param array<string,mixed>|null $existing
      * @return array<string,mixed>

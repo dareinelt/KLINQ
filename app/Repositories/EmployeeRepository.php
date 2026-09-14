@@ -37,6 +37,14 @@ final class EmployeeRepository extends BaseRepository
         return $this->fetchOne('SELECT * FROM employees WHERE personnel_number = :n LIMIT 1', ['n' => $number]);
     }
 
+    /** Mitarbeiter nur bei eindeutigem Anzeigenamen (Import). @return array<string,mixed>|null */
+    public function findUniqueByDisplayName(string $name): ?array
+    {
+        $rows = $this->fetchAll('SELECT * FROM employees WHERE display_name = :n LIMIT 2', ['n' => $name]);
+
+        return count($rows) === 1 ? $rows[0] : null;
+    }
+
     /**
      * @param array<string,mixed> $filters q, active, department, location_id, cost_center_id
      * @return array<int,array<string,mixed>>
