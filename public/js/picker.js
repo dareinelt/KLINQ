@@ -30,7 +30,7 @@
             results.innerHTML = items.map(function (item, i) {
                 const sub = item.meta || item.path || (item.type ? item.type : "");
                 return '<li role="option" aria-selected="' + (i === active) + '"><button type="button" class="' + (i === active ? "is-active" : "") + '" data-index="' + i + '">'
-                    + '<span>' + escapeHtml(item.name) + '</span>'
+                    + '<span>' + escapeHtml(item.label || item.name) + '</span>'
                     + (sub ? '<span class="result-meta">' + escapeHtml(sub) + '</span>' : "")
                     + '</button></li>';
             }).join("");
@@ -49,7 +49,7 @@
 
         function choose(item) {
             value.value = item.id;
-            label.textContent = item.name;
+            label.textContent = item.label || item.name;
             if (meta) { meta.textContent = item.meta || item.path || ""; }
             selected.hidden = false;
             input.hidden = true;
@@ -90,4 +90,24 @@
     }
 
     document.querySelectorAll("[data-picker]").forEach(initPicker);
+
+    // Formulare mit Code-Fallback: ohne Auswahl wird der getippte/gescannte Text als Code mitgesendet
+    document.querySelectorAll("form [data-asset-code]").forEach(function (codeField) {
+        const form = codeField.closest("form");
+        const picker = form.querySelector("[data-picker]");
+        if (!picker) { return; }
+        const input = picker.querySelector("[data-picker-input]");
+        const value = picker.querySelector("[data-picker-value]");
+        input.addEventListener("keydown", function (e) {
+            const results = picker.querySelector("[data-picker-results]");
+            if (e.key === "Enter" && (results.hidden || !results.querySelector("button")) && input.value.trim() !== "") {
+                e.preventDefault();
+                codeField.value = input.value.trim();
+                form.requestSubmit();
+            }
+        });
+        form.addEventListener("submit", function () {
+            if (value.value === "" && input.value.trim() !== "") { codeField.value = input.value.trim(); }
+        });
+    });
 })();

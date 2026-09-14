@@ -13,6 +13,7 @@ use App\Repositories\AssetStatusRepository;
 use App\Repositories\AssetTypeRepository;
 use App\Repositories\CostCenterRepository;
 use App\Repositories\EmployeeRepository;
+use App\Repositories\LicenseRepository;
 use App\Repositories\LocationRepository;
 use App\Repositories\ManufacturerRepository;
 use App\Repositories\MovementRepository;
@@ -64,6 +65,7 @@ return static function (Container $c): void {
         $c->get(CostCenterRepository::class),
         $c->get(EmployeeRepository::class),
         $c->get(MovementRepository::class),
+        $c->get(LicenseRepository::class),
         $c->get(AssetService::class)
     ));
     $c->singleton(SearchController::class, static fn (Container $c): SearchController => new SearchController(

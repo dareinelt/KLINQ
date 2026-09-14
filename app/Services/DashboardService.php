@@ -25,7 +25,7 @@ final class DashboardService
             'movements_today' => $this->count("SELECT COUNT(*) FROM movements WHERE movement_date = '" . date('Y-m-d') . "' AND status <> 'cancelled'"),
             'employees_active' => $this->count('SELECT COUNT(*) FROM employees WHERE is_active = 1'),
             'orders_open' => $this->count("SELECT COUNT(*) FROM purchase_orders WHERE status IN ('ordered','partially_delivered')"),
-            'licenses_expiring' => $this->count('SELECT COUNT(*) FROM licenses WHERE expires_at IS NOT NULL AND expires_at BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 60 DAY)'),
+            'licenses_expiring' => $this->count('SELECT COUNT(*) FROM licenses WHERE is_active = 1 AND expires_at IS NOT NULL AND expires_at BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 60 DAY)'),
         ];
     }
 

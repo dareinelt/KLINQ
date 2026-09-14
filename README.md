@@ -28,6 +28,7 @@ Anwendung: <http://localhost:8080> – Anmeldung mit `ADMIN_USERNAME` / `ADMIN_P
 - [Etiketten & QR-Codes](docs/labels.md)
 - [Bestandsmanagement – Entnahme & Retoure](docs/movements.md)
 - [Einkauf – Bestellungen & Wareneingang](docs/einkauf.md)
+- [Lizenzen – Verwaltung & Assetzuordnung](docs/lizenzen.md)
 - [Backup & Wiederherstellung](docs/backup.md)
 
 ## Tests

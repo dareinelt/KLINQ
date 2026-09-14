@@ -88,6 +88,15 @@ final class PurchaseOrderRepository extends BaseRepository
         return $counts;
     }
 
+    /** Bestellungen für Auswahlfelder (neueste zuerst). @return array<int,array<string,mixed>> */
+    public function forSelect(int $limit = 200): array
+    {
+        return $this->fetchAll(
+            'SELECT o.id, o.order_number, o.order_date, s.name AS supplier_name FROM purchase_orders o JOIN suppliers s ON s.id = o.supplier_id
+             WHERE o.status <> \'cancelled\' ORDER BY o.order_date DESC, o.id DESC LIMIT ' . $limit
+        );
+    }
+
     /** @return array<int,array<string,mixed>> */
     public function forSupplier(int $supplierId, int $limit = 20): array
     {

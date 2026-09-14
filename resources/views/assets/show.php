@@ -119,6 +119,36 @@ $eventClass = ['status_changed' => 'is-warning', 'created' => 'is-success', 'che
 </div>
 <?php endif; ?>
 
+<?php if (!empty($licenses) || $can('licenses.manage')): ?>
+<div class="card card-flush mt-4" id="licenses">
+    <div class="card-header"><h2>Lizenzen</h2><?php if ($can('licenses.view')): ?><a class="btn btn-link btn-sm" href="/licenses?status=available">Verfügbare Lizenzen</a><?php endif; ?></div>
+    <?php if (empty($licenses)): ?>
+        <div class="table-empty">Keine Lizenz zugeordnet. Die Zuordnung erfolgt auf der Lizenzseite unter „Asset zuordnen“.</div>
+    <?php else: ?>
+    <table class="table table-compact">
+        <thead><tr><th>Produkt</th><th>Hersteller</th><th>Lizenztyp</th><th>Lizenznummer</th><th>Ablauf</th><th>Zugeordnet</th><th></th></tr></thead>
+        <tbody>
+        <?php foreach ($licenses as $l): $ls = $l['expiry_status']; ?>
+            <tr class="is-clickable" data-href="/licenses/<?= (int) $l['id'] ?>">
+                <td class="font-semibold"><a href="/licenses/<?= (int) $l['id'] ?>"><?= e($l['product']) ?></a></td>
+                <td><?= e($l['manufacturer_name'] ?? '–') ?></td>
+                <td><?= e($l['license_type'] ?? '–') ?></td>
+                <td class="mono text-sm"><?= e($l['license_number'] ?? '–') ?></td>
+                <td class="nowrap"><?= $l['expires_at'] ? fmt_date($l['expires_at']) . ' ' : '' ?><?= badge(App\Services\LicenseService::EXPIRY_LABELS[$ls] ?? $ls, App\Services\LicenseService::EXPIRY_COLORS[$ls] ?? 'neutral') ?></td>
+                <td class="text-sm"><?= fmt_datetime($l['assigned_at']) ?><br><span class="text-muted text-xs"><?= e($l['assigned_by']) ?></span></td>
+                <td class="table-actions">
+                    <?php if ($can('licenses.manage')): ?>
+                    <form method="post" action="/licenses/<?= (int) $l['id'] ?>/assignments/<?= (int) $l['assignment_id'] ?>/release" data-confirm="Lizenz „<?= e($l['product']) ?>“ von diesem Asset entfernen?"><?= csrf_field() ?><input type="hidden" name="back" value="/assets/<?= (int) $row['id'] ?>#licenses"><button type="submit" class="btn btn-ghost btn-sm" title="Zuordnung aufheben"><?= icon('x') ?></button></form>
+                    <?php endif; ?>
+                </td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
+
 <div class="card mt-4" id="history">
     <div class="card-header"><h2>Historie</h2><span class="text-muted text-sm"><?= count($history) ?> Einträge</span></div>
     <?php if ($can('assets.manage')): ?>

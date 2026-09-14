@@ -16,6 +16,7 @@ use App\Repositories\AssetStatusRepository;
 use App\Repositories\AssetTypeRepository;
 use App\Repositories\CostCenterRepository;
 use App\Repositories\EmployeeRepository;
+use App\Repositories\LicenseRepository;
 use App\Repositories\LocationRepository;
 use App\Repositories\ManufacturerRepository;
 use App\Repositories\MovementRepository;
@@ -41,6 +42,7 @@ final class AssetController extends BaseController
         private readonly CostCenterRepository $costCenters,
         private readonly EmployeeRepository $employees,
         private readonly MovementRepository $movements,
+        private readonly LicenseRepository $licenses,
         private readonly AssetService $service
     ) {
         parent::__construct($view, $currentUser);
@@ -82,6 +84,7 @@ final class AssetController extends BaseController
             'history' => $this->history->forAsset((int) $row['id']),
             'children' => $this->assets->children((int) $row['id']),
             'movements' => $this->movements->forAsset((int) $row['id'], 10),
+            'licenses' => $this->licenses->forAsset((int) $row['id']),
             'statuses' => $this->statuses->all(true),
             'fieldLabels' => AssetService::FIELD_LABELS,
         ]);
@@ -190,6 +193,8 @@ final class AssetController extends BaseController
             'id' => (int) $r['id'],
             'inventory_number' => $r['inventory_number'],
             'name' => $r['name'] ?? $r['article_name'] ?? '',
+            'label' => trim($r['inventory_number'] . ' · ' . ($r['name'] ?? $r['article_name'] ?? ''), ' ·'),
+            'meta' => implode(' · ', array_filter([$r['asset_type_name'], $r['status_name'], $r['employee_name'] ?? null, $r['location_path'] ?? null])),
             'type' => $r['asset_type_name'],
             'status' => $r['status_name'],
             'status_code' => $r['status_code'],
