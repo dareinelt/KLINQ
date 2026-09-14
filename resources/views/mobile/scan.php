@@ -16,6 +16,10 @@
     </form>
 </section>
 
+<section id="offline-asset" class="m-offline-asset" hidden aria-live="polite"></section>
+<section id="offline-queue" class="card card-compact m-queue-card" hidden aria-live="polite"></section>
+<p class="text-xs text-muted text-center mb-0" id="offline-cache-state"></p>
+
 <?php if ($openCount > 0): ?>
 <a class="alert alert-warning" href="/m/open"><?= icon('warning') ?> <?= (int) $openCount ?> offene <?= $openCount === 1 ? 'Vorgang wartet' : 'Vorgänge warten' ?> auf Vervollständigung</a>
 <?php endif; ?>
@@ -37,4 +41,4 @@
     </ul>
 </section>
 <?php endif; ?>
-<?php $innerContent = ob_get_clean(); $scripts = ['/js/vendor/jsqr.js', '/js/scan.js']; include __DIR__ . '/../partials/mobile_layout.php'; ?>
+<?php $innerContent = ob_get_clean(); $scripts = ['/js/vendor/jsqr.js', '/js/scan.js', '/js/offline-ui.js']; include __DIR__ . '/../partials/mobile_layout.php'; ?>

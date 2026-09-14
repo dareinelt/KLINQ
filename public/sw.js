@@ -1,15 +1,20 @@
 /* Service Worker: App-Shell-Cache für den mobilen Bereich; API-Aufrufe werden nicht gecacht. */
-const CACHE_NAME = "assets-shell-v1";
+const CACHE_NAME = "assets-shell-v4";
 const SHELL = [
     "/m",
     "/css/app.css",
     "/js/ui.js",
     "/js/pwa.js",
+    "/js/offline.js",
+    "/js/offline-ui.js",
     "/js/mobile.js",
-    "/js/offline-queue.js",
-    "/js/scanner.js",
-    "/vendor/jsQR.js",
+    "/js/picker.js",
+    "/js/scan.js",
+    "/js/search.js",
+    "/js/vendor/jsqr.js",
     "/img/icon.svg",
+    "/img/icon-192.png",
+    "/img/icon-512.png",
     "/manifest.webmanifest",
     "/offline.html"
 ];
@@ -37,18 +42,19 @@ self.addEventListener("fetch", function (event) {
     if (url.origin !== self.location.origin) { return; }
     if (url.pathname.startsWith("/api/") || url.pathname === "/login" || url.pathname === "/logout") { return; }
 
-    // Statische Dateien: Cache zuerst, dann Netz
+    // Statische Dateien: Netz zuerst (Versions-Query ?v= bleibt wirksam), im Cache ohne Query
+    // abgelegt, damit offline immer die zuletzt gesehene Version ausgeliefert wird.
     if (/\.(css|js|svg|png|webmanifest|woff2?)$/.test(url.pathname)) {
+        const cacheKey = url.origin + url.pathname;
         event.respondWith(
-            caches.match(request).then(function (cached) {
-                const network = fetch(request).then(function (response) {
-                    if (response.ok) {
-                        const copy = response.clone();
-                        caches.open(CACHE_NAME).then(function (cache) { cache.put(request, copy); });
-                    }
-                    return response;
-                }).catch(function () { return cached; });
-                return cached || network;
+            fetch(request).then(function (response) {
+                if (response.ok && response.type === "basic") {
+                    const copy = response.clone();
+                    caches.open(CACHE_NAME).then(function (cache) { cache.put(cacheKey, copy); });
+                }
+                return response;
+            }).catch(function () {
+                return caches.match(cacheKey);
             })
         );
         return;
@@ -64,7 +70,7 @@ self.addEventListener("fetch", function (event) {
                 }
                 return response;
             }).catch(function () {
-                return caches.match(request).then(function (cached) {
+                return caches.match(request, { ignoreSearch: url.pathname === "/m" }).then(function (cached) {
                     return cached || caches.match("/m").then(function (shell) { return shell || caches.match("/offline.html"); });
                 });
             })

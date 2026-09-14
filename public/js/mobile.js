@@ -1,5 +1,5 @@
 /* Mobile Erfassung: Komfortfunktionen für Entnahme-/Rückgabeformulare.
-   Absenden per klassischem POST (funktioniert ohne JS); Offline-Warteschlange folgt in Phase 10. */
+   Absenden per klassischem POST (funktioniert ohne JS); ohne Netz wandert der Vorgang in die Offline-Warteschlange. */
 (function () {
     "use strict";
     const form = document.getElementById("movement-form");
@@ -43,15 +43,42 @@
         });
     }
 
-    // Offline: Formular nicht abschicken, Hinweis anzeigen (Warteschlange in Phase 10)
+    // Offline: Vorgang lokal in die Warteschlange legen statt abzuschicken
+    function readPhotos(input) {
+        const files = Array.from((input && input.files) || []).filter(function (f) { return f.type.indexOf("image/") === 0; }).slice(0, 4);
+        return Promise.all(files.map(function (file) {
+            return new Promise(function (resolve) {
+                const reader = new FileReader();
+                reader.onload = function () { resolve({ name: file.name, type: file.type, data: String(reader.result).split(",")[1] || "" }); };
+                reader.onerror = function () { resolve(null); };
+                reader.readAsDataURL(file);
+            });
+        })).then(function (list) { return list.filter(Boolean); });
+    }
+
     form.addEventListener("submit", function (e) {
-        if (!navigator.onLine) {
-            e.preventDefault();
-            if (window.AppUI && window.AppUI.toast) {
-                window.AppUI.toast("Offline – bitte erneut senden, sobald eine Verbindung besteht.", "warning");
-            } else {
-                window.alert("Offline – bitte erneut senden, sobald eine Verbindung besteht.");
-            }
+        if (navigator.onLine) { return; }
+        e.preventDefault();
+        if (!window.Offline) {
+            (window.AppUI && window.AppUI.toast ? window.AppUI.toast : window.alert)("Offline – bitte erneut senden, sobald eine Verbindung besteht.", "warning");
+            return;
         }
+        const type = form.getAttribute("data-movement") === "return" ? "return" : "checkout";
+        const payload = {};
+        new FormData(form).forEach(function (v, k) { if (typeof v === "string" && k !== "_csrf") { payload[k] = v; } });
+        const pickerLabel = form.querySelector('[data-picker] [data-picker-label]');
+        const label = type === "checkout"
+            ? "an " + (pickerLabel && pickerLabel.textContent.trim() ? pickerLabel.textContent.trim() : "Mitarbeiter")
+            : "Zustand: " + ((form.querySelector("[data-condition]:checked") || {}).value || "");
+        const btn = form.querySelector('button[type="submit"]');
+        if (btn) { btn.disabled = true; }
+        readPhotos(photoInput).then(function (photos) {
+            return window.Offline.enqueue({ type: type, inventory_number: payload.inventory_number || "", label: label, payload: payload, photos: photos, client_transaction_id: payload.client_transaction_id });
+        }).then(function () {
+            window.location.href = "/m?queued=1";
+        }).catch(function () {
+            if (btn) { btn.disabled = false; }
+            (window.AppUI && window.AppUI.toast ? window.AppUI.toast : window.alert)("Lokales Speichern fehlgeschlagen.", "error");
+        });
     });
 })();

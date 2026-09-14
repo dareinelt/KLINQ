@@ -18,6 +18,17 @@
     let ctx = null;
     let frame = 0;
 
+    // Manuelle Eingabe offline: lokal auflösen statt zum Server zu navigieren
+    const manualForm = document.getElementById("scan-form");
+    if (manualForm) {
+        manualForm.addEventListener("submit", function (e) {
+            if (!navigator.onLine && window.Offline) {
+                e.preventDefault();
+                document.dispatchEvent(new CustomEvent("scan:offline-code", { detail: { code: codeInput.value.trim() } }));
+            }
+        });
+    }
+
     const supported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && (window.isSecureContext || location.hostname === "localhost");
     if (!supported) {
         startBtn.hidden = true;
@@ -112,6 +123,10 @@
         setStatus("Erkannt: " + value);
         if (navigator.vibrate) { navigator.vibrate(60); }
         stop();
+        if (!navigator.onLine && window.Offline) {
+            document.dispatchEvent(new CustomEvent("scan:offline-code", { detail: { code: value.trim() } }));
+            return;
+        }
         window.location.href = lookupUrl + "?code=" + encodeURIComponent(value.trim());
     }
 

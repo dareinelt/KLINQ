@@ -102,3 +102,13 @@
 .m-more summary::-webkit-details-marker { display: none; }
 .m-more[open] summary { color: var(--color-text-muted); }
 .m-scan-manual input::placeholder { text-transform: none; font-family: var(--font-family); letter-spacing: 0; }
+
+/* Offline: Warteschlange & lokale Assetkarte */
+.m-queue-badge { position: relative; min-width: var(--touch-target); font-weight: var(--font-weight-semibold); color: var(--color-warning); background: var(--color-warning-soft); border-radius: var(--radius-full); text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+.m-queue-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); }
+.m-queue-item { align-items: flex-start !important; }
+.m-queue-item .m-list-sub { white-space: normal; }
+.m-queue-msg { margin-top: var(--space-1); }
+.m-queue-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+.m-offline-asset { display: flex; flex-direction: column; gap: var(--space-3); }
+#offline-form form { display: flex; flex-direction: column; gap: var(--space-3); }

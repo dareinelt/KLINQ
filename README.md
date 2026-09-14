@@ -29,6 +29,7 @@ Anwendung: <http://localhost:8080> – Anmeldung mit `ADMIN_USERNAME` / `ADMIN_P
 - [Bestandsmanagement – Entnahme & Retoure](docs/movements.md)
 - [Einkauf – Bestellungen & Wareneingang](docs/einkauf.md)
 - [Lizenzen – Verwaltung & Assetzuordnung](docs/lizenzen.md)
+- [Offline-Betrieb – PWA, Warteschlange & Synchronisation](docs/offline.md)
 - [Backup & Wiederherstellung](docs/backup.md)
 
 ## Tests

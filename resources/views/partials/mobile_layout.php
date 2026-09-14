@@ -19,6 +19,7 @@ ob_start();
         <?php endif; ?>
         <h1 class="m-topbar-title"><?= e($title ?? 'Erfassung') ?></h1>
         <span class="offline-indicator m-offline" id="offline-indicator" hidden><?= icon('offline') ?> Offline</span>
+        <a class="m-topbar-btn m-queue-badge" href="/m#offline-queue" title="Ausstehende Vorgänge" aria-label="Ausstehende Vorgänge" data-queue-count hidden>0</a>
         <span class="m-topbar-user" title="<?= e($user['display_name'] ?? '') ?>"><?= e(mb_substr((string) ($user['display_name'] ?? $user['username'] ?? '?'), 0, 1)) ?></span>
     </header>
     <main class="m-content" id="main">
@@ -35,5 +36,5 @@ ob_start();
 unset($_SESSION['_old_input'], $_SESSION['_errors']);
 $content = ob_get_clean();
 $bodyClass = trim(($bodyClass ?? '') . ' m-body');
-$scripts = array_merge(['/js/pwa.js'], $scripts ?? []);
+$scripts = array_merge(['/js/offline.js', '/js/pwa.js'], $scripts ?? []);
 include __DIR__ . '/layout.php';

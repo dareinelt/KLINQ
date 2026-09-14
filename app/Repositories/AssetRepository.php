@@ -143,6 +143,29 @@ final class AssetRepository extends BaseRepository
         return $this->search(['parent_asset_id' => $parentId], 100, 0, 'type');
     }
 
+    /**
+     * Kompakter Bestand für den Offline-Cache der mobilen Erfassung (nur nicht ausgeschiedene Assets).
+     * @return array<int,array<string,mixed>>
+     */
+    public function forOffline(int $limit = 20000): array
+    {
+        return $this->fetchAll(
+            'SELECT a.id, a.inventory_number, a.serial_number, a.name, a.version, a.employee_id, a.location_id, a.cost_center_id,
+                    t.name AS type, t.code AS type_code, m.name AS manufacturer,
+                    s.code AS status_code, s.name AS status_name, s.color AS status_color, s.is_final AS status_final,
+                    e.display_name AS employee_name, l.full_path AS location_path
+             FROM assets a
+             JOIN asset_types t ON t.id = a.asset_type_id
+             JOIN asset_statuses s ON s.id = a.status_id
+             LEFT JOIN manufacturers m ON m.id = a.manufacturer_id
+             LEFT JOIN employees e ON e.id = a.employee_id
+             LEFT JOIN locations l ON l.id = a.location_id
+             WHERE s.is_final = 0
+             ORDER BY a.inventory_number
+             LIMIT ' . max(1, $limit)
+        );
+    }
+
     /** Schnellsuche für Tipp-Vorschläge / globale Suche. @return array<int,array<string,mixed>> */
     public function quickSearch(string $term, int $limit = 10): array
     {

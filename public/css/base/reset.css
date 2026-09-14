@@ -55,3 +55,6 @@ a { color: var(--color-primary); }
 
 /* Standardgröße für Inline-Icons; Komponenten überschreiben bei Bedarf */
 .icon { width: 18px; height: 18px; display: inline-block; vertical-align: -3px; fill: currentColor; }
+
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+legend { padding: 0; display: block; width: 100%; }

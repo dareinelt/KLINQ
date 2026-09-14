@@ -94,7 +94,7 @@ Fotos werden als Dokumente (`documents`, Typ `photo`, Entität `movement`) unter
 
 Jede Bewegung kann eine **Transaktions-ID** (`client_transaction_id`, vom Formular erzeugt) tragen. Wird dieselbe ID erneut gesendet – etwa nach einem Verbindungsabbruch oder bei der Offline-Synchronisation –, liefert der Server die bereits gespeicherte Bewegung zurück, statt eine zweite anzulegen.
 
-Optional übermittelt der Client die **Asset-Version** (`asset_version`), die er beim Scannen gesehen hat. Wurde das Asset zwischenzeitlich geändert, wird die Bewegung mit einer Konfliktmeldung abgelehnt und muss neu erfasst werden. Die Quelle (`source`: Desktop, Mobil, Offline-Sync, Import) wird pro Bewegung gespeichert.
+Optional übermittelt der Client die **Asset-Version** (`asset_version`), die er beim Scannen gesehen hat. Wurde das Asset zwischenzeitlich geändert, wird die Bewegung mit einer Konfliktmeldung abgelehnt und muss neu erfasst werden. Die Quelle (`source`: Desktop, Mobil, Offline-Sync, Import) wird pro Bewegung gespeichert. Wie Vorgänge ohne Verbindung erfasst und später übertragen werden, beschreibt [Offline-Betrieb](offline.md).
 
 Zeitstempel werden in UTC gespeichert und in der Oberfläche in Europe/Berlin angezeigt; das Bewegungsdatum (`movement_date`) ist ein lokales Datum.
 
