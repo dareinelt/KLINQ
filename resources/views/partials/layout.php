@@ -1,0 +1,34 @@
+<?php
+/** Basis-HTML. Erwartet: $content, optional $title, $bodyClass, $scripts, $appName */
+require_once __DIR__ . '/helpers.php';
+$appName = $appName ?? 'Assetverwaltung';
+?>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0f6cbd">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="<?= e($appName) ?>">
+    <meta name="csrf-token" content="<?= e($csrf ?? '') ?>">
+    <title><?= e($title ?? $appName) ?></title>
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" href="/img/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/img/icon-192.png">
+    <link rel="stylesheet" href="<?= e(asset_url('/css/app.css')) ?>">
+<?php foreach (($extraStyles ?? []) as $style): ?>
+    <link rel="stylesheet" href="<?= e($style) ?>" id="<?= e('style-' . preg_replace('/[^a-z0-9]+/i', '-', trim(parse_url($style, PHP_URL_PATH) ?: $style, '/'))) ?>">
+<?php endforeach; ?>
+</head>
+<body class="<?= e($bodyClass ?? '') ?>">
+<?php include __DIR__ . '/icons.php'; ?>
+<?= $content ?? '' ?>
+<script src="<?= e(asset_url('/js/ui.js')) ?>"></script>
+<?php foreach (($scripts ?? []) as $script): ?>
+    <script src="<?= e(asset_url($script)) ?>"></script>
+<?php endforeach; ?>
+</body>
+</html>
