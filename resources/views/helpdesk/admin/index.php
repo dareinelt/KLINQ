@@ -23,6 +23,21 @@ $memberCount = static fn (array $r): int => (int) ($r['member_count'] ?? (is_arr
         <?php endforeach; ?>
     </div>
 </div>
+<div class="card mb-4">
+    <div class="card-header"><h2>Störungsformular für Anwender</h2><span class="text-muted text-sm"><?= $quickReport['enabled'] ? 'aktiv' : 'deaktiviert' ?></span></div>
+    <p class="text-muted text-sm">Öffentlicher Link ohne Anmeldung – nur Betreff und Beschreibung. Melder (inkl. AD-Abgleich), Rechnername und IP-Adresse werden automatisch erfasst. Diesen Link im Intranet, als Desktopverknüpfung oder per Gruppenrichtlinie verteilen.</p>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="quick-report-url">Link zum Formular</label>
+            <input id="quick-report-url" class="mono" value="<?= e($quickReport['url']) ?>" readonly>
+        </div>
+        <div class="form-group">
+            <label>&nbsp;</label>
+            <a class="btn btn-secondary" href="/stoerung" target="_blank" rel="noopener"><?= icon('ticket') ?> Formular öffnen</a>
+        </div>
+    </div>
+    <p class="text-muted text-xs mb-0">Tickets werden unter dem Konto <strong><?= e($quickReport['system_user']) ?></strong> angelegt (benötigt das Recht helpdesk.create).<?= $quickReport['networks'] !== [] ? ' Zugriff beschränkt auf: ' . e(implode(', ', $quickReport['networks'])) . '.' : '' ?><?= $quickReport['enabled'] ? '' : ' Aktivierung über HELPDESK_QUICK_REPORT_ENABLED=true.' ?></p>
+</div>
 <div class="card card-flush">
     <div class="card-header"><h2><?= e($kinds[$kind] ?? 'Bereich') ?></h2><span class="text-muted text-sm"><?= count($rows) ?> Einträge</span></div>
     <?php if ($rows === []): ?>

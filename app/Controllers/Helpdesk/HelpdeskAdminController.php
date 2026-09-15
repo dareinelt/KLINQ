@@ -110,6 +110,12 @@ final class HelpdeskAdminController extends HelpdeskBaseController
                 'sla_escalation_percent' => (int) $this->config->get('helpdesk.sla_escalation_percent', 90),
             ],
             'colors' => HelpdeskAdminService::COLORS,
+            'quickReport' => [
+                'enabled' => (bool) $this->config->get('helpdesk.quick_report.enabled', true),
+                'url' => rtrim((string) $this->config->get('app.url', ''), '/') . '/stoerung',
+                'system_user' => (string) $this->config->get('helpdesk.quick_report.system_user', 'admin'),
+                'networks' => (array) $this->config->get('helpdesk.quick_report.allowed_networks', []),
+            ],
             'statusCategories' => HelpdeskAdminService::STATUS_CATEGORIES,
             'triggers' => TicketRuleRepository::TRIGGERS,
         ]);

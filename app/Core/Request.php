@@ -181,6 +181,14 @@ final class Request
         return (string) ($this->server['REMOTE_ADDR'] ?? '');
     }
 
+    /** Rohwert aus der Serverumgebung, z. B. REMOTE_USER aus der Windows-Anmeldung am Webserver. */
+    public function serverValue(string $key): ?string
+    {
+        $value = $this->server[$key] ?? null;
+
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
     public function userAgent(): string
     {
         return mb_substr((string) ($this->server['HTTP_USER_AGENT'] ?? ''), 0, 255);

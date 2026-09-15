@@ -33,7 +33,7 @@ use App\Support\Validator;
  */
 final class TicketService
 {
-    public const SOURCES = ['web' => 'Help Desk', 'portal' => 'Portal', 'api' => 'API', 'email' => 'E-Mail', 'phone' => 'Telefon', 'scheduler' => 'Automatisch'];
+    public const SOURCES = ['web' => 'Help Desk', 'portal' => 'Portal', 'api' => 'API', 'email' => 'E-Mail', 'phone' => 'Telefon', 'form' => 'Störungsmeldung', 'scheduler' => 'Automatisch'];
     public const WORKLOG_ACTIVITIES = ['analysis' => 'Analyse', 'support' => 'Support', 'onsite' => 'Vor-Ort-Einsatz', 'remote' => 'Fernwartung', 'coordination' => 'Abstimmung', 'documentation' => 'Dokumentation', 'other' => 'Sonstiges'];
     public const RELATION_LABELS = ['duplicate_of' => 'Duplikat von', 'parent_of' => 'Übergeordnet zu', 'related' => 'Verwandt mit', 'problem_of' => 'Problem zu', 'change_for' => 'Change für'];
     public const AGENT_ROLES = ['admin', 'helpdesk_admin', 'helpdesk_lead', 'helpdesk_agent'];
@@ -165,16 +165,22 @@ final class TicketService
     // ------------------------------------------------------------------ Anlegen
 
     /**
-     * Neues Ticket durch Agenten (source web/phone/api) oder Portal (source portal, eingeschränkte Felder).
+     * Neues Ticket durch Agenten (source web/phone/api), Portal (source portal) oder das
+     * öffentliche Störungsformular (source form, Melderdaten unter $input['reporter']).
      * @param array<string,mixed> $input
      * @return array<string,mixed> das angelegte Ticket
      */
     public function create(array $input, string $source = 'web'): array
     {
         $portal = $source === 'portal';
+        // Störungsformular: gleiche Feldbeschränkung wie im Portal, der Melder wird aber
+        // nicht aus der Sitzung abgeleitet (dort läuft ein Systemkonto), sondern übergeben.
+        $quickReport = $source === 'form';
         $this->currentUser->require($portal ? 'portal.create' : 'helpdesk.create');
-        $data = $this->validate($input, null, $portal);
+        $data = $this->validate($input, null, $portal || $quickReport);
         $userId = $this->currentUser->id();
+        $createdByName = $this->currentUser->displayName();
+        $extraFields = [];
 
         if ($portal) {
             $employeeId = $this->currentEmployeeId();
@@ -183,12 +189,20 @@ final class TicketService
             $data['affected_employee_id'] = $data['affected_employee_id'] ?? $employeeId;
             $data['is_portal'] = true;
         }
-        if (empty($data['requester_employee_id']) && empty($data['requester_user_id'])) {
+        if ($quickReport) {
+            $reporter = is_array($input['reporter'] ?? null) ? $input['reporter'] : [];
+            $data['requester_employee_id'] = $this->existingEmployeeId($reporter['employee_id'] ?? null);
+            $data['requester_user_id'] = $this->activeUserId($reporter['user_id'] ?? null);
+            $data['affected_employee_id'] = $data['requester_employee_id'];
+            $extraFields = $this->reporterFields($reporter);
+            $createdByName = mb_substr(trim((string) ($reporter['display_name'] ?? '')) ?: 'Störungsmeldung', 0, 200);
+        }
+        if (!$quickReport && empty($data['requester_employee_id']) && empty($data['requester_user_id'])) {
             $data['requester_user_id'] = $userId;
         }
         // E-Mail-Eingang: externe Absenderadresse und Message-ID für das Threading übernehmen
-        $mailFields = [];
         if ($source === 'email') {
+            $mailFields = [];
             $email = trim((string) ($input['requester_email'] ?? ''));
             if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) !== false) {
                 $mailFields['requester_email'] = mb_substr($email, 0, 255);
@@ -198,6 +212,7 @@ final class TicketService
                 // Unbekannter externer Absender: Systembenutzer soll nicht als Melder erscheinen
                 $data['requester_user_id'] = null;
             }
+            $extraFields = $mailFields;
         }
 
         $type = $this->masterData->findType((int) $data['ticket_type_id']);
@@ -230,7 +245,7 @@ final class TicketService
         $tagNames = $this->parseTags((string) ($input['tags'] ?? ''));
         $assetIds = $this->parseIds($input['asset_ids'] ?? ($input['asset_id'] ?? []));
 
-        $ticketId = $this->tickets->transaction(function () use ($data, $priority, $status, $slaRule, $due, $now, $userId, $source, $tagNames, $assetIds, $mailFields): int {
+        $ticketId = $this->tickets->transaction(function () use ($data, $priority, $status, $slaRule, $due, $now, $userId, $source, $tagNames, $assetIds, $extraFields, $createdByName): int {
             $number = $this->numbers->next($now);
             $id = $this->tickets->create([
                 'number' => $number,
@@ -259,9 +274,9 @@ final class TicketService
                 'sla_response_state' => $due['response_due_at'] !== null ? TicketSlaService::STATE_OK : TicketSlaService::STATE_NONE,
                 'sla_resolution_state' => $due['resolution_due_at'] !== null ? TicketSlaService::STATE_OK : TicketSlaService::STATE_NONE,
                 'created_by' => $userId,
-                'created_by_name' => $this->currentUser->displayName(),
+                'created_by_name' => $createdByName,
                 'updated_by' => $userId,
-            ] + $mailFields);
+            ] + $extraFields);
             foreach ($tagNames as $name) {
                 $this->tags->attach($id, $this->tags->ensure($name));
             }
@@ -1096,6 +1111,47 @@ final class TicketService
         }
 
         return $userId;
+    }
+
+    /** Mitarbeiter-ID nur übernehmen, wenn der Datensatz existiert (Melder aus der automatischen Erkennung). */
+    private function existingEmployeeId(mixed $value): ?int
+    {
+        $id = is_numeric($value) ? (int) $value : 0;
+
+        return $id > 0 && $this->employees->find($id) !== null ? $id : null;
+    }
+
+    /** Benutzer-ID nur übernehmen, wenn das Konto existiert und aktiv ist. */
+    private function activeUserId(mixed $value): ?int
+    {
+        $id = is_numeric($value) ? (int) $value : 0;
+        $user = $id > 0 ? $this->users->find($id) : null;
+
+        return $user !== null && !empty($user['is_active']) ? $id : null;
+    }
+
+    /**
+     * Automatisch erkannte Melderdaten für die Ticketspalten aufbereiten.
+     * @param array<string,mixed> $reporter
+     * @return array<string,?string>
+     */
+    private function reporterFields(array $reporter): array
+    {
+        $trim = static function (mixed $value, int $length): ?string {
+            $value = trim((string) $value);
+
+            return $value === '' ? null : mb_substr($value, 0, $length);
+        };
+        $email = $trim($reporter['email'] ?? null, 255);
+
+        return [
+            'requester_email' => $email !== null && filter_var($email, FILTER_VALIDATE_EMAIL) !== false ? mb_strtolower($email) : null,
+            'reporter_username' => $trim($reporter['username'] ?? null, 100),
+            'reporter_host' => $trim($reporter['host'] ?? null, 255),
+            'reporter_ip' => $trim($reporter['ip'] ?? null, 45),
+            'reporter_phone' => $trim($reporter['phone'] ?? null, 50),
+            'reporter_department' => $trim($reporter['department'] ?? null, 150),
+        ];
     }
 
     private function userName(int $userId): string
