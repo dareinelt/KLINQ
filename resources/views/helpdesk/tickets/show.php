@@ -309,7 +309,8 @@ $percentBar = static function (?int $percent, string $state): string {
         <h2 class="card-title">Details</h2>
         <dl class="detail-list">
             <dt>Melder</dt><dd><?php if ($ticket['requester_employee_id']): ?><a href="/employees/<?= (int) $ticket['requester_employee_id'] ?>"><?= e($ticket['requester_name']) ?></a><?php else: ?><?= e($ticket['requester_name'] ?? '–') ?><?php endif; ?>
-                <?php if ($ticket['requester_department'] || $ticket['requester_phone'] || $ticket['requester_email']): ?><div class="text-xs text-muted"><?= e(implode(' · ', array_filter([$ticket['requester_department'], $ticket['requester_phone'], $ticket['requester_email']]))) ?></div><?php endif; ?></dd>
+                <?php if ($ticket['requester_department'] || $ticket['requester_email']): ?><div class="text-xs text-muted"><?= e(implode(' · ', array_filter([$ticket['requester_department'], $ticket['requester_email']]))) ?></div><?php endif; ?></dd>
+            <?php if ($ticket['requester_phone']): ?><dt>Rufnummer</dt><dd class="detail-phone"><?= e($ticket['requester_phone']) ?></dd><?php endif; ?>
             <?php
             // Automatisch erfasste Angaben aus dem Störungsformular (Windows-Konto, Rechner, AD-Abgleich)
             $reporterInfo = array_filter([
