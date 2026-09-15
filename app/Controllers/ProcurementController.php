@@ -70,9 +70,16 @@ final class ProcurementController extends BaseController
     {
         $description = trim($request->string('description'));
         $quantity = $request->int('quantity') ?? 0;
-        if ($description === '' || $quantity < 1) { $this->flash('error', 'Bitte Artikel/Bezeichnung und Menge angeben.'); return $this->redirect('/orders/requests'); }
         $articleId = $request->int('article_id');
-        if ($articleId !== null && ($article = $this->articles->find($articleId)) !== null) { $description = $article['manufacturer_name'] . ' ' . $article['name']; }
+        if ($articleId !== null) {
+            $article = $this->articles->find($articleId);
+            if ($article === null || (int) $article['is_active'] !== 1) {
+                $this->flash('error', 'Der ausgewählte Artikel ist nicht verfügbar.');
+                return $this->redirect('/orders/requests');
+            }
+            $description = $article['manufacturer_name'] . ' ' . $article['name'];
+        }
+        if ($description === '' || $quantity < 1) { $this->flash('error', 'Bitte Artikel/Bezeichnung und Menge angeben.'); return $this->redirect('/orders/requests'); }
         $id = $this->procurement->transaction(function () use ($request, $description, $quantity, $articleId): int {
             $id = $this->procurement->createRequest(['requested_by' => $this->currentUser->id(), 'requested_by_name' => $this->currentUser->displayName(), 'cost_center_id' => $request->int('cost_center_id'), 'note' => $request->stringOrNull('note')]);
             $this->procurement->createRequestItem(['purchase_request_id' => $id, 'article_id' => $articleId, 'description' => $description, 'quantity' => $quantity, 'note' => null]);
@@ -85,14 +92,20 @@ final class ProcurementController extends BaseController
     public function convertRequest(Request $request): Response
     {
         $this->currentUser->require('orders.manage');
-        $demand = $this->findOrFail($this->procurement->request($request->paramInt('id')), 'Bedarfsmeldung nicht gefunden');
-        if ($demand['status'] !== 'open') { throw new ConflictException('Die Bedarfsmeldung wurde bereits verarbeitet.'); }
+        $demandId = $request->paramInt('id');
         $supplierId = $request->int('supplier_id') ?? 0;
-        $orderId = $this->orderService->create(['supplier_id' => (string) $supplierId, 'cost_center_id' => (string) ($demand['cost_center_id'] ?? ''), 'note' => 'Aus Bedarfsmeldung #' . $demand['id'] . ($demand['note'] ? ': ' . $demand['note'] : '')]);
-        foreach ($this->procurement->requestItems((int) $demand['id']) as $item) {
-            $this->orderService->addItem($orderId, $this->orders->find($orderId) ?? [], ['article_id' => (string) ($item['article_id'] ?? ''), 'description' => $item['description'], 'quantity' => (string) $item['quantity'], 'creates_assets' => '0', 'note' => $item['note']]);
-        }
-        $this->procurement->updateRequest((int) $demand['id'], ['status' => 'converted', 'purchase_order_id' => $orderId]);
+        $orderId = $this->procurement->transaction(function () use ($demandId, $supplierId): int {
+            if (!$this->procurement->claimRequest($demandId)) {
+                throw new ConflictException('Die Bedarfsmeldung wurde bereits verarbeitet.');
+            }
+            $demand = $this->findOrFail($this->procurement->request($demandId), 'Bedarfsmeldung nicht gefunden');
+            $orderId = $this->orderService->create(['supplier_id' => (string) $supplierId, 'cost_center_id' => (string) ($demand['cost_center_id'] ?? ''), 'note' => 'Aus Bedarfsmeldung #' . $demand['id'] . ($demand['note'] ? ': ' . $demand['note'] : '')]);
+            foreach ($this->procurement->requestItems((int) $demand['id']) as $item) {
+                $this->orderService->addItem($orderId, $this->orders->find($orderId) ?? [], ['article_id' => (string) ($item['article_id'] ?? ''), 'description' => $item['description'], 'quantity' => (string) $item['quantity'], 'creates_assets' => '0', 'note' => $item['note']]);
+            }
+            $this->procurement->updateRequest((int) $demand['id'], ['purchase_order_id' => $orderId]);
+            return $orderId;
+        });
         $this->flash('success', 'Bedarfsmeldung in Bestellung übernommen.');
         return $this->redirect('/orders/' . $orderId);
     }

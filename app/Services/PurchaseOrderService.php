@@ -303,7 +303,7 @@ final class PurchaseOrderService
                 if ($item['article_id'] !== null && (int) ($item['is_consumable'] ?? 0) === 1) {
                     $this->articles->addStock((int) $item['article_id'], $line['quantity']);
                 }
-                if ((int) $item['creates_assets'] !== 1) {
+                if ((int) $item['creates_assets'] !== 1 || (int) ($item['is_consumable'] ?? 0) === 1) {
                     continue;
                 }
                 for ($i = 0; $i < $line['quantity']; $i++) {

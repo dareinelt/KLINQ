@@ -52,4 +52,10 @@ final class ProcurementRepository extends BaseRepository
     public function createRequestItem(array $data): int { return $this->insertRow('purchase_request_items', $data); }
     /** @param array<string,mixed> $data */
     public function updateRequest(int $id, array $data): void { $this->updateRow('purchase_requests', $id, $data); }
+
+    /** Atomar für die Übernahme reservieren; verhindert doppelte Bestellungen. */
+    public function claimRequest(int $id): bool
+    {
+        return $this->execute("UPDATE purchase_requests SET status = 'converted' WHERE id = ? AND status = 'open'", [$id]) === 1;
+    }
 }

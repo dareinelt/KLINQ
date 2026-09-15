@@ -7,6 +7,8 @@ namespace Tests\Integration;
 use App\Exceptions\ConflictException;
 use App\Exceptions\ForbiddenException;
 use App\Exceptions\ValidationException;
+use App\Controllers\ProcurementController;
+use App\Core\Request;
 use App\Repositories\ArticleRepository;
 use App\Repositories\AssetHistoryRepository;
 use App\Repositories\AssetRepository;
@@ -15,6 +17,7 @@ use App\Repositories\CostCenterRepository;
 use App\Repositories\LocationRepository;
 use App\Repositories\ManufacturerRepository;
 use App\Repositories\PurchaseOrderRepository;
+use App\Repositories\ProcurementRepository;
 use App\Repositories\SupplierRepository;
 use App\Security\CurrentUser;
 use App\Services\PurchaseOrderService;
@@ -324,6 +327,42 @@ final class PurchaseOrderServiceIntegrationTest extends DatabaseTestCase
 
         $this->assertSame([], $result['asset_ids']);
         $this->assertSame(6, (int) $this->pdo->query('SELECT stock_quantity FROM articles WHERE id = ' . $this->articleId)->fetchColumn());
+    }
+
+    public function testReceiptOfItemChangedToConsumableDoesNotCreateAssets(): void
+    {
+        $id = $this->service()->create(['supplier_id' => (string) $this->supplierId]);
+        $itemId = $this->service()->addItem($id, $this->order($id), ['article_id' => (string) $this->articleId, 'quantity' => '1', 'creates_assets' => '1']);
+        $this->service()->markOrdered($id, $this->order($id));
+        $this->pdo->prepare('UPDATE articles SET is_consumable = 1, stock_quantity = 0 WHERE id = ?')->execute([$this->articleId]);
+
+        $result = $this->service()->receive($id, $this->order($id), ['received_at' => date('Y-m-d'), 'items' => [$itemId => ['quantity' => '1']]]);
+
+        $this->assertSame([], $result['asset_ids']);
+        $this->assertSame(1, (int) $this->pdo->query('SELECT stock_quantity FROM articles WHERE id = ' . $this->articleId)->fetchColumn());
+    }
+
+    public function testDemandRequestAcceptsSelectedArticleWithoutFreeText(): void
+    {
+        $response = $this->c->get(ProcurementController::class)->storeRequest(new Request(
+            ['REQUEST_METHOD' => 'POST'], [], ['article_id' => (string) $this->articleId, 'quantity' => '2'], []
+        ));
+
+        $this->assertSame(302, $response->status());
+        $requests = $this->c->get(ProcurementRepository::class)->requests($this->userId);
+        $this->assertCount(1, $requests);
+        $items = $this->c->get(ProcurementRepository::class)->requestItems((int) $requests[0]['id']);
+        $this->assertSame($this->articleId, (int) $items[0]['article_id']);
+        $this->assertSame('Testphone Inc. Phone X 128GB', $items[0]['description']);
+    }
+
+    public function testDemandRequestCanOnlyBeClaimedOnce(): void
+    {
+        $repository = $this->c->get(ProcurementRepository::class);
+        $id = $repository->createRequest(['requested_by' => $this->userId, 'requested_by_name' => 'Test User', 'status' => 'open']);
+
+        $this->assertTrue($repository->claimRequest($id));
+        $this->assertFalse($repository->claimRequest($id));
     }
 
     // ------------------------------------------------------------------ Berechtigungen
