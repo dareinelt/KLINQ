@@ -20,6 +20,8 @@ docker compose up --build -d  # Migrationen laufen automatisch beim Start
 
 Anwendung: <http://localhost:8080> – Anmeldung mit `ADMIN_USERNAME` / `ADMIN_PASSWORD` aus der `.env`.
 
+Alternativ ohne Docker (Debian/Ubuntu, inkl. SSL-Zertifikat): `sudo bin/install.sh`, siehe [Docker-freie Installation](docs/installation.md#docker-freie-installation-binstallsh).
+
 ## Dokumentation
 
 - [Installation & Betrieb](docs/installation.md)

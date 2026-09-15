@@ -1,6 +1,8 @@
 # Installation & Betrieb
 
-Die Anwendung läuft vollständig in Docker: ein **App-Container** (PHP 8.4 + Apache, Image aus `docker/php/Dockerfile`), ein **MySQL 8.4**-Container und ein **PDF-Container** (`docker/pdf/Dockerfile`, Python + WeasyPrint, nur intern erreichbar; erzeugt die PDFs der [Übergabeprotokolle](uebergabeprotokoll.md), konfiguriert über `PDF_SERVICE_URL`/`PDF_SERVICE_TIMEOUT`). Es werden keine externen Laufzeitabhängigkeiten, kein Composer, kein Node und keine CDNs benötigt – alles Notwendige liegt im Repository.
+Die Anwendung läuft standardmäßig vollständig in Docker: ein **App-Container** (PHP 8.4 + Apache, Image aus `docker/php/Dockerfile`), ein **MySQL 8.4**-Container und ein **PDF-Container** (`docker/pdf/Dockerfile`, Python + WeasyPrint, nur intern erreichbar; erzeugt die PDFs der [Übergabeprotokolle](uebergabeprotokoll.md), konfiguriert über `PDF_SERVICE_URL`/`PDF_SERVICE_TIMEOUT`). Es werden keine externen Laufzeitabhängigkeiten, kein Composer, kein Node und keine CDNs benötigt – alles Notwendige liegt im Repository.
+
+Alternativ steht eine **Docker-freie Installation** über `bin/install.sh` zur Verfügung, siehe [Docker-freie Installation](#docker-freie-installation-binstallsh) weiter unten.
 
 ## Voraussetzungen
 
@@ -80,6 +82,47 @@ Das Upload-Limit ist zusätzlich im Proxy freizugeben (z. B. `client_max_body_si
 | `assets_labels` | Hochgeladenes Etikettenlogo (`storage/labels/`) |
 
 Sicherung und Wiederherstellung sind in [Backup & Wiederherstellung](backup.md) beschrieben.
+
+## Docker-freie Installation (`bin/install.sh`)
+
+Für Umgebungen ohne Docker richtet `bin/install.sh` auf einem frischen Debian- oder Ubuntu-Host alle Abhängigkeiten nativ ein: Apache mit PHP 8.4 (inkl. der benötigten Erweiterungen `pdo_mysql`, `ldap`, `gd`, `zip`, `opcache`), MySQL-Server, die Python-Laufzeitumgebung für die PDF- (WeasyPrint) und E-Mail-Dienste (als systemd-Dienste `assets-pdf` und `assets-mail`), einen Scheduler-Dienst (`assets-scheduler`, ersetzt `docker/php/scheduler.sh`) sowie ein SSL-Zertifikat für Apache. Am Ende ist die Anwendung inklusive Datenbankmigrationen und Erst-Administrator lauffähig.
+
+```bash
+git clone https://github.com/dareinelt/assets assets && cd assets
+sudo bin/install.sh --domain assets.example.local
+```
+
+Wichtige Optionen (`bin/install.sh --help` zeigt alle):
+
+| Option | Bedeutung |
+|---|---|
+| `--app-dir <pfad>` | Zielverzeichnis der Anwendung (Standard `/var/www/assets`) |
+| `--domain <fqdn>` | Domain für `APP_URL`, Apache `ServerName` und das Zertifikat |
+| `--skip-packages` / `--skip-mysql` / `--skip-apache` / `--skip-migrate` | Einzelne Schritte bei wiederholten Läufen überspringen |
+| `--non-interactive` | Keine Rückfragen; Passwörter werden generiert oder aus Umgebungsvariablen (`DB_PASSWORD`, `ADMIN_PASSWORD`, ...) übernommen |
+
+Datenbank- und Administrator-Zugangsdaten werden, sofern nicht vorgegeben, automatisch erzeugt und am Ende ausgegeben sowie in die erzeugte `.env` geschrieben.
+
+### SSL-Zertifikat: selbstsigniert oder CSR/CA-Zertifikat
+
+Das Skript unterstützt drei Modi über `--ssl-mode`:
+
+- **`selfsigned`** (Standard): Erzeugt sofort ein selbstsigniertes Zertifikat – die Umgebung ist direkt per HTTPS erreichbar.
+- **`csr`**: Erzeugt nur einen privaten Schlüssel und eine CSR (Certificate Signing Request) unter `--ssl-dir` (Standard `/etc/ssl/assets/server.csr`), zur Einreichung bei einer internen oder öffentlichen Zertifizierungsstelle. Bis zum Import des signierten Zertifikats läuft Apache mit einem kurzlebigen Übergangszertifikat weiter.
+- **`install-cert`**: Spielt ein von der CA signiertes Zertifikat ein, das zum zuvor per `csr` erzeugten Schlüssel passt (wird automatisch geprüft), und aktiviert es in Apache.
+
+```bash
+# 1. CSR erzeugen
+sudo bin/install.sh --domain assets.example.local --ssl-mode csr
+
+# 2. assets.example.local.csr bei der CA einreichen, signiertes Zertifikat erhalten
+
+# 3. signiertes Zertifikat einspielen (optional mit Zertifikatskette)
+sudo bin/install.sh --ssl-mode install-cert --cert zertifikat.crt --chain kette.crt \
+    --skip-packages --skip-mysql --skip-migrate
+```
+
+Das Skript ist wiederholt ausführbar (z. B. nach `git pull`, um erneut zu migrieren oder ein neues Zertifikat einzuspielen); mit den `--skip-*`-Optionen lassen sich dabei bereits erledigte Schritte überspringen.
 
 ## Update auf eine neue Version
 
