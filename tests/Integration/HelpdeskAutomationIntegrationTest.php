@@ -36,9 +36,10 @@ final class HelpdeskAutomationIntegrationTest extends DatabaseTestCase
         $this->login($this->adminId, 'helpdesk_admin');
     }
 
-    private function login(int $userId, string $role): void
+    /** @param array<int,string> $groups */
+    private function login(int $userId, string $role, array $groups = []): void
     {
-        $this->c->get(CurrentUser::class)->login(['id' => $userId, 'username' => 'u' . $userId, 'display_name' => 'User ' . $userId, 'role' => $role]);
+        $this->c->get(CurrentUser::class)->login(['id' => $userId, 'username' => 'u' . $userId, 'display_name' => 'User ' . $userId, 'role' => $role, 'groups' => $groups]);
     }
 
     /** @param array<string,mixed> $overrides @return array<string,mixed> */
@@ -203,6 +204,10 @@ final class HelpdeskAutomationIntegrationTest extends DatabaseTestCase
         $service->changeStatus((int) $a['id'], 'in_progress');
         $service->changeStatus((int) $a['id'], 'resolved', null, 'Neustart.');
 
+        // Ticket-Berichte erfordern die Berechtigungsgruppe „Statistik“ (nicht mehr Bestandteil
+        // der Help-Desk-Rollen); ausgenommen sind Admins.
+        $this->login($this->adminId, 'helpdesk_admin', ['statistik']);
+
         $reports = $this->c->get(TicketReportService::class);
         $from = gmdate('Y-m-d', strtotime('-1 day'));
         $to = gmdate('Y-m-d', strtotime('+1 day'));
@@ -220,6 +225,25 @@ final class HelpdeskAutomationIntegrationTest extends DatabaseTestCase
         $list = $reports->exportListCsv(['q' => 'Drucker offline'], 'created_at', 'desc');
         $this->assertStringContains((string) $b['number'], $list);
         $this->assertFalse(str_contains($list, (string) $a['number']));
+    }
+
+    public function testReportsRequireStatisticsGroupExceptGlobalAdmin(): void
+    {
+        $reports = $this->c->get(TicketReportService::class);
+        $from = gmdate('Y-m-d', strtotime('-1 day'));
+        $to = gmdate('Y-m-d', strtotime('+1 day'));
+
+        // Help-Desk-Administrator ohne Gruppe „Statistik“ darf die Ticket-Berichte nicht sehen.
+        $this->login($this->adminId, 'helpdesk_admin');
+        $this->assertThrows(ForbiddenException::class, fn () => $reports->overview($from, $to));
+
+        // Mit zugeordneter Gruppe „Statistik“ funktioniert der Zugriff.
+        $this->login($this->adminId, 'helpdesk_admin', ['statistik']);
+        $reports->overview($from, $to);
+
+        // Der globale Administrator (Rolle "admin") hat unabhängig von Gruppen Zugriff.
+        $this->login($this->adminId, 'admin');
+        $reports->overview($from, $to);
     }
 
     // ------------------------------------------------------------------ Administration

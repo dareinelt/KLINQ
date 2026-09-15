@@ -37,7 +37,7 @@
     <?php else: ?>
     <div class="table-wrapper">
     <table class="table">
-        <thead><tr><th>Benutzername</th><th>Anzeigename</th><th>E-Mail</th><th>Rolle</th><th>Quelle</th><th>Letzte Anmeldung</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Benutzername</th><th>Anzeigename</th><th>E-Mail</th><th>Rolle</th><th>Gruppen</th><th>Quelle</th><th>Letzte Anmeldung</th><th>Status</th><th></th></tr></thead>
         <tbody>
         <?php foreach ($rows as $r): ?>
             <tr class="is-clickable <?= (int) $r['is_active'] ? '' : 'is-muted' ?>" data-href="/admin/users/<?= (int) $r['id'] ?>/edit">
@@ -45,6 +45,7 @@
                 <td><?= e($r['display_name']) ?></td>
                 <td><?php if ($r['email']): ?><a href="mailto:<?= e($r['email']) ?>"><?= e($r['email']) ?></a><?php else: ?>–<?php endif; ?></td>
                 <td><?= badge((string) $r['role_label'], $r['role'] === 'admin' ? 'danger' : ($r['role'] === 'readonly' ? 'neutral' : 'info')) ?></td>
+                <td><?php if ($r['groups']): ?><?php foreach ($r['groups'] as $g): ?><?= badge($groupLabels[$g] ?? $g, 'neutral') ?> <?php endforeach; ?><?php else: ?>–<?php endif; ?></td>
                 <td><?= $r['auth_source'] === 'ldap' ? badge('Active Directory', 'info') : badge('Lokal', 'neutral') ?></td>
                 <td class="text-sm text-muted">
                     <?= $r['last_login_at'] ? e(fmt_datetime($r['last_login_at'])) : 'noch nie' ?>

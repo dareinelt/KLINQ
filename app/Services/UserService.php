@@ -21,7 +21,7 @@ final class UserService
     public const USERNAME_PATTERN = '/^[a-zA-Z0-9][a-zA-Z0-9._\-@]{2,63}$/';
 
     /** Felder, die im Audit-Log erscheinen dürfen */
-    private const AUDIT_FIELDS = ['username', 'display_name', 'email', 'role', 'is_active', 'auth_source'];
+    private const AUDIT_FIELDS = ['username', 'display_name', 'email', 'role', 'is_active', 'auth_source', 'groups'];
 
     public function __construct(
         private readonly UserRepository $users,
@@ -46,6 +46,7 @@ final class UserService
             'auth_source' => 'local',
             'is_active' => $data['is_active'],
         ]);
+        $this->users->syncGroups($id, $data['group_ids']);
         $this->audit->log('create', 'user', $id, $data['username'], null, $this->auditData($data + ['auth_source' => 'local']));
 
         return $id;
@@ -66,6 +67,7 @@ final class UserService
             'role_id' => $this->users->roleId($data['role']),
             'is_active' => $data['is_active'],
         ]);
+        $this->users->syncGroups($id, $data['group_ids']);
         $this->audit->log('update', 'user', $id, (string) $existing['username'], $this->auditData($existing), $this->auditData($data + ['username' => $existing['username'], 'auth_source' => $existing['auth_source']]));
     }
 
@@ -127,6 +129,14 @@ final class UserService
             throw ValidationException::single('username', 'Dieser Benutzername ist bereits vergeben.');
         }
         $data['is_active'] = $data['is_active'] ? 1 : 0;
+
+        // Berechtigungsgruppen (z. B. „Statistik“): einem Benutzer können mehrere zugeordnet werden.
+        // Unbekannte/fremde IDs werden stillschweigend verworfen.
+        $validGroupIds = array_column($this->users->permissionGroups(), 'id');
+        $requested = array_map('intval', (array) ($input['groups'] ?? []));
+        $data['group_ids'] = array_values(array_intersect($requested, array_map('intval', $validGroupIds)));
+        $groupNames = array_column($this->users->permissionGroups(), 'name', 'id');
+        $data['groups'] = array_values(array_map(static fn (int $id): string => (string) $groupNames[$id], $data['group_ids']));
 
         return $data;
     }

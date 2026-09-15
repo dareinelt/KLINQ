@@ -43,11 +43,13 @@ $all = [
 $readOnly = array_values(array_filter($all, static fn (string $p): bool => str_ends_with($p, '.view') && $p !== 'audit.view' && $p !== 'helpdesk.view'));
 
 // Rechte des Help-Desk-Agenten (Tickets bearbeiten, ohne Stammdaten/SLA-Pflege)
+// helpdesk.reports (Ticket-Berichte) ist bewusst nicht enthalten: das Recht wird nur über
+// die Berechtigungsgruppe "Statistik" vergeben (siehe $groups unten), ausgenommen Admins.
 $helpdeskAgent = [
     'portal.view', 'portal.create',
     'helpdesk.view', 'helpdesk.create', 'helpdesk.update', 'helpdesk.assign',
     'helpdesk.comment', 'helpdesk.internal_note', 'helpdesk.close', 'helpdesk.reopen',
-    'helpdesk.merge', 'helpdesk.worklog', 'helpdesk.delete', 'helpdesk.reports',
+    'helpdesk.merge', 'helpdesk.worklog', 'helpdesk.delete',
     'knowledgebase.view', 'knowledgebase.manage',
 ];
 $helpdeskLead = array_merge($helpdeskAgent, [
@@ -96,5 +98,15 @@ return [
         'helpdesk_lead' => 'Help Desk Leitung',
         'helpdesk_agent' => 'Help Desk Agent',
         'readonly' => 'Nur lesen',
+    ],
+    // Berechtigungsgruppen: zusätzlich zur Rolle zuweisbare Rechte, einem Benutzer können
+    // mehrere Gruppen zugeordnet werden. "Statistik" gewährt Zugriff auf die
+    // Help-Desk-Ticket-Berichte (helpdesk.reports); Admins haben dieses Recht ohnehin über
+    // ihre Rolle.
+    'groups' => [
+        'statistik' => ['helpdesk.reports'],
+    ],
+    'group_labels' => [
+        'statistik' => 'Statistik',
     ],
 ];
