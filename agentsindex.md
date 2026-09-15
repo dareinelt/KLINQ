@@ -52,10 +52,10 @@ Webbasierte Inventar- und Assetverwaltung für IT-Hardware (PCs, Mobilgeräte, N
 | `app/Exceptions/` | `HttpException`, `NotFoundException`, `ForbiddenException`, `ValidationException`, `ConflictException` |
 | `routes/web.php`, `routes/modules/*.php` | Routen je Modul, **jede Route trägt ihre Berechtigung** |
 | `resources/views/` | PHP-Templates je Modul, `partials/` (Layouts, Helfer, Filterleiste, Pagination, Flash, Icons) |
-| `config/` | `app.php`, `database.php`, `ldap.php`, `mail.php`, `uploads.php`, `permissions.php` – gespeist aus Umgebungsvariablen |
+| `config/` | `app.php`, `database.php`, `ldap.php`, `kerberos.php`, `mail.php`, `uploads.php`, `permissions.php` – gespeist aus Umgebungsvariablen |
 | `database/migrations/` | Nummerierte SQL-Migrationen (001–007), genau einmal angewendet über `schema_migrations` |
 | `database/seeders/`, `database/fixtures/` | Stammdaten (Rollen, Assettypen, Status) bzw. Fake-AD-Daten |
-| `bin/` | CLI: `migrate.php`, `sync-ad.php`, `build-docs-pdf.py` (Handbuch-PDF) |
+| `bin/` | CLI: `migrate.php`, `sync-ad.php`, `kerberos-setup.php` (Windows-SSO), `build-docs-pdf.py` (Handbuch-PDF) |
 | `storage/` | `uploads/`, `logs/`, `labels/`, `tmp/` – außerhalb des Webroots, als Docker-Volumes eingebunden |
 | `tests/` | Eigener Runner `tests/run.php`, `Unit/`, `Integration/`, `Support/` |
 | `docker/` | `php/` (Dockerfile, vHost, php.ini, Entrypoint, Scheduler), `pdf/`, `mail/`, `mysql/init/` |
@@ -102,6 +102,7 @@ Jedes Modul folgt demselben Schnitt: **Routendatei → Controller → Service �
 | Etiketten | `routes/modules/labels.php` | `LabelController` | `LabelService`, `Support\QrCode` | `labels/`, `partials/label.php` | [labels](docs/labels.md) |
 | Stammdaten | `routes/modules/masterdata.php` | `LocationController`, `CostCenterController`, `ManufacturerController`, `ArticleController`, `SupplierController`, `EmployeeController` (alle über `CrudController`) | `LocationService`, `CostCenterService`, `ManufacturerService`, `ArticleService`, `SupplierService`, `EmployeeService` | `locations/`, `cost_centers/`, `manufacturers/`, `articles/`, `suppliers/`, `employees/` | [datenmodell](docs/datenmodell.md) |
 | AD-Sync | `routes/modules/ad.php` | `AdSyncController` | `Ad\EmployeeSyncService`, `Ad\AdUserMapper`, `Ldap\*` | `admin/` | [ad-sync](docs/ad-sync.md) |
+| Windows-SSO (Kerberos) | `routes/modules/sso.php` | `SsoController` | `Security\WindowsIdentity`, `Sso\KerberosSetupService`, `Support\Kerberos` | `sso/` | [windows-sso](docs/windows-sso.md) |
 | Offline/PWA | `routes/modules/offline.php` | `Api\OfflineController` | `OfflineSyncService` | `public/js/offline*.js`, `public/sw.js` | [offline](docs/offline.md) |
 | Berichte | `routes/modules/reports.php` | `ReportController` | `ReportService`, `Support\CsvWriter` | `reports/` | [berichte](docs/berichte.md) |
 | Import | `routes/modules/imports.php` | `ImportController` | `ImportService`, `Support\CsvReader` | `imports/` | [import](docs/import.md) |
@@ -229,6 +230,7 @@ docker compose exec app php tests/run.php # alle Tests inkl. Integration (Test-D
 | Navigation/Modulwechsel | `Support/ModuleNavigation`, `resources/views/partials/app_layout.php`, `public/css/layout/shell.css` |
 | PDF/E-Mail | `PdfClient`, `MailClient`, `docker/pdf/server.py`, `docker/mail/server.py` |
 | AD-Anbindung | `Ad/EmployeeSyncService`, `Ad/AdUserMapper`, `Ldap/*`, `AD_*`-Variablen, `docs/ad-sync.md` |
+| Windows-Benutzererkennung | `Security/WindowsIdentity`, `Sso/KerberosSetupService`, `bin/kerberos-setup.php`, `KERBEROS_*`-Variablen, `docs/windows-sso.md` |
 
 ---
 

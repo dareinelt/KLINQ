@@ -24,6 +24,7 @@ Anwendung: <http://localhost:8080> – Anmeldung mit `ADMIN_USERNAME` / `ADMIN_P
 - [Architektur](docs/architektur.md)
 - [Datenmodell](docs/datenmodell.md)
 - [AD-Synchronisation](docs/ad-sync.md)
+- [Windows-SSO per Kerberos](docs/windows-sso.md)
 - [Assets & Inventarnummern](docs/assets.md)
 - [Etiketten & QR-Codes](docs/labels.md)
 - [Bestandsmanagement – Entnahme & Retoure](docs/movements.md)

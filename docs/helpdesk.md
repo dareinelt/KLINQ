@@ -92,7 +92,7 @@ Bewusst minimales Formular für Personen, die sich **nicht** anmelden sollen ode
 
 **Erkennung des Anwenders** (`ReporterIdentityService`, in dieser Reihenfolge):
 
-1. **Windows-SSO**: `REMOTE_USER` / `REDIRECT_REMOTE_USER` / `AUTH_USER` / `PHP_AUTH_USER`, gesetzt vom Webserver (IIS mit Windows-Authentifizierung oder Apache mit Kerberos/NTLM). `DOMAIN\benutzer` und `benutzer@domain.tld` werden auf den Anmeldenamen reduziert.
+1. **Windows-SSO**: `REMOTE_USER` / `REDIRECT_REMOTE_USER` / `AUTH_USER` / `PHP_AUTH_USER`, gesetzt vom Webserver. Der mitgelieferte Apache handelt dafür Kerberos aus (`mod_auth_gssapi`, Keytab aus dem AD-Dienstkonto – siehe [Windows-SSO](windows-sso.md)); ist `KERBEROS_ENABLED=true`, leitet `/stoerung` einmalig auf `/sso/pruefung` um, um den Benutzer zu ermitteln. `DOMAIN\benutzer` und `benutzer@domain.tld` werden auf den Anmeldenamen reduziert.
 2. **Proxy-Header** (Standard: `X-Remote-User`) – nur wenn `HELPDESK_QUICK_REPORT_TRUST_USER_HEADER=true`, da ein Header ohne vorgelagerten, vertrauenswürdigen Proxy fälschbar ist.
 3. **App-Sitzung**: ist der Besucher zufällig in der Assetverwaltung angemeldet, wird sein Konto genutzt.
 

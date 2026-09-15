@@ -16,6 +16,14 @@ if [ "${SKIP_MIGRATIONS:-0}" != "1" ]; then
     php bin/migrate.php
 fi
 
+# Windows-SSO: Keytab (aus dem AD-Dienstkonto), krb5.conf und Apache-Konfiguration erzeugen.
+# Schlaegt die Einrichtung fehl, startet Apache ohne Kerberos weiter – die Anwendung bleibt nutzbar.
+if [ "${KERBEROS_ENABLED:-false}" = "true" ]; then
+    if ! php bin/kerberos-setup.php; then
+        echo "[entrypoint] Kerberos-Einrichtung fehlgeschlagen - Windows-SSO bleibt inaktiv." >&2
+    fi
+fi
+
 mkdir -p storage/uploads storage/logs storage/labels storage/tmp
 chown -R www-data:www-data storage
 

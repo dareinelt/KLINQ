@@ -9,13 +9,14 @@ use App\Core\Request;
 use App\Repositories\EmployeeRepository;
 use App\Repositories\UserRepository;
 use App\Security\CurrentUser;
+use App\Security\WindowsIdentity;
 use App\Services\Ad\AdUserLookupService;
 
 /**
  * Erkennt den Melder einer Störungsmeldung ohne zusätzliche Eingabefelder.
  *
  * Reihenfolge der Benutzererkennung:
- *  1. Windows-Anmeldung am Webserver (REMOTE_USER/AUTH_USER, gesetzt von Kerberos/NTLM bzw. IIS)
+ *  1. Windows-Anmeldung am Webserver (Kerberos/SPNEGO über mod_auth_gssapi, siehe WindowsIdentity)
  *  2. optionaler Proxy-Header (nur wenn ausdrücklich freigegeben, da fälschbar)
  *  3. bestehende Anmeldung in der Anwendung (Sitzung)
  *
@@ -26,16 +27,23 @@ use App\Services\Ad\AdUserLookupService;
  */
 final class ReporterIdentityService
 {
-    /** Vom Webserver gesetzte Variablen mit dem angemeldeten Windows-Konto */
-    private const SERVER_KEYS = ['REMOTE_USER', 'REDIRECT_REMOTE_USER', 'AUTH_USER', 'PHP_AUTH_USER'];
-
     public function __construct(
         private readonly Config $config,
         private readonly CurrentUser $currentUser,
         private readonly UserRepository $users,
         private readonly EmployeeRepository $employees,
-        private readonly AdUserLookupService $directory
+        private readonly AdUserLookupService $directory,
+        private readonly WindowsIdentity $windows
     ) {}
+
+    /**
+     * Ziel der einmaligen Kerberos-Aushandlung, falls der Windows-Benutzer noch unbekannt ist.
+     * Der Aufrufer leitet dorthin weiter; ohne aktiviertes SSO liefert die Methode null.
+     */
+    public function ssoProbeRedirect(Request $request): ?string
+    {
+        return $this->windows->probeRedirect($request);
+    }
 
     /**
      * Melderdaten zur aktuellen Anfrage zusammenstellen.
@@ -96,11 +104,9 @@ final class ReporterIdentityService
      */
     private function username(Request $request): array
     {
-        foreach (self::SERVER_KEYS as $key) {
-            $value = self::normalize($request->serverValue($key));
-            if ($value !== null) {
-                return [$value, 'sso'];
-            }
+        $value = $this->windows->detect($request);
+        if ($value !== null) {
+            return [$value, 'sso'];
         }
         if ((bool) $this->config->get('helpdesk.quick_report.trust_user_header', false)) {
             $header = (string) $this->config->get('helpdesk.quick_report.user_header', 'X-Remote-User');
@@ -122,21 +128,7 @@ final class ReporterIdentityService
     /** „DOMAIN\\benutzer“, „benutzer@domain.tld“ und „benutzer“ auf den Anmeldenamen reduzieren. */
     public static function normalize(?string $raw): ?string
     {
-        $value = trim((string) $raw);
-        if ($value === '') {
-            return null;
-        }
-        $backslash = strrpos($value, '\\');
-        if ($backslash !== false) {
-            $value = substr($value, $backslash + 1);
-        }
-        $at = strpos($value, '@');
-        if ($at !== false) {
-            $value = substr($value, 0, $at);
-        }
-        $value = trim($value);
-
-        return $value !== '' && preg_match('/^[a-zA-Z0-9._\-]{1,100}$/', $value) === 1 ? $value : null;
+        return WindowsIdentity::normalize($raw);
     }
 
     /** Rechnername per Reverse-DNS; liefert null, wenn nur die IP zurückkommt. */

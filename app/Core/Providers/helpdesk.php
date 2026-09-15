@@ -35,6 +35,7 @@ use App\Repositories\TicketWorklogRepository;
 use App\Repositories\UserRepository;
 use App\Security\CurrentUser;
 use App\Security\Permissions;
+use App\Security\WindowsIdentity;
 use App\Services\Ad\AdUserLookupService;
 use App\Services\AuditLogService;
 use App\Services\DocumentService;
@@ -258,7 +259,8 @@ return static function (Container $c): void {
         $c->get(CurrentUser::class),
         $c->get(UserRepository::class),
         $c->get(EmployeeRepository::class),
-        $c->get(AdUserLookupService::class)
+        $c->get(AdUserLookupService::class),
+        $c->get(WindowsIdentity::class)
     ));
     $c->singleton(QuickReportController::class, static fn (Container $c): QuickReportController => new QuickReportController(
         $c->get(View::class),
