@@ -64,7 +64,7 @@ erDiagram
 | `asset_categories` | je Typ: `name`, `sort_order` |
 | `asset_statuses` | `code`, `name`, `color`, `is_available`, `is_final` |
 | `manufacturers` | `name` (eindeutig), `short_name`, `website`, `contact`, `phonetic_key` (Kölner Phonetik) und `normalized_name` für die Dublettenwarnung |
-| `articles` | `manufacturer_id`, `asset_type_id`, `asset_category_id`, `name`, `article_number`, `normalized_name`/`phonetic_key` (Dublettenwarnung), `is_handover_relevant` (Asset erscheint im Übergabeprotokoll) |
+| `articles` | `manufacturer_id`, `asset_type_id`, `asset_category_id`, `name`, `article_number`, `normalized_name`/`phonetic_key` (Dublettenwarnung), `is_handover_relevant` (Asset erscheint im Übergabeprotokoll), `is_consumable` mit `minimum_stock`/`stock_quantity` (Verbrauchsmaterial ohne Assets, Grundlage der Bestellvorschläge) |
 | `suppliers` | Firma, Anschrift, Kontakt, `customer_number` |
 | `locations` | Baum über `parent_id`; `type` (`site|building|floor|room|workplace|warehouse|other`), `code`, materialisierter `full_path` und `depth` für schnelle Anzeige/Suche |
 | `cost_centers` | `number` (eindeutig), `description`, optional `location_id` |
@@ -75,7 +75,9 @@ Alle Stammdaten werden **deaktiviert statt gelöscht** (`is_active`), damit Hist
 
 ### Einkauf
 
-`purchase_orders` (`order_number` eindeutig, `supplier_id`, `status` `draft → ordered → partially_delivered → delivered → closed`, alternativ `cancelled`, `expected_delivery_date`, `cost_center_id`) mit `purchase_order_items` (`position`, `article_id`/`asset_type_id`, `description`, `quantity`, `quantity_received`, `unit_price`, `creates_assets`). `goods_receipts` (Lieferung: `received_at`, `delivery_note_number`, `location_id`) mit `goods_receipt_items`, die je Position die gelieferte Menge festhalten und bei `creates_assets` pro Stück ein Asset anlegen (`asset_id`, `serial_number`). Details: [Einkauf](einkauf.md).
+`purchase_orders` (`order_number` eindeutig, `supplier_id`, `status` `draft → ordered → partially_delivered → delivered → closed`, alternativ `cancelled`, `expected_delivery_date`, `cost_center_id`) mit `purchase_order_items` (`position`, `article_id`/`asset_type_id`, `description`, `quantity`, `quantity_received`, `unit_price`, `creates_assets`). `goods_receipts` (Lieferung: `received_at`, `delivery_note_number`, `location_id`) mit `goods_receipt_items`, die je Position die gelieferte Menge festhalten und bei `creates_assets` pro Stück ein Asset anlegen (`asset_id`, `serial_number`) – bei Verbrauchsartikeln stattdessen `articles.stock_quantity` erhöhen.
+
+`purchase_order_templates` (`name`, `supplier_id`, `cost_center_id`, `note`, `created_by`) mit `purchase_order_template_items` (`position` je Vorlage eindeutig, `article_id`/`asset_type_id`, `description`, `quantity`, `unit_price`, `creates_assets`, `note`) speichern wiederverwendbare Bestellungen. `purchase_requests` (`requested_by`/`requested_by_name`, `cost_center_id`, `status` `open → converted`, alternativ `cancelled`, `note`, `purchase_order_id` der erzeugten Bestellung) mit `purchase_request_items` (`article_id`, `description`, `quantity`, `note`) halten die Bedarfsmeldungen. Details: [Einkauf](einkauf.md).
 
 ### Lizenzen
 
