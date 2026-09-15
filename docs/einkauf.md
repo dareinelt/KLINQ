@@ -15,7 +15,7 @@ Die Liste zeigt Bestellungen mit Lieferant, Bestell- und Lieferdatum, Besteller,
 | Entwürfe, Bestellt, Teilgeliefert, Geliefert, Abgeschlossen, Storniert | jeweils genau ein Status |
 | **Alle** | ohne Statusfilter |
 
-Zusätzlich lassen sich Volltext (Bestellnummer, Lieferant, Bemerkung, Positionstext), Lieferant, Kostenstelle und Bestelldatum-Zeitraum filtern. Das Dashboard verlinkt die Zahl der offenen Bestellungen, die Lieferantenseite alle Bestellungen des Lieferanten.
+Zusätzlich lassen sich Volltext (Bestellnummer, Lieferant, Bemerkung, Positionstext), Lieferant, Kostenstelle und Bestelldatum-Zeitraum filtern. Die Kopfzeile verlinkt außerdem Bedarfsmeldungen (`/orders/requests`) und Bestellvorlagen (`/orders/templates`). Das Dashboard verlinkt die Zahl der offenen Bestellungen, die Lieferantenseite alle Bestellungen des Lieferanten.
 
 ### Kopfdaten
 
@@ -70,12 +70,43 @@ Weitere Felder: Menge (1–10 000), Netto-Einzelpreis (deutsche oder englische S
 - Die Menge kann nicht unter die bereits gelieferte Menge gesenkt werden; Positionen mit Lieferungen lassen sich nicht löschen.
 - Positionsnummern werden nicht wiederverwendet.
 
-### Vorlagen, Bedarfe und Verbrauchsmaterial
+## Bestellvorlagen (`/orders/templates`)
 
-- Bestehende Bestellungen lassen sich als **Bestellvorlage** speichern und erzeugen später mit einem Klick einen neuen Entwurf samt Positionen.
-- Über **Bedarfsmeldungen** können Anwender Artikel oder freie Bedarfe mit Menge, Kostenstelle und Hinweis an den Einkauf übergeben. Der Einkauf übernimmt offene Meldungen mit einem ausgewählten Lieferanten in einen Bestellentwurf.
-- Artikel können als **Verbrauchsmaterial** mit aktuellem Bestand und Mindestbestand markiert werden. Diese Artikel erzeugen niemals Assets oder Inventarnummern; beim Wareneingang erhöht sich ausschließlich ihr Lagerbestand.
-- Liegt der Bestand auf oder unter dem Mindestbestand, erscheint der Artikel unter **Bestellvorschläge**. Dort wird ein Entwurf bis zum doppelten Mindestbestand erzeugt.
+Wiederkehrende Bestellungen – Standard-Notebook, Monitorpaket, Verbrauchsmaterial – lassen sich als Vorlage ablegen: `Als Vorlage speichern` auf der Bestellseite fragt einen Namen ab (vorbelegt mit dem Lieferanten) und kopiert Lieferant, Kostenstelle, Bemerkung und **alle Positionen** in `purchase_order_templates` / `purchase_order_template_items`. Die Bestellung selbst bleibt unverändert; Vorlagen sind also unabhängige Kopien und ändern sich nicht mehr mit.
+
+Die Übersicht listet Name, Lieferant, Kostenstelle und Positionsanzahl. `Entwurf erstellen` legt eine neue Bestellung im Status *Entwurf* an – mit neuer Bestellnummer – und fügt die Positionen über die normalen Positionsregeln ein (Assettyp aus dem Artikel, Verbrauchsmaterial ohne Assets). Anschließend wird direkt auf den Entwurf verzweigt, der wie jede andere Bestellung geprüft, ergänzt und als *bestellt* markiert wird. Vorlagen ohne Lieferant lassen sich nicht verwenden; der Aufruf wird mit einem Hinweis abgebrochen.
+
+## Bedarfsmeldungen (`/orders/requests`)
+
+Bedarfsmeldungen sind der Weg für alle, die selbst nicht bestellen dürfen: Jede Rolle mit `orders.view` kann melden, was gebraucht wird, ohne Zugriff auf Lieferanten und Preise.
+
+| Feld | Bedeutung |
+|---|---|
+| Artikel | Auswahl aus dem Artikelstamm (nur aktive Artikel); die Bezeichnung wird aus `Hersteller Artikelname` übernommen |
+| Bezeichnung | Freitext, wenn kein Artikel passt – ohne Artikel Pflicht |
+| Menge | mindestens 1 |
+| Kostenstelle | optional, wird in die spätere Bestellung übernommen |
+| Begründung / Hinweis | Freitext, landet als Bemerkung in der Bestellung |
+
+Die Liste zeigt eigene Meldungen; mit `orders.manage` sind alle Meldungen sichtbar – sortiert nach Status (offen zuerst) und Meldedatum. Der Einkauf wählt zu einer offenen Meldung einen Lieferanten und übernimmt sie mit `In Bestellung übernehmen`: In einer Transaktion wird die Meldung auf *Übernommen* gesetzt, ein Bestellentwurf mit der Bemerkung `Aus Bedarfsmeldung #<Nr.>` angelegt und jede Bedarfsposition als Bestellposition eingefügt. Die Meldung verlinkt danach dauerhaft auf die Bestellung.
+
+Der Statuswechsel erfolgt als atomare Reservierung (`open → converted`); eine zweite, gleichzeitige Übernahme schlägt mit einem Konflikt fehl, sodass keine doppelten Bestellungen entstehen.
+
+| Status | Bedeutung |
+|---|---|
+| `open` | gemeldet, noch nicht bearbeitet – erscheint auf dem Dashboard des Melders |
+| `converted` | in einen Bestellentwurf übernommen (`purchase_order_id` gesetzt) |
+| `cancelled` | verworfen |
+
+## Verbrauchsmaterial und Bestellvorschläge (`/orders/replenishment`)
+
+Artikel, die nicht inventarisiert werden (Toner, Kabel, Batterien), lassen sich im Artikelstamm als **Verbrauchsmaterial** kennzeichnen und erhalten dann *Mindestbestand* und *Aktuellen Bestand*. Wird der Haken entfernt, setzt die Anwendung Mindestbestand und Bestand zurück.
+
+- Positionen mit einem Verbrauchsartikel erzeugen **nie** Assets oder Inventarnummern – das Häkchen *erzeugt Assets* wird beim Speichern automatisch entfernt und die Position auf der Bestellseite als *Verbrauchsmaterial* gekennzeichnet.
+- Beim Wareneingang erhöht die gelieferte Menge stattdessen den Lagerbestand des Artikels (`articles.stock_quantity`) – in derselben Transaktion wie die Lieferung.
+- Die Artikelliste zeigt `Bestand / Mindestbestand`, gelb markiert, sobald der Mindestbestand erreicht ist.
+
+Die Seite **Bestellvorschläge** listet alle aktiven Verbrauchsartikel mit gepflegtem Mindestbestand, deren Bestand kleiner oder gleich dem Mindestbestand ist, samt Vorschlagsmenge (Auffüllen bis zum doppelten Mindestbestand, mindestens 1 Stück). Nach Auswahl eines Lieferanten erzeugt `Bestellentwurf erzeugen` eine Bestellung im Status *Entwurf* mit der Bemerkung *Automatisch aus Bestandsunterschreitungen erstellt* und je Vorschlag eine Position. Sind alle Mindestbestände erfüllt, bleibt die Seite leer.
 
 ## Wareneingang
 
@@ -89,8 +120,9 @@ Beim Buchen passiert in **einer Transaktion**:
 
 1. `goods_receipts` und je Position eine Zeile `goods_receipt_items` (Menge, Bemerkung) werden angelegt.
 2. `purchase_order_items.quantity_received` wird erhöht; die Restmenge darf nicht überschritten werden.
-3. Für jede gelieferte Einheit einer Asset-Position entsteht ein Asset über den regulären `AssetService` – mit neuer Inventarnummer, Assettyp, Artikel, Seriennummer, Lieferant, Kaufdatum (= Lieferdatum), Einkaufspreis (= Einzelpreis), Kostenstelle der Bestellung, Lagerort der Lieferung, Status *Lagerbestand* sowie den Verweisen `purchase_order_id`, `purchase_order_item_id`, `goods_receipt_id`. Die Asset-Historie erhält den Eintrag *Wareneingang*.
-4. Der Bestellstatus wird neu berechnet und die Buchung im Audit-Log festgehalten.
+3. Bei Positionen mit einem Verbrauchsartikel wird stattdessen `articles.stock_quantity` um die gelieferte Menge erhöht – es entstehen keine Assets.
+4. Für jede gelieferte Einheit einer Asset-Position entsteht ein Asset über den regulären `AssetService` – mit neuer Inventarnummer, Assettyp, Artikel, Seriennummer, Lieferant, Kaufdatum (= Lieferdatum), Einkaufspreis (= Einzelpreis), Kostenstelle der Bestellung, Lagerort der Lieferung, Status *Lagerbestand* sowie den Verweisen `purchase_order_id`, `purchase_order_item_id`, `goods_receipt_id`. Die Asset-Historie erhält den Eintrag *Wareneingang*.
+5. Der Bestellstatus wird neu berechnet und die Buchung im Audit-Log festgehalten.
 
 Schlägt ein Schritt fehl – etwa weil eine Seriennummer im Assettyp bereits vergeben ist –, wird die gesamte Lieferung verworfen und der Fehler am betroffenen Feld angezeigt. Eingaben bleiben erhalten.
 
@@ -106,8 +138,8 @@ Zur Bestellung können Bestellung, Auftragsbestätigung, Lieferschein, Rechnung 
 
 | Recht | admin | einkauf | lager | assetmanagement | readonly |
 |---|---|---|---|---|---|
-| `orders.view` – Bestellungen sehen | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `orders.manage` – anlegen, ändern, Status, Positionen, stornieren | ✓ | ✓ | – | – | – |
+| `orders.view` – Bestellungen, Vorlagen, Bestellvorschläge sehen und Bedarf melden | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `orders.manage` – anlegen, ändern, Status, Positionen, stornieren, Vorlagen speichern/verwenden, Bedarfe übernehmen, Bestellvorschläge erzeugen | ✓ | ✓ | – | – | – |
 | `orders.receive` – Wareneingang buchen | ✓ | ✓ | ✓ | – | – |
 | `documents.manage` – Dokumente hochladen/löschen | ✓ | ✓ | ✓ | ✓ | – |
 
@@ -127,13 +159,18 @@ erDiagram
     purchase_order_items ||--o{ assets : erzeugt
     goods_receipts ||--o{ assets : "angelegt bei"
     purchase_orders ||--o{ documents : "entity_type = purchase_order"
+    purchase_order_templates ||--|{ purchase_order_template_items : enthaelt
+    suppliers |o--o{ purchase_order_templates : liefert
+    purchase_requests ||--|{ purchase_request_items : enthaelt
+    purchase_requests |o--o| purchase_orders : "uebernommen in"
+    articles |o--o{ purchase_request_items : referenziert
 ```
 
-Migration `002_goods_receipt_items.sql` ergänzt `goods_receipt_items.note`, `goods_receipts.location_id` und `assets.goods_receipt_id`.
+Migration `002_goods_receipt_items.sql` ergänzt `goods_receipt_items.note`, `goods_receipts.location_id` und `assets.goods_receipt_id`. Migration `007_procurement_workflows.sql` legt `purchase_order_templates`, `purchase_order_template_items`, `purchase_requests` und `purchase_request_items` an und ergänzt `articles` um `is_consumable`, `minimum_stock` und `stock_quantity`.
 
 ## Tests
 
-`tests/Integration/PurchaseOrderServiceIntegrationTest.php` deckt ab: fortlaufende Bestellnummern, Validierung (doppelte Nummer, Lieferdatum vor Bestelldatum), Statusübergänge (bestellt nur mit Positionen, stornieren nur ohne Lieferung, abschließen/wieder öffnen), Positionsregeln (Typ aus Artikel, Assettyp-Pflicht, Sperre nach erster Lieferung), Teil- und Restlieferung mit Asset-Erzeugung, Historie und Verknüpfungen, Ablehnung von Übermengen, doppelten und bereits vergebenen Seriennummern inkl. Rollback sowie die Rollenrechte.
+`tests/Integration/PurchaseOrderServiceIntegrationTest.php` deckt ab: fortlaufende Bestellnummern, Validierung (doppelte Nummer, Lieferdatum vor Bestelldatum), Statusübergänge (bestellt nur mit Positionen, stornieren nur ohne Lieferung, abschließen/wieder öffnen), Positionsregeln (Typ aus Artikel, Assettyp-Pflicht, Sperre nach erster Lieferung), Teil- und Restlieferung mit Asset-Erzeugung, Historie und Verknüpfungen, Ablehnung von Übermengen, doppelten und bereits vergebenen Seriennummern inkl. Rollback, Verbrauchsmaterial (Wareneingang ohne Assets, nur Bestandserhöhung), Bedarfsmeldungen (Artikelauswahl ohne Freitext, einmalige Übernahme) sowie die Rollenrechte.
 
 ```bash
 docker compose exec app php tests/run.php --integration --filter=PurchaseOrder

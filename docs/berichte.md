@@ -21,6 +21,15 @@ Die Karte *Offene Aufgaben* steht oben und listet nur, was aktuell eine Handlung
 | Erwartete Lieferungen (14 Tage) | Liefertermin innerhalb von 14 Tagen | `/orders?status=open` | blau |
 | Lizenzen laufen ab (60 Tage) | Ablaufdatum innerhalb von 60 Tagen | `/licenses?expiring=60` | gelb |
 
+### Meine Einkaufsaufgaben
+
+Für Benutzer mit `orders.view` erscheint darunter die persönliche Karte *Meine Einkaufsaufgaben* – ausgeblendet, solange nichts offen ist:
+
+| Aufgabe | Bedingung | Ziel | Stufe |
+|---|---|---|---|
+| Bestellentwurf vervollständigen | eigene Bestellung im Status `draft` (die 5 zuletzt geänderten) | `/orders/{id}` | gelb |
+| Bedarfsmeldung ist noch offen | eigene Bedarfsmeldung im Status `open` (die 5 jüngsten) | `/orders/requests` | blau |
+
 ### Kennzahlen
 
 Assets gesamt, im Lager, ausgegeben, defekt, in Reparatur, offene Entnahmen, offene Retouren, Rückgabe überfällig, Bewegungen heute, offene Bestellungen, erwartete Lieferungen (mit Anzahl überfälliger), ablaufende Lizenzen. Jede Karte verlinkt auf die passend gefilterte Liste.

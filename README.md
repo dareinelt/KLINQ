@@ -36,6 +36,14 @@ Anwendung: <http://localhost:8080> – Anmeldung mit `ADMIN_USERNAME` / `ADMIN_P
 - [Audit-Log & Benutzerverwaltung](docs/audit.md)
 - [Backup & Wiederherstellung](docs/backup.md)
 
+Die gesamte Dokumentation gibt es zusätzlich als PDF mit Inhaltsverzeichnis: [docs/handbuch.pdf](docs/handbuch.pdf).
+Neu erzeugen nach Änderungen an den Markdown-Dateien:
+
+```bash
+pip install weasyprint==63.1 markdown   # nur für den Build nötig
+python3 bin/build-docs-pdf.py
+```
+
 ## Tests
 
 ```bash
