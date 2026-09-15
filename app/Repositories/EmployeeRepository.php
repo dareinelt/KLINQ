@@ -90,6 +90,12 @@ final class EmployeeRepository extends BaseRepository
         return $this->fetchAll('SELECT id, display_name, department, personnel_number FROM employees WHERE is_active = 1 ORDER BY last_name, first_name');
     }
 
+    /** Für die phonetische Autovervollständigung (Melder-Suche); enthält zusätzlich Benutzername für die Ergebnisanzeige. @return array<int,array<string,mixed>> */
+    public function activeForAutocomplete(): array
+    {
+        return $this->fetchAll('SELECT id, display_name, username, department, personnel_number FROM employees WHERE is_active = 1 ORDER BY last_name, first_name');
+    }
+
     /** @return array<int,string> */
     public function departments(): array
     {

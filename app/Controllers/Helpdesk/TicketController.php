@@ -442,7 +442,7 @@ final class TicketController extends HelpdeskBaseController
             'tags' => $ticket !== null ? $this->tags->forTicket((int) $ticket['id']) : [],
             'impactLabels' => TicketPriorityMatrix::IMPACT_LABELS,
             'urgencyLabels' => TicketPriorityMatrix::URGENCY_LABELS,
-            'scripts' => ['/js/helpdesk.js'],
+            'scripts' => ['/js/picker.js', '/js/helpdesk.js'],
         ]);
     }
 }

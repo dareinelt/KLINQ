@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Exceptions\ValidationException;
 use App\Repositories\EmployeeRepository;
+use App\Support\ColognePhonetic;
 use App\Support\Validator;
 
 /** Manuelle Pflege von Mitarbeitern (AD-Mitarbeiter: nur lokale Zuordnungen änderbar). */
@@ -49,6 +50,54 @@ final class EmployeeService
     {
         $this->employees->update($id, ['is_active' => $active ? 1 : 0, 'deactivated_at' => $active ? null : gmdate('Y-m-d H:i:s')]);
         $this->audit->log($active ? 'activate' : 'deactivate', 'employee', $id, (string) $existing['display_name'], ['is_active' => $existing['is_active']], ['is_active' => $active ? 1 : 0]);
+    }
+
+    /**
+     * Autovervollständigung für die Melder-Auswahl im Help Desk: findet Treffer per Teilstring
+     * (Name, Benutzername, Personalnummer, Abteilung) sowie phonetisch (Kölner Phonetik), damit
+     * z. B. „Meier“ auch „Maier“ oder „Mayer“ findet. Teilstring-Treffer werden zuerst gelistet.
+     * @return array<int,array<string,mixed>>
+     */
+    public function searchAutocomplete(string $term, int $limit = 30): array
+    {
+        $term = trim($term);
+        if ($term === '') {
+            return [];
+        }
+        $termLower = mb_strtolower($term);
+        $termCodes = self::phoneticCodes($term);
+
+        $direct = [];
+        $phonetic = [];
+        foreach ($this->employees->activeForAutocomplete() as $row) {
+            $haystack = mb_strtolower(implode(' ', array_filter([
+                $row['display_name'] ?? '',
+                $row['username'] ?? '',
+                $row['personnel_number'] ?? '',
+                $row['department'] ?? '',
+            ])));
+            if (str_contains($haystack, $termLower)) {
+                $direct[] = $row;
+                continue;
+            }
+            if ($termCodes !== [] && array_intersect($termCodes, self::phoneticCodes((string) $row['display_name'])) !== []) {
+                $phonetic[] = $row;
+            }
+        }
+
+        $byName = static fn (array $a, array $b): int => strcmp((string) $a['display_name'], (string) $b['display_name']);
+        usort($direct, $byName);
+        usort($phonetic, $byName);
+
+        return array_slice(array_merge($direct, $phonetic), 0, $limit);
+    }
+
+    /** Phonetische Codes der einzelnen Wörter eines Namens (Kölner Phonetik). @return array<int,string> */
+    private static function phoneticCodes(string $text): array
+    {
+        $words = preg_split('/\s+/', trim(ColognePhonetic::normalize($text)), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        return array_values(array_unique(array_filter(array_map([ColognePhonetic::class, 'encodeWord'], $words))));
     }
 
     /**
