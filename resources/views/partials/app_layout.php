@@ -24,7 +24,11 @@ if (!in_array($activeModule, array_column($modules, 'key'), true)) {
     $activeModule = \App\Support\ModuleNavigation::ASSETS;
 }
 $moduleLabel = \App\Support\ModuleNavigation::label($activeModule, $appName);
-$moduleIcon = $activeModule === \App\Support\ModuleNavigation::HELPDESK ? 'lifebuoy' : 'box';
+$moduleIcon = match ($activeModule) {
+    \App\Support\ModuleNavigation::HELPDESK => 'lifebuoy',
+    \App\Support\ModuleNavigation::SYSTEM => 'chart',
+    default => 'box',
+};
 $moduleHome = \App\Support\ModuleNavigation::home($activeModule, $can);
 $navItems = \App\Support\ModuleNavigation::items($activeModule, $can, $openCounts, $helpdeskEnabled);
 

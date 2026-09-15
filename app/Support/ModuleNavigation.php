@@ -9,18 +9,24 @@ use ArrayAccess;
 /**
  * Modulstruktur der Anwendung.
  *
- * Die Oberfläche ist in eigenständige Module aufgeteilt (Assetverwaltung, Help Desk).
- * Jedes Modul besitzt ein eigenes Dashboard und eine eigene Navigation; in der Topbar
- * wird über ein Dropdown zwischen den Modulen gewechselt. Diese Klasse ist die einzige
- * Quelle für Modulzuordnung und Navigationseinträge (siehe partials/app_layout.php).
+ * Die Oberfläche ist in eigenständige Module aufgeteilt (Assetverwaltung, Help Desk,
+ * Auswertung & System). Jedes Modul besitzt eine eigene Navigation; in der Topbar wird
+ * über ein Dropdown zwischen den Modulen gewechselt. Das Modul "Auswertung & System"
+ * (Berichte, Import, Audit-Log, Administration) ist dort nur für Admins sichtbar (siehe
+ * modules()). Diese Klasse ist die einzige Quelle für Modulzuordnung und
+ * Navigationseinträge (siehe partials/app_layout.php).
  */
 final class ModuleNavigation
 {
     public const ASSETS = 'assets';
     public const HELPDESK = 'helpdesk';
+    public const SYSTEM = 'system';
 
     /** Navigationsschlüssel, die zum Help-Desk-Modul gehören. */
     private const HELPDESK_PREFIXES = ['helpdesk', 'portal'];
+
+    /** Navigationsschlüssel, die zum Modul "Auswertung & System" gehören (nur für Admins). */
+    private const SYSTEM_KEYS = ['reports', 'imports', 'audit', 'admin'];
 
     /** Ermittelt das Modul zu einem Navigationsschlüssel ($activeNav). */
     public static function moduleFor(string $activeNav): string
@@ -31,22 +37,39 @@ final class ModuleNavigation
             }
         }
 
+        if (in_array($activeNav, self::SYSTEM_KEYS, true)) {
+            return self::SYSTEM;
+        }
+
         return self::ASSETS;
     }
 
     public static function label(string $module, string $appName = 'Assetverwaltung'): string
     {
-        return $module === self::HELPDESK ? 'Help Desk' : $appName;
+        return match ($module) {
+            self::HELPDESK => 'Help Desk',
+            self::SYSTEM => 'Auswertung & System',
+            default => $appName,
+        };
     }
 
     /** Startseite (Dashboard) eines Moduls für den aktuellen Benutzer. */
     public static function home(string $module, callable $can): string
     {
-        if ($module !== self::HELPDESK) {
-            return '/dashboard';
+        if ($module === self::HELPDESK) {
+            return $can('helpdesk.view') ? '/helpdesk' : '/portal';
         }
 
-        return $can('helpdesk.view') ? '/helpdesk' : '/portal';
+        if ($module === self::SYSTEM) {
+            return match (true) {
+                $can('reports.view') => '/reports',
+                $can('imports.manage') => '/imports',
+                $can('audit.view') => '/audit',
+                default => '/admin',
+            };
+        }
+
+        return '/dashboard';
     }
 
     /**
@@ -74,6 +97,17 @@ final class ModuleNavigation
             ];
         }
 
+        // Nur für Admins sichtbar (settings.manage wird ausschließlich der Rolle "admin" zugewiesen).
+        if ($can('settings.manage')) {
+            $modules[] = [
+                'key' => self::SYSTEM,
+                'label' => self::label(self::SYSTEM, $appName),
+                'icon' => 'chart',
+                'href' => self::home(self::SYSTEM, $can),
+                'description' => 'Berichte, Import, Audit-Log und Administration',
+            ];
+        }
+
         return $modules;
     }
 
@@ -91,9 +125,11 @@ final class ModuleNavigation
     {
         $count = static fn (string $key): int => (int) ($openCounts[$key] ?? 0);
 
-        return $module === self::HELPDESK
-            ? self::helpdeskItems($can, $count, $helpdeskEnabled)
-            : self::assetItems($can, $count);
+        return match ($module) {
+            self::HELPDESK => self::helpdeskItems($can, $count, $helpdeskEnabled),
+            self::SYSTEM => self::systemItems($can),
+            default => self::assetItems($can, $count),
+        };
     }
 
     /** @return list<array<string,mixed>> */
@@ -146,20 +182,30 @@ final class ModuleNavigation
             $items[] = self::link('articles', '/articles', 'tag', 'Artikel');
         }
 
-        if ($can('reports.view') || $can('imports.manage') || $can('settings.manage') || $can('audit.view')) {
-            $items[] = self::section('Auswertung & System');
-            if ($can('reports.view')) {
-                $items[] = self::link('reports', '/reports', 'chart', 'Berichte');
-            }
-            if ($can('imports.manage')) {
-                $items[] = self::link('imports', '/imports', 'import', 'Import');
-            }
-            if ($can('audit.view')) {
-                $items[] = self::link('audit', '/audit', 'shield', 'Audit-Log');
-            }
-            if ($can('settings.manage')) {
-                $items[] = self::link('admin', '/admin', 'settings', 'Administration');
-            }
+        return $items;
+    }
+
+    /**
+     * Navigationseinträge des Moduls "Auswertung & System" (nur für Admins über das
+     * Kopfzeilen-Dropdown erreichbar, siehe modules()).
+     *
+     * @return list<array<string,mixed>>
+     */
+    private static function systemItems(callable $can): array
+    {
+        $items = [];
+
+        if ($can('reports.view')) {
+            $items[] = self::link('reports', '/reports', 'chart', 'Berichte');
+        }
+        if ($can('imports.manage')) {
+            $items[] = self::link('imports', '/imports', 'import', 'Import');
+        }
+        if ($can('audit.view')) {
+            $items[] = self::link('audit', '/audit', 'shield', 'Audit-Log');
+        }
+        if ($can('settings.manage')) {
+            $items[] = self::link('admin', '/admin', 'settings', 'Administration');
         }
 
         return $items;
