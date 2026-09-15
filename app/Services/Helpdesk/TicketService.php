@@ -316,6 +316,15 @@ final class TicketService
     // ------------------------------------------------------------------ Ändern
 
     /**
+     * Der Beschreibungstext eines bestehenden Tickets darf nur von Help-Desk-Administratoren
+     * geändert werden; alle anderen Bearbeiter behalten den ursprünglichen Text bei.
+     */
+    public function canEditDescription(): bool
+    {
+        return $this->currentUser->can('helpdesk.admin');
+    }
+
+    /**
      * Stammdaten eines Tickets ändern (nicht Status/Zuweisung – dafür eigene Methoden).
      * @param array<string,mixed> $input
      * @return array<string,mixed>
@@ -325,6 +334,10 @@ final class TicketService
         $this->currentUser->require('helpdesk.update');
         $ticket = $this->get($id);
         $this->assertNotMerged($ticket);
+        if (!$this->canEditDescription()) {
+            // Der Beschreibungstext darf nur von Help-Desk-Administratoren geändert werden.
+            $input['description'] = $ticket['description'];
+        }
         $data = $this->validate($input, $ticket, false);
         $priority = $this->resolvePriority($data, $ticket);
         if ($priority === null) {
