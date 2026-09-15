@@ -52,5 +52,24 @@ return [
         // Standard-Tickettyp (Code) für Tickets aus E-Mails
         'default_type' => trim((string) Env::get('HELPDESK_MAIL_DEFAULT_TYPE', 'incident')) ?: 'incident',
     ],
+    // Öffentliches Störungsformular (/stoerung): nur Betreff und Beschreibung, ohne Anmeldung.
+    // Melder, Rechnername/IP und die AD-Daten werden serverseitig ermittelt.
+    'quick_report' => [
+        'enabled' => Env::bool('HELPDESK_QUICK_REPORT_ENABLED', true),
+        // Benutzerkonto, unter dem die Tickets angelegt werden (benötigt helpdesk.create)
+        'system_user' => trim((string) Env::get('HELPDESK_QUICK_REPORT_SYSTEM_USER', (string) Env::get('HELPDESK_MAIL_SYSTEM_USER', 'admin'))) ?: 'admin',
+        // Standard-Tickettyp (Code) für Meldungen aus dem Formular
+        'default_type' => trim((string) Env::get('HELPDESK_QUICK_REPORT_TYPE', 'incident')) ?: 'incident',
+        // Benutzererkennung: REMOTE_USER/AUTH_USER setzt der Webserver bei Windows-SSO (Kerberos/NTLM).
+        // Ein Proxy-Header ist fälschbar und wird nur ausgewertet, wenn er hier bewusst freigegeben wird.
+        'trust_user_header' => Env::bool('HELPDESK_QUICK_REPORT_TRUST_USER_HEADER', false),
+        'user_header' => trim((string) Env::get('HELPDESK_QUICK_REPORT_USER_HEADER', 'X-Remote-User')) ?: 'X-Remote-User',
+        // Rechnername per Reverse-DNS aus der IP-Adresse ermitteln (sonst wird nur die IP erfasst)
+        'resolve_hostname' => Env::bool('HELPDESK_QUICK_REPORT_RESOLVE_HOSTNAME', true),
+        // Zugriff auf diese Netze beschränken (CIDR oder einzelne IPs, kommagetrennt); leer = keine Einschränkung
+        'allowed_networks' => array_values(array_filter(array_map('trim', explode(',', (string) Env::get('HELPDESK_QUICK_REPORT_NETWORKS', ''))), static fn (string $n): bool => $n !== '')),
+        // Meldungen je Browsersitzung und Stunde (0 = unbegrenzt)
+        'rate_limit_per_hour' => max(0, Env::int('HELPDESK_QUICK_REPORT_RATE_LIMIT', 10)),
+    ],
     'list_per_page' => 25,
 ];

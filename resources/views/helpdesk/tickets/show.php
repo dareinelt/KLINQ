@@ -310,6 +310,16 @@ $percentBar = static function (?int $percent, string $state): string {
         <dl class="detail-list">
             <dt>Melder</dt><dd><?php if ($ticket['requester_employee_id']): ?><a href="/employees/<?= (int) $ticket['requester_employee_id'] ?>"><?= e($ticket['requester_name']) ?></a><?php else: ?><?= e($ticket['requester_name'] ?? '–') ?><?php endif; ?>
                 <?php if ($ticket['requester_department'] || $ticket['requester_phone'] || $ticket['requester_email']): ?><div class="text-xs text-muted"><?= e(implode(' · ', array_filter([$ticket['requester_department'], $ticket['requester_phone'], $ticket['requester_email']]))) ?></div><?php endif; ?></dd>
+            <?php
+            // Automatisch erfasste Angaben aus dem Störungsformular (Windows-Konto, Rechner, AD-Abgleich)
+            $reporterInfo = array_filter([
+                $ticket['reporter_username'] ?? null,
+                $ticket['reporter_host'] ?? ($ticket['reporter_ip'] ?? null),
+                $ticket['reporter_phone'] ?? null,
+                $ticket['reporter_department'] ?? null,
+            ]);
+            ?>
+            <?php if ($reporterInfo !== []): ?><dt>Automatisch erfasst</dt><dd><?= e(implode(' · ', $reporterInfo)) ?><?php if (!empty($ticket['reporter_host']) && !empty($ticket['reporter_ip'])): ?><div class="text-xs text-muted">IP <?= e($ticket['reporter_ip']) ?></div><?php endif; ?></dd><?php endif; ?>
             <?php if ($ticket['affected_employee_id'] && (int) $ticket['affected_employee_id'] !== (int) ($ticket['requester_employee_id'] ?? 0)): ?><dt>Betroffen</dt><dd><a href="/employees/<?= (int) $ticket['affected_employee_id'] ?>"><?= e($ticket['affected_name']) ?></a></dd><?php endif; ?>
             <dt>Kategorie</dt><dd><?= e($ticket['category_name'] ?? '–') ?><?= $ticket['subcategory_name'] ? ' / ' . e($ticket['subcategory_name']) : '' ?></dd>
             <dt>Auswirkung / Dringlichkeit</dt><dd><?= e($impactLabels[(int) $ticket['impact']] ?? $ticket['impact']) ?> / <?= e($urgencyLabels[(int) $ticket['urgency']] ?? $ticket['urgency']) ?></dd>

@@ -34,7 +34,8 @@ final class RouteInventoryTest extends TestCase
     {
         $permissions = new Permissions(new Config(dirname(__DIR__, 2) . '/config'));
         $known = $permissions->all();
-        $publicAllowed = ['GET /login', 'POST /login', 'GET /health'];
+        // Öffentlich sind nur die Anmeldung, der Health-Check und das Störungsformular für Anwender.
+        $publicAllowed = ['GET /login', 'POST /login', 'GET /health', 'GET /stoerung', 'POST /stoerung', 'GET /stoerung/gesendet'];
         $routes = $this->routes();
 
         $this->assertTrue(count($routes) > 80, 'Routen nicht geladen');
@@ -53,13 +54,16 @@ final class RouteInventoryTest extends TestCase
     public function testWriteRoutesRequireAPermissionOrAreSessionScoped(): void
     {
         // POST ohne Recht ist nur erlaubt, wenn die Aktion nur den eigenen Kontext betrifft.
-        $sessionScoped = ['POST /logout', 'POST /login', 'POST /profile/password'];
+        // POST /stoerung ist bewusst öffentlich: das Formular legt Tickets über ein Systemkonto an
+        // und ist durch CSRF-Token, Netzfreigabe und Ratenbegrenzung abgesichert.
+        $sessionScoped = ['POST /logout', 'POST /login', 'POST /profile/password', 'POST /stoerung'];
+        $publicWriteAllowed = ['POST /login', 'POST /stoerung'];
         foreach ($this->routes() as $route) {
             if ($route->method !== 'POST') {
                 continue;
             }
             $key = $route->method . ' ' . $route->pattern;
-            $this->assertFalse($route->public && $key !== 'POST /login', "{$key} darf nicht öffentlich sein");
+            $this->assertFalse($route->public && !in_array($key, $publicWriteAllowed, true), "{$key} darf nicht öffentlich sein");
             if ($route->permission === null) {
                 $this->assertContains($key, $sessionScoped, "{$key} hat kein Recht – bewusst?");
             }

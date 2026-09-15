@@ -13,6 +13,9 @@ final class CurrentUser
 {
     private const SESSION_KEY = 'auth_user';
 
+    /** Vorübergehender Systemkontext (siehe runAs); hat Vorrang vor der Sitzung. @var array<string,mixed>|null */
+    private ?array $override = null;
+
     public function __construct(private readonly Permissions $permissions) {}
 
     /** @param array<string,mixed> $user */
@@ -47,12 +50,39 @@ final class CurrentUser
 
     public function isAuthenticated(): bool
     {
-        return is_array($_SESSION[self::SESSION_KEY] ?? null);
+        return is_array($this->override) || is_array($_SESSION[self::SESSION_KEY] ?? null);
+    }
+
+    /**
+     * Führt eine Aktion im Kontext eines Systembenutzers aus, ohne die Sitzung zu verändern.
+     * Wird für anonyme Vorgänge benötigt (z. B. Störungsformular), damit der Besucher
+     * nicht dauerhaft die Rechte des Systemkontos erhält.
+     *
+     * @param array<string,mixed> $user Benutzerdatensatz aus der Datenbank
+     */
+    public function runAs(array $user, callable $action): mixed
+    {
+        $previous = $this->override;
+        $this->override = [
+            'id' => (int) $user['id'],
+            'username' => (string) $user['username'],
+            'display_name' => (string) ($user['display_name'] ?? $user['username']),
+            'role' => (string) $user['role'],
+            'logged_in_at' => time(),
+        ];
+        try {
+            return $action();
+        } finally {
+            $this->override = $previous;
+        }
     }
 
     /** @return array<string,mixed>|null */
     public function user(): ?array
     {
+        if (is_array($this->override)) {
+            return $this->override;
+        }
         $user = $_SESSION[self::SESSION_KEY] ?? null;
 
         return is_array($user) ? $user : null;

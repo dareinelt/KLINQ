@@ -8,6 +8,7 @@ use App\Controllers\Helpdesk\HelpdeskDashboardController;
 use App\Controllers\Helpdesk\HelpdeskReportController;
 use App\Controllers\Helpdesk\KnowledgeBaseController;
 use App\Controllers\Helpdesk\PortalController;
+use App\Controllers\Helpdesk\QuickReportController;
 use App\Controllers\Helpdesk\TicketAttachmentController;
 use App\Controllers\Helpdesk\TicketController;
 use App\Core\Config;
@@ -34,11 +35,13 @@ use App\Repositories\TicketWorklogRepository;
 use App\Repositories\UserRepository;
 use App\Security\CurrentUser;
 use App\Security\Permissions;
+use App\Services\Ad\AdUserLookupService;
 use App\Services\AuditLogService;
 use App\Services\DocumentService;
 use App\Services\Helpdesk\HelpdeskAdminService;
 use App\Services\Helpdesk\HelpdeskSchedulerService;
 use App\Services\Helpdesk\KnowledgeBaseService;
+use App\Services\Helpdesk\ReporterIdentityService;
 use App\Services\Helpdesk\Mail\FileMailboxClient;
 use App\Services\Helpdesk\Mail\ImapMailboxClient;
 use App\Services\Helpdesk\Mail\MailboxClientInterface;
@@ -249,6 +252,24 @@ return static function (Container $c): void {
         $c->get(KnowledgeBaseRepository::class),
         $c->get(TicketSlaService::class),
         $c->get(Config::class)
+    ));
+    $c->singleton(ReporterIdentityService::class, static fn (Container $c): ReporterIdentityService => new ReporterIdentityService(
+        $c->get(Config::class),
+        $c->get(CurrentUser::class),
+        $c->get(UserRepository::class),
+        $c->get(EmployeeRepository::class),
+        $c->get(AdUserLookupService::class)
+    ));
+    $c->singleton(QuickReportController::class, static fn (Container $c): QuickReportController => new QuickReportController(
+        $c->get(View::class),
+        $c->get(CurrentUser::class),
+        $c->get(TicketService::class),
+        $c->get(ReporterIdentityService::class),
+        $c->get(TicketMasterDataRepository::class),
+        $c->get(UserRepository::class),
+        $c->get(Permissions::class),
+        $c->get(Config::class),
+        $c->get(Logger::class)
     ));
     $c->singleton(KnowledgeBaseController::class, static fn (Container $c): KnowledgeBaseController => new KnowledgeBaseController(
         $c->get(View::class),

@@ -8,6 +8,7 @@ use App\Controllers\Helpdesk\HelpdeskDashboardController;
 use App\Controllers\Helpdesk\HelpdeskReportController;
 use App\Controllers\Helpdesk\KnowledgeBaseController;
 use App\Controllers\Helpdesk\PortalController;
+use App\Controllers\Helpdesk\QuickReportController;
 use App\Controllers\Helpdesk\TicketAttachmentController;
 use App\Controllers\Helpdesk\TicketController;
 use App\Core\Container;
@@ -29,6 +30,14 @@ return static function (Router $router, Container $c): void {
     $admin = static fn (): HelpdeskAdminController => $c->get(HelpdeskAdminController::class);
     $api = static fn (): HelpdeskApiController => $c->get(HelpdeskApiController::class);
     $portal = static fn (): PortalController => $c->get(PortalController::class);
+    $quick = static fn (): QuickReportController => $c->get(QuickReportController::class);
+
+    // ------------------------------------------------------------------ Öffentliche Störungsmeldung
+    // Ohne Anmeldung erreichbar (Link aus der Help-Desk-Administration). Melder, Rechner und
+    // AD-Daten werden serverseitig ermittelt; CSRF-Schutz und Netz-/Ratenbegrenzung greifen im Controller.
+    $router->get('/stoerung', static fn (Request $r): Response => $quick()->form($r), null, true);
+    $router->post('/stoerung', static fn (Request $r): Response => $quick()->store($r), null, true);
+    $router->get('/stoerung/gesendet', static fn (Request $r): Response => $quick()->done($r), null, true);
 
     // ------------------------------------------------------------------ Agentenbereich
     $router->get('/helpdesk', static fn (Request $r): Response => $dash()->index($r), 'helpdesk.view');
