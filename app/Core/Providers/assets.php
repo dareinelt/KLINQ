@@ -71,6 +71,7 @@ return static function (Container $c): void {
         $c->get(MovementRepository::class),
         $c->get(LicenseRepository::class),
         $c->get(AssetService::class),
+        $c->get(InventoryNumberService::class),
         $c->get(TicketRepository::class),
         (bool) $c->get(Config::class)->get('helpdesk.enabled', true)
     ));

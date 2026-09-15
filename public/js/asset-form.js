@@ -126,9 +126,66 @@
         });
     }
 
+    /* Manuelle Inventarnummer nur zeigen/leeren, wenn nicht durch das Overlay bestätigt */
+    function bindInventoryNumberOverlay() {
+        const dialog = document.querySelector("[data-inventory-dialog]");
+        const manualRow = form.querySelector("[data-manual-invno-row]");
+        const manualInput = form.querySelector("[data-manual-invno]");
+        if (!dialog || !manualRow || !manualInput) { return; }
+        const message = dialog.querySelector("[data-inventory-dialog-message]");
+        const yesBtn = dialog.querySelector("[data-inventory-dialog-yes]");
+        const noBtn = dialog.querySelector("[data-inventory-dialog-no]");
+        let lastPrefix = null;
+
+        function showManual(prefix) {
+            manualRow.hidden = false;
+            if (!manualInput.value || manualInput.value.toUpperCase().indexOf(prefix) !== 0) {
+                manualInput.value = prefix;
+            }
+            manualInput.focus();
+            const val = manualInput.value;
+            manualInput.setSelectionRange(val.length, val.length);
+        }
+
+        function hideManual() {
+            manualRow.hidden = true;
+            manualInput.value = "";
+        }
+
+        async function handleTypeChange() {
+            const opt = selectedTypeOption();
+            const prefix = opt ? opt.getAttribute("data-prefix") : "";
+            hideManual();
+            if (!prefix || prefix === lastPrefix) { lastPrefix = prefix || null; return; }
+            lastPrefix = prefix;
+            let lastNumber = null;
+            try {
+                const data = await AppUI.api("/api/assets/last-inventory-number?prefix=" + encodeURIComponent(prefix));
+                lastNumber = data.last_number;
+            } catch (e) { lastNumber = null; }
+            if (!lastNumber) { return; }
+            message.textContent = "Die zuletzt vergebene Inventarnummer für den gewählten Gerätetyp lautet " + lastNumber + ". Übernehmen?";
+            dialog.setAttribute("data-inventory-dialog-prefix", prefix);
+            AppUI.openDialog(dialog.id);
+        }
+
+        yesBtn.addEventListener("click", function () {
+            hideManual();
+            dialog.close();
+        });
+        noBtn.addEventListener("click", function () {
+            showManual(dialog.getAttribute("data-inventory-dialog-prefix") || "");
+            dialog.close();
+        });
+        dialog.addEventListener("cancel", function () { hideManual(); });
+
+        typeField.addEventListener("change", handleTypeChange);
+    }
+
     typeField.addEventListener("change", applyTypeFields);
     if (articlePicker) { articlePicker.addEventListener("picker:change", function (e) { applyArticle(e.detail); }); }
     Array.prototype.forEach.call(form.querySelectorAll("[data-check]"), bindCheck);
     bindParent();
+    bindInventoryNumberOverlay();
     applyTypeFields();
 })();
