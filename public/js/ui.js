@@ -101,6 +101,19 @@
         if (rowLink && !event.target.closest("a, button, input, form")) {
             window.location.href = rowLink.getAttribute("data-href");
         }
+        // Dropdowns (z. B. Modulwechsel) schließen, sobald außerhalb geklickt wird
+        document.querySelectorAll("details[data-module-switcher][open]").forEach(function (details) {
+            if (!details.contains(event.target)) { details.open = false; }
+        });
+    });
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key !== "Escape") { return; }
+        document.querySelectorAll("details[data-module-switcher][open]").forEach(function (details) {
+            details.open = false;
+            const summary = details.querySelector("summary");
+            if (summary) { summary.focus(); }
+        });
     });
 
     document.addEventListener("submit", function (event) {

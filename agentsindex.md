@@ -48,7 +48,7 @@ Webbasierte Inventar- und Assetverwaltung für IT-Hardware (PCs, Mobilgeräte, N
 | `app/Controllers/` | HTTP-Schicht; `CrudController`/`BaseController` als Basis, `Mobile/` (Scan-UI), `Api/` (JSON) |
 | `app/Services/` | Geschäftslogik und Validierung je Fachbereich; `Ad/` (Sync), `Ldap/` (Client, Fake-Client, Auth) |
 | `app/Repositories/` | Datenzugriff; `BaseRepository` kapselt `fetchOne/fetchAll/insertRow/updateRow` |
-| `app/Support/` | Fachlogikfreie Helfer: `Validator`, `Paginator`, `CsvReader`/`CsvWriter`, `QrCode`, `ColognePhonetic`, `Url` |
+| `app/Support/` | Fachlogikfreie Helfer: `Validator`, `Paginator`, `CsvReader`/`CsvWriter`, `QrCode`, `ColognePhonetic`, `Url`, `ModuleNavigation` |
 | `app/Exceptions/` | `HttpException`, `NotFoundException`, `ForbiddenException`, `ValidationException`, `ConflictException` |
 | `routes/web.php`, `routes/modules/*.php` | Routen je Modul, **jede Route trägt ihre Berechtigung** |
 | `resources/views/` | PHP-Templates je Modul, `partials/` (Layouts, Helfer, Filterleiste, Pagination, Flash, Icons) |
@@ -226,6 +226,7 @@ docker compose exec app php tests/run.php # alle Tests inkl. Integration (Test-D
 | Offline-Verhalten | `OfflineSyncService`, `Api/OfflineController`, `public/js/offline.js`, `public/sw.js`, `docs/offline.md` |
 | Bestellung/Wareneingang | `PurchaseOrderService`, `ProcurementController`, `resources/views/orders/`, `docs/einkauf.md` |
 | Etikettenlayout | `LabelService`, `Support/QrCode`, `resources/views/partials/label.php`, `docs/labels.md` |
+| Navigation/Modulwechsel | `Support/ModuleNavigation`, `resources/views/partials/app_layout.php`, `public/css/layout/shell.css` |
 | PDF/E-Mail | `PdfClient`, `MailClient`, `docker/pdf/server.py`, `docker/mail/server.py` |
 | AD-Anbindung | `Ad/EmployeeSyncService`, `Ad/AdUserMapper`, `Ldap/*`, `AD_*`-Variablen, `docs/ad-sync.md` |
 

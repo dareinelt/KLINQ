@@ -1,6 +1,11 @@
 <?php
 /**
  * App-Layout (Desktop): Sidebar + Topbar.
+ *
+ * Die Oberfläche ist in eigenständige Module aufgeteilt (Assetverwaltung, Help Desk). Das aktive
+ * Modul ergibt sich aus $activeNav (oder wird per $activeModule überschrieben) und bestimmt, welche
+ * Navigationseinträge sichtbar sind. Gewechselt wird über das Modul-Dropdown in der Topbar.
+ *
  * Erwartet: $innerContent, $title, $activeNav, $user, $can (callable), optional $scripts, $areaLabel
  */
 require_once __DIR__ . '/helpers.php';
@@ -12,77 +17,47 @@ $can = $can ?? static fn (string $p): bool => false;
 $roleLabels = $roleLabels ?? [];
 $openCounts = $openCounts ?? ['checkouts' => 0, 'returns' => 0];
 $helpdeskEnabled = $helpdeskEnabled ?? false;
+
+$modules = \App\Support\ModuleNavigation::modules($can, $helpdeskEnabled, $appName);
+$activeModule = $activeModule ?? \App\Support\ModuleNavigation::moduleFor($activeNav);
+if (!in_array($activeModule, array_column($modules, 'key'), true)) {
+    $activeModule = \App\Support\ModuleNavigation::ASSETS;
+}
+$moduleLabel = \App\Support\ModuleNavigation::label($activeModule, $appName);
+$moduleIcon = $activeModule === \App\Support\ModuleNavigation::HELPDESK ? 'lifebuoy' : 'box';
+$moduleHome = \App\Support\ModuleNavigation::home($activeModule, $can);
+$navItems = \App\Support\ModuleNavigation::items($activeModule, $can, $openCounts, $helpdeskEnabled);
+
 $areaClass = match (true) {
     $activeNav === 'admin' => 'is-admin',
     str_starts_with($activeNav, 'helpdesk') => 'is-helpdesk',
     str_starts_with($activeNav, 'portal') => 'is-portal',
     default => '',
 };
-
-$navItem = static function (string $key, string $href, string $iconName, string $label, ?int $badge = null) use ($activeNav): string {
-    $active = $activeNav === $key;
-    $badgeHtml = $badge !== null && $badge > 0 ? '<span class="nav-badge">' . $badge . '</span>' : '';
-
-    return '<a href="' . e($href) . '" class="' . ($active ? 'is-active' : '') . '"' . ($active ? ' aria-current="page"' : '') . '>'
-        . icon($iconName) . '<span>' . e($label) . '</span>' . $badgeHtml . '</a>';
-};
+// Der Modulname steht bereits im Dropdown – nur davon abweichende Bereiche zusätzlich anzeigen.
+$showAreaLabel = !empty($areaLabel) && $areaLabel !== $moduleLabel;
 
 ob_start();
 ?>
 <a class="skip-link" href="#main">Zum Inhalt springen</a>
 <div class="app-shell">
     <aside class="sidebar" id="sidebar">
-        <a class="sidebar-brand" href="/dashboard">
-            <span class="brand-logo" aria-hidden="true"><?= icon('box') ?></span>
-            <span><?= e($appName) ?></span>
+        <a class="sidebar-brand" href="<?= e($moduleHome) ?>">
+            <span class="brand-logo" aria-hidden="true"><?= icon($moduleIcon) ?></span>
+            <span><?= e($moduleLabel) ?></span>
         </a>
         <nav class="sidebar-nav" aria-label="Hauptnavigation">
-            <?= $navItem('dashboard', '/dashboard', 'home', 'Dashboard') ?>
-            <?= $navItem('scan', '/m', 'qr', 'Scannen') ?>
-            <?php if ($can('assets.view')): ?>
-                <span class="sidebar-section-label">Bestand</span>
-                <?= $navItem('assets', '/assets', 'laptop', 'Assets') ?>
-            <?php endif; ?>
-            <?php if ($can('movements.view')): ?>
-                <?= $navItem('open-checkouts', '/movements/open', 'warning', 'Offene Vorgänge', ($openCounts['checkouts'] ?? 0) + ($openCounts['returns'] ?? 0)) ?>
-                <?= $navItem('movements', '/movements', 'swap', 'Bewegungen') ?>
-            <?php endif; ?>
-            <?php if ($can('handover.view')): ?>
-                <?= $navItem('handover', '/handover', 'signature', 'Übergabeprotokolle') ?>
-            <?php endif; ?>
-            <?php if ($can('licenses.view')): ?>
-                <?= $navItem('licenses', '/licenses', 'key', 'Lizenzen') ?>
-            <?php endif; ?>
-            <?php if ($helpdeskEnabled && $can('helpdesk.view')): ?>
-                <span class="sidebar-section-label">Help Desk</span>
-                <?= $navItem('helpdesk', '/helpdesk', 'lifebuoy', 'Übersicht') ?>
-                <?= $navItem('helpdesk-tickets', '/helpdesk/tickets', 'ticket', 'Tickets', $openCounts['tickets'] ?? 0) ?>
-                <?php if ($can('knowledgebase.view')): ?><?= $navItem('helpdesk-knowledge', '/helpdesk/knowledge', 'book', 'Wissensdatenbank') ?><?php endif; ?>
-                <?php if ($can('helpdesk.reports')): ?><?= $navItem('helpdesk-reports', '/helpdesk/reports', 'chart', 'Ticket-Berichte') ?><?php endif; ?>
-                <?php if ($can('helpdesk.categories') || $can('helpdesk.admin')): ?><?= $navItem('helpdesk-admin', '/helpdesk/admin', 'settings', 'Help-Desk-Einstellungen') ?><?php endif; ?>
-            <?php elseif ($helpdeskEnabled && $can('portal.view')): ?>
-                <span class="sidebar-section-label">Support</span>
-                <?= $navItem('portal', '/portal', 'lifebuoy', 'Meine Tickets', $openCounts['portal_tickets'] ?? 0) ?>
-                <?php if ($can('knowledgebase.view')): ?><?= $navItem('portal-knowledge', '/portal/knowledge', 'book', 'Hilfe & Anleitungen') ?><?php endif; ?>
-            <?php endif; ?>
-            <?php if ($can('orders.view') || $can('suppliers.view')): ?>
-                <span class="sidebar-section-label">Einkauf</span>
-                <?php if ($can('orders.view')): ?><?= $navItem('orders', '/orders', 'cart', 'Bestellungen') ?><?php endif; ?>
-                <?php if ($can('suppliers.view')): ?><?= $navItem('suppliers', '/suppliers', 'truck', 'Lieferanten') ?><?php endif; ?>
-            <?php endif; ?>
-            <span class="sidebar-section-label">Stammdaten</span>
-            <?php if ($can('employees.view')): ?><?= $navItem('employees', '/employees', 'users', 'Mitarbeiter') ?><?php endif; ?>
-            <?php if ($can('locations.view')): ?><?= $navItem('locations', '/locations', 'map', 'Standorte') ?><?php endif; ?>
-            <?php if ($can('costcenters.view')): ?><?= $navItem('costcenters', '/cost-centers', 'hash', 'Kostenstellen') ?><?php endif; ?>
-            <?php if ($can('manufacturers.view')): ?><?= $navItem('manufacturers', '/manufacturers', 'factory', 'Hersteller') ?><?php endif; ?>
-            <?php if ($can('articles.view')): ?><?= $navItem('articles', '/articles', 'tag', 'Artikel') ?><?php endif; ?>
-            <?php if ($can('reports.view') || $can('imports.manage') || $can('settings.manage') || $can('audit.view')): ?>
-                <span class="sidebar-section-label">Auswertung &amp; System</span>
-                <?php if ($can('reports.view')): ?><?= $navItem('reports', '/reports', 'chart', 'Berichte') ?><?php endif; ?>
-                <?php if ($can('imports.manage')): ?><?= $navItem('imports', '/imports', 'import', 'Import') ?><?php endif; ?>
-                <?php if ($can('audit.view')): ?><?= $navItem('audit', '/audit', 'shield', 'Audit-Log') ?><?php endif; ?>
-                <?php if ($can('settings.manage')): ?><?= $navItem('admin', '/admin', 'settings', 'Administration') ?><?php endif; ?>
-            <?php endif; ?>
+            <?php foreach ($navItems as $item): ?>
+                <?php if ($item['type'] === 'section'): ?>
+                    <span class="sidebar-section-label"><?= e($item['label']) ?></span>
+                <?php else: ?>
+                    <?php $isActive = $activeNav === $item['key']; ?>
+                    <a href="<?= e($item['href']) ?>" class="<?= $isActive ? 'is-active' : '' ?>"<?= $isActive ? ' aria-current="page"' : '' ?>>
+                        <?= icon($item['icon']) ?><span><?= e($item['label']) ?></span>
+                        <?php if (!empty($item['badge'])): ?><span class="nav-badge"><?= (int) $item['badge'] ?></span><?php endif; ?>
+                    </a>
+                <?php endif; ?>
+            <?php endforeach; ?>
         </nav>
         <div class="sidebar-footer">
             <form method="post" action="/logout">
@@ -98,7 +73,7 @@ ob_start();
         <button type="button" class="topbar-menu-toggle" id="sidebar-toggle" aria-label="Navigation öffnen" aria-expanded="false" aria-controls="sidebar">
             <?= icon('menu') ?>
         </button>
-        <?php if (!empty($areaLabel)): ?>
+        <?php if (!empty($showAreaLabel)): ?>
             <span class="topbar-area-label <?= $areaClass ?>"><?= e($areaLabel) ?></span>
         <?php endif; ?>
         <div class="search-box topbar-search" id="global-search">
@@ -107,6 +82,32 @@ ob_start();
             <input id="global-search-input" type="search" placeholder="Inventarnr., Seriennr., Mitarbeiter, Standort …" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="global-search-results" enterkeyhint="search">
             <ul class="search-results" id="global-search-results" hidden></ul>
         </div>
+        <div class="topbar-spacer"></div>
+        <?php if (count($modules) > 1): ?>
+            <details class="module-switcher" data-module-switcher>
+                <summary class="module-switcher-toggle" title="Bereich wechseln" aria-label="Bereich wechseln">
+                    <span class="module-switcher-icon is-<?= e($activeModule) ?>" aria-hidden="true"><?= icon($moduleIcon) ?></span>
+                    <span class="module-switcher-current">
+                        <span class="module-switcher-hint">Bereich</span>
+                        <span class="module-switcher-name"><?= e($moduleLabel) ?></span>
+                    </span>
+                    <?= icon('chevron-down', 'icon module-switcher-caret') ?>
+                </summary>
+                <div class="module-switcher-menu" role="menu">
+                    <?php foreach ($modules as $module): ?>
+                        <?php $isCurrent = $module['key'] === $activeModule; ?>
+                        <a href="<?= e($module['href']) ?>" role="menuitem" class="module-switcher-item <?= $isCurrent ? 'is-active' : '' ?>"<?= $isCurrent ? ' aria-current="true"' : '' ?>>
+                            <span class="module-switcher-icon is-<?= e($module['key']) ?>" aria-hidden="true"><?= icon($module['icon']) ?></span>
+                            <span class="module-switcher-text">
+                                <span class="module-switcher-name"><?= e($module['label']) ?></span>
+                                <span class="module-switcher-description"><?= e($module['description']) ?></span>
+                            </span>
+                            <?php if ($isCurrent): ?><?= icon('check', 'icon module-switcher-check') ?><?php endif; ?>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            </details>
+        <?php endif; ?>
         <div class="topbar-spacer"></div>
         <span class="offline-indicator" id="offline-indicator" hidden><?= icon('offline') ?> Offline</span>
         <a class="topbar-user" href="/profile/password" title="Passwort ändern">
