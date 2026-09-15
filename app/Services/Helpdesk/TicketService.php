@@ -892,6 +892,9 @@ final class TicketService
             ->in('activity', 'Tätigkeit', array_keys(self::WORKLOG_ACTIVITIES), true)
             ->text('note', 'Notiz', false, 2000)
             ->date('worked_on', 'Datum');
+        if (isset($input['minutes']) && is_numeric($input['minutes']) && (int) $input['minutes'] % 15 !== 0) {
+            $v->addError('minutes', 'Dauer (Minuten) muss ein Vielfaches von 15 Minuten sein.');
+        }
         if ($v->fails()) {
             throw new ValidationException($v->errors());
         }
