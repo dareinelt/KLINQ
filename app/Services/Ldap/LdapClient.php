@@ -72,16 +72,44 @@ final class LdapClient implements LdapClientInterface
         if (!function_exists('ldap_connect')) {
             throw new RuntimeException('PHP-Erweiterung ldap ist nicht installiert.');
         }
-        $scheme = $this->port === 636 ? 'ldaps' : 'ldap';
-        $connection = ldap_connect("{$scheme}://{$this->host}:{$this->port}");
-        if ($connection === false) {
-            throw new RuntimeException('LDAP-Verbindung konnte nicht aufgebaut werden.');
+        $uri = $this->buildUri();
+        $connection = ldap_connect($uri);        if ($connection === false) {
+            throw new RuntimeException('LDAP-Verbindung konnte nicht aufgebaut werden (URI: ' . $uri . ').');
         }
         ldap_set_option($connection, LDAP_OPT_PROTOCOL_VERSION, 3);
         ldap_set_option($connection, LDAP_OPT_REFERRALS, 0);
         ldap_set_option($connection, LDAP_OPT_NETWORK_TIMEOUT, 10);
 
         return $this->connection = $connection;
+    }
+
+    /**
+     * Baut die LDAP-URI. AD_HOST darf als reiner Host, mit Schema (ldap://, ldaps://)
+     * und/oder mit angehängtem Port konfiguriert sein.
+     */
+    private function buildUri(): string
+    {
+        $host = trim($this->host);
+        $scheme = '';
+        if (preg_match('#^(ldaps?)://#i', $host, $matches) === 1) {
+            $scheme = strtolower($matches[1]);
+            $host = substr($host, strlen($matches[0]));
+        }
+        $host = trim($host, '/');
+        if ($host === '') {
+            throw new RuntimeException('AD_HOST ist nicht konfiguriert.');
+        }
+
+        $port = $this->port;
+        if (preg_match('#^(?<host>\[[^\]]+\]|[^:]+):(?<port>\d+)$#', $host, $matches) === 1) {
+            $host = $matches['host'];
+            $port = (int) $matches['port'];
+        }
+        if ($scheme === '') {
+            $scheme = $port === 636 ? 'ldaps' : 'ldap';
+        }
+
+        return "{$scheme}://{$host}:{$port}";
     }
 
     /**
