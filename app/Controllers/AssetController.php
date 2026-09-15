@@ -21,6 +21,7 @@ use App\Repositories\LocationRepository;
 use App\Repositories\ManufacturerRepository;
 use App\Repositories\MovementRepository;
 use App\Repositories\SupplierRepository;
+use App\Repositories\TicketRepository;
 use App\Security\CurrentUser;
 use App\Services\AssetService;
 use App\Services\LocationService;
@@ -43,7 +44,9 @@ final class AssetController extends BaseController
         private readonly EmployeeRepository $employees,
         private readonly MovementRepository $movements,
         private readonly LicenseRepository $licenses,
-        private readonly AssetService $service
+        private readonly AssetService $service,
+        private readonly ?TicketRepository $tickets = null,
+        private readonly bool $helpdeskEnabled = true
     ) {
         parent::__construct($view, $currentUser);
     }
@@ -85,6 +88,7 @@ final class AssetController extends BaseController
             'children' => $this->assets->children((int) $row['id']),
             'movements' => $this->movements->forAsset((int) $row['id'], 10),
             'licenses' => $this->licenses->forAsset((int) $row['id']),
+            'tickets' => $this->tickets !== null && $this->helpdeskEnabled && $this->currentUser->can('helpdesk.view') ? $this->tickets->forAsset((int) $row['id'], 10) : null,
             'statuses' => $this->statuses->all(true),
             'fieldLabels' => AssetService::FIELD_LABELS,
         ]);

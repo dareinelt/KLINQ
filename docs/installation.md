@@ -98,6 +98,7 @@ docker compose exec app php bin/migrate.php --no-seed  # ohne Stammdaten-Seeder
 ## Zeitgesteuerte Aufgaben
 
 - **AD-Synchronisation**: entweder `AD_SYNC_INTERVAL_MINUTES` setzen (ein Scheduler-Prozess im App-Container, `docker/php/scheduler.sh`) oder per Host-Cron `docker compose exec -T app php bin/sync-ad.php --by=cron --quiet` aufrufen.
+- **Help Desk**: SLA-Prüfung/Eskalation/Auto-Close alle `HELPDESK_ESCALATION_INTERVAL_MINUTES` Minuten (`php bin/helpdesk.php process`); E-Mail-Eingang per IMAP alle `HELPDESK_MAIL_INTERVAL_MINUTES` Minuten, sobald `HELPDESK_MAIL_ENABLED=true` (`php bin/helpdesk.php mail`). Beide laufen im selben Scheduler-Prozess oder per Host-Cron; Details in [Help Desk](helpdesk.md).
 - **Aufräumen**: Abgelaufene Importvorschauen (24 h) werden beim nächsten Aufruf der Importseite automatisch entfernt; Sitzungen laufen nach `SESSION_LIFETIME` ab.
 
 ## Logging

@@ -1,14 +1,41 @@
 #!/bin/sh
-# Einfacher Zeitplaner ohne Cron-Abhängigkeit: startet die AD-Synchronisation
-# alle AD_SYNC_INTERVAL_MINUTES Minuten (0 = aus). Läuft als Hintergrundprozess im App-Container.
-interval="${AD_SYNC_INTERVAL_MINUTES:-0}"
-case "$interval" in ''|*[!0-9]*) interval=0;; esac
-if [ "$interval" -le 0 ] || [ "${AD_ENABLED:-false}" != "true" ]; then
-    echo "[scheduler] AD-Synchronisation nicht geplant (AD_ENABLED=${AD_ENABLED:-false}, AD_SYNC_INTERVAL_MINUTES=${interval})."
+# Einfacher Zeitplaner ohne Cron-Abhängigkeit. Läuft als Hintergrundprozess im App-Container und startet
+#  - die AD-Synchronisation alle AD_SYNC_INTERVAL_MINUTES Minuten (0 = aus),
+#  - den Help-Desk-Job (SLA-Prüfung, Eskalation, Auto-Close) alle HELPDESK_ESCALATION_INTERVAL_MINUTES Minuten (0 = aus),
+#  - den E-Mail-Eingang des Help Desks (IMAP → Ticket/Kommentar) alle HELPDESK_MAIL_INTERVAL_MINUTES Minuten (0 = aus).
+# Alle Intervalle werden im Minutentakt geprüft; ein Lauf blockiert die anderen nicht länger als seine Laufzeit.
+
+ad_interval="${AD_SYNC_INTERVAL_MINUTES:-0}"
+case "$ad_interval" in ''|*[!0-9]*) ad_interval=0;; esac
+if [ "${AD_ENABLED:-false}" != "true" ]; then ad_interval=0; fi
+
+hd_interval="${HELPDESK_ESCALATION_INTERVAL_MINUTES:-0}"
+case "$hd_interval" in ''|*[!0-9]*) hd_interval=0;; esac
+if [ "${HELPDESK_ENABLED:-true}" != "true" ] || [ "${HELPDESK_ESCALATION_ENABLED:-true}" != "true" ]; then hd_interval=0; fi
+
+mail_interval="${HELPDESK_MAIL_INTERVAL_MINUTES:-0}"
+case "$mail_interval" in ''|*[!0-9]*) mail_interval=0;; esac
+if [ "${HELPDESK_ENABLED:-true}" != "true" ] || [ "${HELPDESK_MAIL_ENABLED:-false}" != "true" ]; then mail_interval=0; fi
+
+if [ "$ad_interval" -le 0 ] && [ "$hd_interval" -le 0 ] && [ "$mail_interval" -le 0 ]; then
+    echo "[scheduler] Keine Jobs geplant (AD_SYNC_INTERVAL_MINUTES=${ad_interval}, HELPDESK_ESCALATION_INTERVAL_MINUTES=${hd_interval}, HELPDESK_MAIL_INTERVAL_MINUTES=${mail_interval})."
     exit 0
 fi
-echo "[scheduler] AD-Synchronisation alle ${interval} Minuten."
+[ "$ad_interval" -gt 0 ] && echo "[scheduler] AD-Synchronisation alle ${ad_interval} Minuten."
+[ "$hd_interval" -gt 0 ] && echo "[scheduler] Help-Desk-Job alle ${hd_interval} Minuten."
+[ "$mail_interval" -gt 0 ] && echo "[scheduler] Help-Desk-E-Mail-Eingang alle ${mail_interval} Minuten."
+
+tick=0
 while true; do
-    sleep $((interval * 60))
-    php /var/www/html/bin/sync-ad.php --by=scheduler --quiet || echo "[scheduler] AD-Synchronisation fehlgeschlagen (Exit $?)" >&2
+    sleep 60
+    tick=$((tick + 1))
+    if [ "$ad_interval" -gt 0 ] && [ $((tick % ad_interval)) -eq 0 ]; then
+        php /var/www/html/bin/sync-ad.php --by=scheduler --quiet || echo "[scheduler] AD-Synchronisation fehlgeschlagen (Exit $?)" >&2
+    fi
+    if [ "$hd_interval" -gt 0 ] && [ $((tick % hd_interval)) -eq 0 ]; then
+        php /var/www/html/bin/helpdesk.php process --quiet || echo "[scheduler] Help-Desk-Job fehlgeschlagen (Exit $?)" >&2
+    fi
+    if [ "$mail_interval" -gt 0 ] && [ $((tick % mail_interval)) -eq 0 ]; then
+        php /var/www/html/bin/helpdesk.php mail --quiet || echo "[scheduler] Help-Desk-E-Mail-Eingang fehlgeschlagen (Exit $?)" >&2
+    fi
 done

@@ -149,6 +149,36 @@ $eventClass = ['status_changed' => 'is-warning', 'created' => 'is-success', 'che
 </div>
 <?php endif; ?>
 
+<?php if ($tickets !== null): ?>
+<div class="card card-flush mt-4" id="tickets">
+    <div class="card-header"><h2>Help-Desk-Tickets</h2>
+        <div>
+            <a class="btn btn-link btn-sm" href="/helpdesk/tickets?view=all&amp;asset_id=<?= (int) $row['id'] ?>">Alle anzeigen</a>
+            <?php if ($can('helpdesk.create')): ?><a class="btn btn-secondary btn-sm" href="/helpdesk/tickets/new?asset_id=<?= (int) $row['id'] ?>"><?= icon('plus') ?> Ticket erstellen</a><?php endif; ?>
+        </div>
+    </div>
+    <?php if ($tickets === []): ?>
+        <div class="table-empty">Keine Tickets zu diesem Asset.</div>
+    <?php else: ?>
+    <table class="table table-compact">
+        <thead><tr><th>Nummer</th><th>Betreff</th><th>Status</th><th>Priorität</th><th>Bearbeiter</th><th>Aktualisiert</th></tr></thead>
+        <tbody>
+        <?php foreach ($tickets as $t): ?>
+            <tr class="is-clickable<?= in_array($t['status_category'], ['resolved', 'closed', 'cancelled'], true) ? ' text-muted' : '' ?>" data-href="/helpdesk/tickets/<?= (int) $t['id'] ?>">
+                <td class="mono"><a href="/helpdesk/tickets/<?= (int) $t['id'] ?>"><?= e($t['number']) ?></a></td>
+                <td><?= e($t['subject']) ?></td>
+                <td><?= badge($t['status_name'], $t['status_color']) ?></td>
+                <td><?= badge($t['priority_name'], $t['priority_color']) ?></td>
+                <td><?= e($t['assignee_name'] ?? '–') ?></td>
+                <td class="nowrap text-sm"><?= fmt_datetime($t['updated_at']) ?></td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
+
 <div class="card mt-4" id="history">
     <div class="card-header"><h2>Historie</h2><span class="text-muted text-sm"><?= count($history) ?> Einträge</span></div>
     <?php if ($can('assets.manage')): ?>

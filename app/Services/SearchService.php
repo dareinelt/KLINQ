@@ -11,11 +11,12 @@ use App\Repositories\EmployeeRepository;
 use App\Repositories\LocationRepository;
 use App\Repositories\ManufacturerRepository;
 use App\Repositories\SupplierRepository;
+use App\Repositories\TicketRepository;
 use App\Security\CurrentUser;
 
 /**
  * Globale Suche über Inventarnummer, Seriennummer, Hersteller, Artikel, Mitarbeiter,
- * Kostenstelle, Standort, Lieferant, MAC-Adresse und IMEI. Rechte werden pro Gruppe geprüft.
+ * Kostenstelle, Standort, Lieferant, MAC-Adresse, IMEI und Help-Desk-Tickets. Rechte werden pro Gruppe geprüft.
  */
 final class SearchService
 {
@@ -27,7 +28,9 @@ final class SearchService
         private readonly ManufacturerRepository $manufacturers,
         private readonly ArticleRepository $articles,
         private readonly SupplierRepository $suppliers,
-        private readonly CurrentUser $user
+        private readonly CurrentUser $user,
+        private readonly ?TicketRepository $tickets = null,
+        private readonly bool $helpdeskEnabled = true
     ) {}
 
     /**
@@ -40,6 +43,16 @@ final class SearchService
             return [];
         }
         $groups = [];
+
+        if ($this->tickets !== null && $this->helpdeskEnabled && ($this->user->can('helpdesk.view') || $this->user->can('portal.view'))) {
+            $agent = $this->user->can('helpdesk.view');
+            $listUrl = $agent ? '/helpdesk/tickets?view=all&q=' : '/portal/tickets?q=';
+            $groups[] = $this->group('tickets', 'Tickets', $listUrl . rawurlencode($term), array_map(static fn (array $t): array => [
+                'title' => $t['number'] . ' · ' . $t['subject'],
+                'meta' => implode(' · ', array_filter([$t['status_name'], $t['priority_name'], $t['requester_name'] ?? null, $t['assignee_name'] ?? null])),
+                'url' => ($agent ? '/helpdesk/tickets/' : '/portal/tickets/') . (int) $t['id'],
+            ], $this->tickets->quickSearch($term, $perGroup, $agent ? null : $this->user->id())));
+        }
 
         if ($this->user->can('assets.view')) {
             $groups[] = $this->group('assets', 'Assets', '/assets?status=all&q=' . rawurlencode($term), array_map(static fn (array $a): array => [

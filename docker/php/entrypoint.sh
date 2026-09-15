@@ -19,8 +19,12 @@ fi
 mkdir -p storage/uploads storage/logs storage/labels storage/tmp
 chown -R www-data:www-data storage
 
-# Zeitgesteuerte AD-Synchronisation als Hintergrundprozess (nur wenn konfiguriert)
-if [ "${AD_ENABLED:-false}" = "true" ] && [ "${AD_SYNC_INTERVAL_MINUTES:-0}" != "0" ]; then
+# Zeitgesteuerte Jobs (AD-Synchronisation, Help-Desk-SLA/Eskalation, Help-Desk-E-Mail-Eingang) als Hintergrundprozess (nur wenn konfiguriert)
+ad_scheduled=0; hd_scheduled=0; mail_scheduled=0
+if [ "${AD_ENABLED:-false}" = "true" ] && [ "${AD_SYNC_INTERVAL_MINUTES:-0}" != "0" ]; then ad_scheduled=1; fi
+if [ "${HELPDESK_ENABLED:-true}" = "true" ] && [ "${HELPDESK_ESCALATION_ENABLED:-true}" = "true" ] && [ "${HELPDESK_ESCALATION_INTERVAL_MINUTES:-5}" != "0" ]; then hd_scheduled=1; fi
+if [ "${HELPDESK_ENABLED:-true}" = "true" ] && [ "${HELPDESK_MAIL_ENABLED:-false}" = "true" ] && [ "${HELPDESK_MAIL_INTERVAL_MINUTES:-2}" != "0" ]; then mail_scheduled=1; fi
+if [ "$ad_scheduled" = "1" ] || [ "$hd_scheduled" = "1" ] || [ "$mail_scheduled" = "1" ]; then
     su -s /bin/sh www-data -c "/usr/local/bin/app-scheduler" &
 fi
 
