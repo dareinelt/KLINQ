@@ -15,11 +15,12 @@ use App\Security\CurrentUser;
  */
 final class DocumentService
 {
-    public const ENTITY_TYPES = ['asset', 'purchase_order', 'license', 'movement', 'supplier', 'import', 'handover'];
+    public const ENTITY_TYPES = ['asset', 'purchase_order', 'license', 'movement', 'supplier', 'import', 'handover', 'ticket', 'knowledge_article'];
     public const DOCUMENT_TYPES = [
         'order' => 'Bestellung', 'order_confirmation' => 'Auftragsbestätigung', 'delivery_note' => 'Lieferschein',
         'invoice' => 'Rechnung', 'license' => 'Lizenz', 'photo' => 'Foto', 'signature' => 'Unterschrift',
-        'handover_protocol' => 'Übergabeprotokoll', 'movement_receipt' => 'Entnahme-/Retourennachweis', 'other' => 'Sonstiges',
+        'handover_protocol' => 'Übergabeprotokoll', 'movement_receipt' => 'Entnahme-/Retourennachweis',
+        'attachment' => 'Anhang', 'other' => 'Sonstiges',
     ];
     /** Typen, die Benutzer manuell hochladen dürfen (ohne systemerzeugte Unterschrift/Protokoll). */
     public const UPLOAD_TYPES = [

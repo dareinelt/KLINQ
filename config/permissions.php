@@ -28,16 +28,40 @@ $all = [
     'audit.view',
     'settings.manage',
     'users.manage',
+    // Help Desk – Benutzerportal (eigene Tickets) und Agentenbereich
+    'portal.view', 'portal.create',
+    'helpdesk.view', 'helpdesk.create', 'helpdesk.update', 'helpdesk.assign',
+    'helpdesk.comment', 'helpdesk.internal_note', 'helpdesk.close', 'helpdesk.reopen',
+    'helpdesk.merge', 'helpdesk.escalate', 'helpdesk.sla', 'helpdesk.worklog', 'helpdesk.delete',
+    'helpdesk.reports', 'helpdesk.export',
+    'helpdesk.categories', 'helpdesk.templates', 'helpdesk.admin',
+    'knowledgebase.view', 'knowledgebase.manage',
 ];
 
 // Alle Leserechte – außer dem Audit-Log (enthält Benutzer- und IP-Daten; nur Admin und Assetmanagement)
-$readOnly = array_values(array_filter($all, static fn (string $p): bool => str_ends_with($p, '.view') && $p !== 'audit.view'));
+// und dem Help-Desk-Agentenbereich (fremde Tickets sehen nur Help-Desk-Rollen)
+$readOnly = array_values(array_filter($all, static fn (string $p): bool => str_ends_with($p, '.view') && $p !== 'audit.view' && $p !== 'helpdesk.view'));
+
+// Rechte des Help-Desk-Agenten (Tickets bearbeiten, ohne Stammdaten/SLA-Pflege)
+$helpdeskAgent = [
+    'portal.view', 'portal.create',
+    'helpdesk.view', 'helpdesk.create', 'helpdesk.update', 'helpdesk.assign',
+    'helpdesk.comment', 'helpdesk.internal_note', 'helpdesk.close', 'helpdesk.reopen',
+    'helpdesk.merge', 'helpdesk.worklog', 'helpdesk.delete', 'helpdesk.reports',
+    'knowledgebase.view', 'knowledgebase.manage',
+];
+$helpdeskLead = array_merge($helpdeskAgent, [
+    'helpdesk.escalate', 'helpdesk.sla', 'helpdesk.export', 'helpdesk.categories', 'helpdesk.templates',
+]);
+$helpdeskAdmin = array_merge($helpdeskLead, ['helpdesk.admin', 'documents.manage']);
+// Alle Mitarbeiter dürfen im Portal eigene Tickets erstellen und Wissensartikel lesen
+$portal = ['portal.view', 'portal.create', 'knowledgebase.view'];
 
 return [
     'all' => $all,
     'roles' => [
         'admin' => $all,
-        'assetmanagement' => array_values(array_unique(array_merge($readOnly, [
+        'assetmanagement' => array_values(array_unique(array_merge($readOnly, $portal, [
             'assets.manage', 'assets.retire', 'labels.print',
             'movements.checkout', 'movements.return', 'movements.complete',
             'handover.manage', 'handover.sign',
@@ -47,17 +71,20 @@ return [
             'documents.manage', 'licenses.manage',
             'reports.export', 'imports.manage', 'audit.view',
         ]))),
-        'lager' => array_values(array_unique(array_merge($readOnly, [
+        'lager' => array_values(array_unique(array_merge($readOnly, $portal, [
             'labels.print',
             'movements.checkout', 'movements.return', 'movements.complete',
             'handover.manage', 'handover.sign',
             'orders.receive', 'assets.manage', 'documents.manage',
         ]))),
-        'einkauf' => array_values(array_unique(array_merge($readOnly, [
+        'einkauf' => array_values(array_unique(array_merge($readOnly, $portal, [
             'suppliers.manage', 'orders.manage', 'orders.receive',
             'manufacturers.manage', 'articles.manage', 'documents.manage',
             'licenses.manage', 'reports.export',
         ]))),
+        'helpdesk_admin' => array_values(array_unique(array_merge($readOnly, $helpdeskAdmin))),
+        'helpdesk_lead' => array_values(array_unique(array_merge($readOnly, $helpdeskLead))),
+        'helpdesk_agent' => array_values(array_unique(array_merge($readOnly, $helpdeskAgent))),
         'readonly' => $readOnly,
     ],
     'role_labels' => [
@@ -65,6 +92,9 @@ return [
         'assetmanagement' => 'Assetmanagement',
         'lager' => 'Lager',
         'einkauf' => 'Einkauf',
+        'helpdesk_admin' => 'Help Desk Administrator',
+        'helpdesk_lead' => 'Help Desk Leitung',
+        'helpdesk_agent' => 'Help Desk Agent',
         'readonly' => 'Nur lesen',
     ],
 ];

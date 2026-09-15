@@ -104,6 +104,15 @@ Alle Stammdaten werden **deaktiviert statt gelöscht** (`is_active`), damit Hist
 - `system_settings`: Schlüssel/Wert (Etikettenlayout u. a.), `updated_by`.
 - `inventory_sequences`: `prefix`, `year_code`, `last_number` – Vergabe unter `SELECT … FOR UPDATE`.
 
+### Help Desk
+
+- Stammdaten: `ticket_types` (Störung, Anfrage, Änderung, Problem), `ticket_statuses` (`category` `new|open|pending|resolved|closed|cancelled`, `allowed_transitions` JSON, Farbe, Reihenfolge), `ticket_priorities` (Level, Farbe), `ticket_categories` (zweistufig über `parent_id`, Standardgruppe/-SLA), `ticket_slas` (Reaktions-/Lösungsminuten, Servicezeiten, Warn-/Eskalationsprozent, optional je Priorität/Typ/Kategorie), `ticket_groups` + `ticket_group_members` (Agenten, Leitung), `ticket_tags`, `ticket_templates`, `ticket_rules` (`trigger_event`, Bedingungen/Aktionen JSON, `sort_order`, `stop_processing`), `ticket_sequences` (Nummernkreis je Jahr).
+- `tickets`: `number` (eindeutig, `PREFIX-JJJJ-NNNNNN`), `subject`, `description`, Typ/Kategorie/Unterkategorie, Status, Priorität, `impact`/`urgency`, SLA mit `response_due_at`/`resolution_due_at`, Pausen (`sla_paused_at`, `sla_paused_minutes`) und Zuständen `sla_response_state`/`sla_resolution_state`, Melder (`requester_employee_id`/`requester_user_id`), `affected_employee_id`, `assignee_user_id`, `deputy_user_id`, `group_id`, Standort/Kostenstelle, `source` (`web|portal|api|email|phone|scheduler`), Zeitstempel `first_response_at`/`resolved_at`/`closed_at`/`cancelled_at`, `escalation_level`, `reopen_count`, `resolution`, `close_reason`, `merged_into_ticket_id`, `knowledge_article_id`, `version` (optimistische Sperre). Indizes auf Status, Zuständigkeit, Gruppe, Melder, Fälligkeiten und Zeitstempel; Volltextindex auf Betreff/Beschreibung.
+- Detailzeilen (`ON DELETE CASCADE` am Ticket): `ticket_comments` (`type` `public|internal`, `source`, Autor), `ticket_attachments` (Verweis auf `documents`, `comment_id`, `is_internal`), `ticket_events` (Historie: `type`, `field`, `old_value`/`new_value`, `payload` JSON, Akteur), `ticket_assets`, `ticket_tag_relations`, `ticket_relations` (`related|duplicate_of|parent_of|problem_of|change_for`), `ticket_watchers`, `ticket_worklogs` (`minutes`, `activity`, `started_at`), `ticket_notifications` (Ausgangsprotokoll mit `event_key`, `recipient`, `status`, `error`).
+- Wissensdatenbank: `knowledge_articles` (`slug`, Titel, `summary`, `body`, Kategorie, `visibility` `internal|public`, `status` `draft|published|archived`, `view_count`, Autor), `knowledge_article_tags`, `knowledge_article_tickets`.
+
+Details: [Help Desk](helpdesk.md).
+
 ## Konventionen
 
 - Primärschlüssel `id INT UNSIGNED AUTO_INCREMENT`; Fremdschlüssel `<tabelle>_id`. Bestandsdaten werden nie kaskadiert gelöscht (`RESTRICT`); nur echte Detailzeilen hängen per `ON DELETE CASCADE` an ihrem Kopf (Bestell-/Wareneingangspositionen, Importzeilen, Asset-Historie, Lizenzzuordnungen).

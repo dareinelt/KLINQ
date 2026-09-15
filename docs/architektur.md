@@ -22,16 +22,16 @@ Browser ──HTTP──▶ Apache ──▶ public/index.php ──▶ Applicat
 | `app/Core/` | Laufzeit: `Application`, `ApplicationFactory`, `Container`, `Config`, `Env`, `Database`, `Router`/`Route`, `Request`/`Response`, `View`, `SessionManager`, `Logger`; `Providers/` registriert modulweise Dienste |
 | `app/Middleware/` | `SecurityHeadersMiddleware`, `RequestLogMiddleware`, `CsrfMiddleware`, `AuthorizationMiddleware` |
 | `app/Security/` | `CurrentUser`, `Permissions`, `PasswordHasher` (Argon2id), `CsrfTokenManager`, `HtmlEscaper` |
-| `app/Controllers/` | HTTP-Schicht: Eingaben lesen, Services aufrufen, Views rendern oder JSON antworten. `CrudController` als Basis für Stammdaten; `Mobile/` für die Scan-Oberfläche; `Api/` für JSON-Endpunkte |
-| `app/Services/` | Geschäftslogik und Validierung (ein Service je Fachbereich), `Ad/` (AD-Sync), `Ldap/` (LDAP-Client, Fake-Client, LDAP-Authentifizierung) |
+| `app/Controllers/` | HTTP-Schicht: Eingaben lesen, Services aufrufen, Views rendern oder JSON antworten. `CrudController` als Basis für Stammdaten; `Mobile/` für die Scan-Oberfläche; `Api/` für JSON-Endpunkte; `Helpdesk/` für Ticketsystem, Portal und Wissensdatenbank |
+| `app/Services/` | Geschäftslogik und Validierung (ein Service je Fachbereich), `Ad/` (AD-Sync), `Ldap/` (LDAP-Client, Fake-Client, LDAP-Authentifizierung), `Helpdesk/` (Ticket-Workflow, SLA, Regeln, Benachrichtigungen, Scheduler) |
 | `app/Repositories/` | Datenzugriff mit PDO-Prepared-Statements; `BaseRepository` kapselt `fetchOne/fetchAll/insertRow/updateRow` |
 | `app/Support/` | Hilfsklassen ohne Fachlogik: `Validator`, `Paginator`, `CsvReader`/`CsvWriter`, `QrCode`, `ColognePhonetic`, `Url` |
 | `app/Exceptions/` | `HttpException` (404/403/409 …), `ValidationException`, `ConflictException` |
 | `routes/web.php` + `routes/modules/*.php` | Routen je Modul mit **Pflicht-Berechtigung** pro Route |
 | `resources/views/` | PHP-Templates; `partials/` (Layout, Helfer, Filterleiste, Pagination, Flash) |
-| `config/` | Konfiguration aus Umgebungsvariablen (`app.php`, `database.php`, `ldap.php`, `permissions.php`) |
-| `database/migrations/` | Nummerierte SQL-Migrationen; `database/seeders/001_defaults.sql` Stammdaten (Rollen, Assettypen, Status); `database/fixtures/` Fake-AD |
-| `bin/` | CLI: `migrate.php`, `sync-ad.php` |
+| `config/` | Konfiguration aus Umgebungsvariablen (`app.php`, `database.php`, `ldap.php`, `helpdesk.php`, `permissions.php`) |
+| `database/migrations/` | Nummerierte SQL-Migrationen; `database/seeders/001_defaults.sql` Stammdaten (Rollen, Assettypen, Status), `003_helpdesk_defaults.sql` Help-Desk-Stammdaten; `database/fixtures/` Fake-AD |
+| `bin/` | CLI: `migrate.php`, `sync-ad.php`, `helpdesk.php` (SLA-Prüfung, Eskalation, Auto-Close) |
 | `storage/` | Uploads, Logs, temporäre Dateien (außerhalb des Webroots, Docker-Volumes) |
 | `tests/` | Eigener schlanker Test-Runner (`tests/run.php`), Unit- und Integrationstests |
 | `docker/` | Dockerfile (PHP 8.4 + Apache), php.ini, vHost, Entrypoint, Scheduler, MySQL-Init |
@@ -51,15 +51,16 @@ Browser ──HTTP──▶ Apache ──▶ public/index.php ──▶ Applicat
 
 ## Berechtigungen
 
-Rollen und Rechte stehen in `config/permissions.php` (`<bereich>.<aktion>`, z. B. `assets.manage`, `movements.checkout`, `orders.receive`). Fünf Rollen:
+Rollen und Rechte stehen in `config/permissions.php` (`<bereich>.<aktion>`, z. B. `assets.manage`, `movements.checkout`, `orders.receive`). Acht Rollen:
 
 | Rolle | Umfang |
 |---|---|
 | **admin** | Vollzugriff inkl. Benutzerverwaltung, Einstellungen, Audit-Log |
-| **assetmanagement** | Assets, Etiketten, Entnahmen/Retouren, Mitarbeiter, Standorte, Kostenstellen, Hersteller/Artikel, Lizenzen, Import, Berichte, Audit-Log |
-| **lager** | Bestand und Assets, Entnahmen/Retouren, Wareneingang, Etiketten |
-| **einkauf** | Lieferanten, Bestellungen, Wareneingang, Hersteller/Artikel, Lizenzen, Dokumente, Berichte inkl. Export |
-| **readonly** | Alle `*.view`-Rechte außer `audit.view` |
+| **assetmanagement** | Assets, Etiketten, Entnahmen/Retouren, Mitarbeiter, Standorte, Kostenstellen, Hersteller/Artikel, Lizenzen, Import, Berichte, Audit-Log, Serviceportal |
+| **lager** | Bestand und Assets, Entnahmen/Retouren, Wareneingang, Etiketten, Serviceportal |
+| **einkauf** | Lieferanten, Bestellungen, Wareneingang, Hersteller/Artikel, Lizenzen, Dokumente, Berichte inkl. Export, Serviceportal |
+| **helpdesk_agent / helpdesk_lead / helpdesk_admin** | Help-Desk-Agentenbereich in drei Stufen (Tickets bearbeiten → SLA/Kategorien/Vorlagen/Export → Administration); dazu alle Leserechte. Details: [Help Desk](helpdesk.md) |
+| **readonly** | Alle `*.view`-Rechte außer `audit.view` und `helpdesk.view` |
 
 Jede Route trägt ihre Berechtigung (Test `RouteInventoryTest` stellt sicher, dass keine Route ohne Recht existiert); zusätzlich prüfen Services sicherheitsrelevante Operationen erneut (`CurrentUser::require`), z. B. Ausmusterung, Storno oder Offline-Sync je Vorgang. Die Oberfläche blendet nur aus, was serverseitig ohnehin verweigert wird.
 

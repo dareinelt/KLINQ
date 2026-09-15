@@ -40,6 +40,17 @@
 <?php endif; ?>
 
 <section class="grid grid-4 mt-4" aria-label="Kennzahlen">
+    <?php if (!empty($helpdeskEnabled) && $can('helpdesk.view')): ?>
+    <a class="card stat-card <?= ($openCounts['tickets'] ?? 0) > 0 ? 'is-info' : '' ?>" href="/helpdesk/tickets?view=mine_open">
+        <span class="stat-value"><?= (int) ($openCounts['tickets'] ?? 0) ?></span>
+        <span class="stat-label">Meine offenen Tickets</span>
+    </a>
+    <?php elseif (!empty($helpdeskEnabled) && $can('portal.view')): ?>
+    <a class="card stat-card <?= ($openCounts['portal_tickets'] ?? 0) > 0 ? 'is-info' : '' ?>" href="/portal/tickets">
+        <span class="stat-value"><?= (int) ($openCounts['portal_tickets'] ?? 0) ?></span>
+        <span class="stat-label">Meine offenen Support-Tickets</span>
+    </a>
+    <?php endif; ?>
     <?php if ($can('assets.view')): ?>
     <a class="card stat-card" href="/assets">
         <span class="stat-value"><?= (int) $stats['assets_total'] ?></span>

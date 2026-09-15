@@ -34,6 +34,7 @@ Anwendung: <http://localhost:8080> – Anmeldung mit `ADMIN_USERNAME` / `ADMIN_P
 - [Berichte & Dashboard – Auswertungen & CSV-Export](docs/berichte.md)
 - [Import – Altbestand aus CSV übernehmen](docs/import.md)
 - [Audit-Log & Benutzerverwaltung](docs/audit.md)
+- [Help Desk – Ticketsystem, Serviceportal & Wissensdatenbank](docs/helpdesk.md)
 - [Backup & Wiederherstellung](docs/backup.md)
 
 Die gesamte Dokumentation gibt es zusätzlich als PDF mit Inhaltsverzeichnis: [docs/handbuch.pdf](docs/handbuch.pdf).

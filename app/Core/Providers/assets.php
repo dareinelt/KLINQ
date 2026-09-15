@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Controllers\AssetController;
 use App\Controllers\SearchController;
+use App\Core\Config;
 use App\Core\Container;
 use App\Core\View;
 use App\Repositories\ArticleRepository;
@@ -18,6 +19,7 @@ use App\Repositories\LocationRepository;
 use App\Repositories\ManufacturerRepository;
 use App\Repositories\MovementRepository;
 use App\Repositories\SupplierRepository;
+use App\Repositories\TicketRepository;
 use App\Security\CurrentUser;
 use App\Services\AssetService;
 use App\Services\AuditLogService;
@@ -48,7 +50,9 @@ return static function (Container $c): void {
         $c->get(ManufacturerRepository::class),
         $c->get(ArticleRepository::class),
         $c->get(SupplierRepository::class),
-        $c->get(CurrentUser::class)
+        $c->get(CurrentUser::class),
+        $c->get(TicketRepository::class),
+        (bool) $c->get(Config::class)->get('helpdesk.enabled', true)
     ));
 
     $c->singleton(AssetController::class, static fn (Container $c): AssetController => new AssetController(
@@ -66,7 +70,9 @@ return static function (Container $c): void {
         $c->get(EmployeeRepository::class),
         $c->get(MovementRepository::class),
         $c->get(LicenseRepository::class),
-        $c->get(AssetService::class)
+        $c->get(AssetService::class),
+        $c->get(TicketRepository::class),
+        (bool) $c->get(Config::class)->get('helpdesk.enabled', true)
     ));
     $c->singleton(SearchController::class, static fn (Container $c): SearchController => new SearchController(
         $c->get(View::class),

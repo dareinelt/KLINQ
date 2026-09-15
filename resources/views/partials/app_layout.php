@@ -11,6 +11,13 @@ $appName = $appName ?? 'Assetverwaltung';
 $can = $can ?? static fn (string $p): bool => false;
 $roleLabels = $roleLabels ?? [];
 $openCounts = $openCounts ?? ['checkouts' => 0, 'returns' => 0];
+$helpdeskEnabled = $helpdeskEnabled ?? false;
+$areaClass = match (true) {
+    $activeNav === 'admin' => 'is-admin',
+    str_starts_with($activeNav, 'helpdesk') => 'is-helpdesk',
+    str_starts_with($activeNav, 'portal') => 'is-portal',
+    default => '',
+};
 
 $navItem = static function (string $key, string $href, string $iconName, string $label, ?int $badge = null) use ($activeNav): string {
     $active = $activeNav === $key;
@@ -46,6 +53,18 @@ ob_start();
             <?php if ($can('licenses.view')): ?>
                 <?= $navItem('licenses', '/licenses', 'key', 'Lizenzen') ?>
             <?php endif; ?>
+            <?php if ($helpdeskEnabled && $can('helpdesk.view')): ?>
+                <span class="sidebar-section-label">Help Desk</span>
+                <?= $navItem('helpdesk', '/helpdesk', 'lifebuoy', 'Übersicht') ?>
+                <?= $navItem('helpdesk-tickets', '/helpdesk/tickets', 'ticket', 'Tickets', $openCounts['tickets'] ?? 0) ?>
+                <?php if ($can('knowledgebase.view')): ?><?= $navItem('helpdesk-knowledge', '/helpdesk/knowledge', 'book', 'Wissensdatenbank') ?><?php endif; ?>
+                <?php if ($can('helpdesk.reports')): ?><?= $navItem('helpdesk-reports', '/helpdesk/reports', 'chart', 'Ticket-Berichte') ?><?php endif; ?>
+                <?php if ($can('helpdesk.categories') || $can('helpdesk.admin')): ?><?= $navItem('helpdesk-admin', '/helpdesk/admin', 'settings', 'Help-Desk-Einstellungen') ?><?php endif; ?>
+            <?php elseif ($helpdeskEnabled && $can('portal.view')): ?>
+                <span class="sidebar-section-label">Support</span>
+                <?= $navItem('portal', '/portal', 'lifebuoy', 'Meine Tickets', $openCounts['portal_tickets'] ?? 0) ?>
+                <?php if ($can('knowledgebase.view')): ?><?= $navItem('portal-knowledge', '/portal/knowledge', 'book', 'Hilfe & Anleitungen') ?><?php endif; ?>
+            <?php endif; ?>
             <?php if ($can('orders.view') || $can('suppliers.view')): ?>
                 <span class="sidebar-section-label">Einkauf</span>
                 <?php if ($can('orders.view')): ?><?= $navItem('orders', '/orders', 'cart', 'Bestellungen') ?><?php endif; ?>
@@ -80,7 +99,7 @@ ob_start();
             <?= icon('menu') ?>
         </button>
         <?php if (!empty($areaLabel)): ?>
-            <span class="topbar-area-label <?= $activeNav === 'admin' ? 'is-admin' : '' ?>"><?= e($areaLabel) ?></span>
+            <span class="topbar-area-label <?= $areaClass ?>"><?= e($areaLabel) ?></span>
         <?php endif; ?>
         <div class="search-box topbar-search" id="global-search">
             <?= icon('search') ?>

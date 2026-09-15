@@ -13,6 +13,7 @@ use App\Middleware\SecurityHeadersMiddleware;
 use App\Repositories\AuditLogRepository;
 use App\Repositories\EmployeeRepository;
 use App\Repositories\SystemSettingRepository;
+use App\Repositories\TicketRepository;
 use App\Repositories\UserRepository;
 use App\Security\CsrfTokenManager;
 use App\Security\CurrentUser;
@@ -62,6 +63,7 @@ final class ApplicationFactory
         $view->share('can', static fn (string $permission): bool => $currentUser->can($permission));
         $view->share('roleLabels', $permissions->roleLabels());
         $view->share('openCounts', self::lazyOpenCounts($container, $currentUser));
+        $view->share('helpdeskEnabled', (bool) $config->get('helpdesk.enabled', true));
 
         if (isset($_SERVER['REMOTE_ADDR'])) {
             $container->get(AuditLogService::class)->setIpAddress((string) $_SERVER['REMOTE_ADDR']);
@@ -187,9 +189,33 @@ final class ApplicationFactory
                     $this->counts = $this->currentUser->isAuthenticated() && $this->currentUser->can('movements.view')
                         ? $this->container->get(DashboardService::class)->openCounts()
                         : ['checkouts' => 0, 'returns' => 0];
+                    $this->counts += $this->ticketCounts();
                 }
 
                 return $this->counts;
+            }
+
+            /** Ticket-Badges: Agenten sehen ihre zugewiesenen offenen Tickets, Portalnutzer ihre eigenen. @return array<string,int> */
+            private function ticketCounts(): array
+            {
+                $counts = ['tickets' => 0, 'portal_tickets' => 0];
+                $userId = $this->currentUser->id();
+                if ($userId === null || !(bool) $this->container->get(Config::class)->get('helpdesk.enabled', true)) {
+                    return $counts;
+                }
+                try {
+                    $tickets = $this->container->get(TicketRepository::class);
+                    if ($this->currentUser->can('helpdesk.view')) {
+                        $counts['tickets'] = $tickets->openCountForUser((int) $userId, true);
+                    }
+                    if ($this->currentUser->can('portal.view')) {
+                        $counts['portal_tickets'] = $tickets->openCountForUser((int) $userId, false);
+                    }
+                } catch (\Throwable) {
+                    // Help-Desk-Tabellen fehlen (Migration noch nicht eingespielt): Badge stillschweigend auslassen
+                }
+
+                return $counts;
             }
 
             public function offsetExists(mixed $offset): bool { return isset($this->counts()[$offset]); }
