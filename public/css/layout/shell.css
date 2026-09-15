@@ -167,6 +167,7 @@
 
 .module-switcher-icon .icon { width: 18px; height: 18px; }
 .module-switcher-icon.is-helpdesk { background: var(--color-info-soft); color: var(--color-info); }
+.module-switcher-icon.is-system { background: var(--color-warning-soft); color: var(--color-warning); }
 
 .module-switcher-current { display: flex; flex-direction: column; line-height: 1.15; text-align: left; }
 .module-switcher-hint { font-size: var(--font-size-xs); color: var(--color-text-muted); }

@@ -27,7 +27,10 @@ final class ModuleNavigationTest extends TestCase
     public function testMapsNavKeysToModules(): void
     {
         $this->assertSame(ModuleNavigation::ASSETS, ModuleNavigation::moduleFor('dashboard'));
-        $this->assertSame(ModuleNavigation::ASSETS, ModuleNavigation::moduleFor('admin'));
+        $this->assertSame(ModuleNavigation::SYSTEM, ModuleNavigation::moduleFor('admin'));
+        $this->assertSame(ModuleNavigation::SYSTEM, ModuleNavigation::moduleFor('reports'));
+        $this->assertSame(ModuleNavigation::SYSTEM, ModuleNavigation::moduleFor('imports'));
+        $this->assertSame(ModuleNavigation::SYSTEM, ModuleNavigation::moduleFor('audit'));
         $this->assertSame(ModuleNavigation::ASSETS, ModuleNavigation::moduleFor(''));
         $this->assertSame(ModuleNavigation::HELPDESK, ModuleNavigation::moduleFor('helpdesk'));
         $this->assertSame(ModuleNavigation::HELPDESK, ModuleNavigation::moduleFor('helpdesk-tickets'));
@@ -44,12 +47,26 @@ final class ModuleNavigationTest extends TestCase
         $this->assertSame([ModuleNavigation::ASSETS, ModuleNavigation::HELPDESK], array_column(ModuleNavigation::modules($this->can(['portal.view']), true), 'key'));
     }
 
+    public function testSystemModuleOnlyVisibleForAdmins(): void
+    {
+        $admin = $this->can(['assets.view', 'settings.manage', 'reports.view', 'imports.manage', 'audit.view']);
+        $this->assertSame(
+            [ModuleNavigation::ASSETS, ModuleNavigation::SYSTEM],
+            array_column(ModuleNavigation::modules($admin, false), 'key')
+        );
+
+        $nonAdmin = $this->can(['assets.view', 'reports.view', 'imports.manage', 'audit.view']);
+        $this->assertSame([ModuleNavigation::ASSETS], array_column(ModuleNavigation::modules($nonAdmin, false), 'key'));
+    }
+
     public function testEachModuleHasItsOwnDashboard(): void
     {
         $agent = $this->can(['helpdesk.view']);
         $this->assertSame('/dashboard', ModuleNavigation::home(ModuleNavigation::ASSETS, $agent));
         $this->assertSame('/helpdesk', ModuleNavigation::home(ModuleNavigation::HELPDESK, $agent));
         $this->assertSame('/portal', ModuleNavigation::home(ModuleNavigation::HELPDESK, $this->can(['portal.view'])));
+        $this->assertSame('/reports', ModuleNavigation::home(ModuleNavigation::SYSTEM, $this->can(['reports.view', 'settings.manage'])));
+        $this->assertSame('/admin', ModuleNavigation::home(ModuleNavigation::SYSTEM, $this->can(['settings.manage'])));
 
         $assetItems = ModuleNavigation::items(ModuleNavigation::ASSETS, $agent);
         $this->assertSame('dashboard', $this->keys($assetItems)[0]);
@@ -60,11 +77,12 @@ final class ModuleNavigationTest extends TestCase
 
     public function testModulesShowOnlyTheirOwnNavigation(): void
     {
-        $can = $this->can(['assets.view', 'movements.view', 'settings.manage', 'helpdesk.view', 'knowledgebase.view', 'helpdesk.reports', 'portal.view']);
+        $can = $this->can(['assets.view', 'movements.view', 'settings.manage', 'reports.view', 'imports.manage', 'audit.view', 'helpdesk.view', 'knowledgebase.view', 'helpdesk.reports', 'portal.view']);
 
         $assetKeys = $this->keys(ModuleNavigation::items(ModuleNavigation::ASSETS, $can));
         $this->assertContains('assets', $assetKeys);
-        $this->assertContains('admin', $assetKeys);
+        $this->assertFalse(in_array('admin', $assetKeys, true));
+        $this->assertFalse(in_array('reports', $assetKeys, true));
         foreach ($assetKeys as $key) {
             $this->assertSame(ModuleNavigation::ASSETS, ModuleNavigation::moduleFor($key), 'Assetmodul enthält Fremdeintrag: ' . $key);
         }
@@ -74,6 +92,12 @@ final class ModuleNavigationTest extends TestCase
         $this->assertContains('helpdesk-knowledge', $helpdeskKeys);
         foreach ($helpdeskKeys as $key) {
             $this->assertSame(ModuleNavigation::HELPDESK, ModuleNavigation::moduleFor($key), 'Help Desk enthält Fremdeintrag: ' . $key);
+        }
+
+        $systemKeys = $this->keys(ModuleNavigation::items(ModuleNavigation::SYSTEM, $can));
+        $this->assertSame(['reports', 'imports', 'audit', 'admin'], $systemKeys);
+        foreach ($systemKeys as $key) {
+            $this->assertSame(ModuleNavigation::SYSTEM, ModuleNavigation::moduleFor($key), 'Auswertung & System enthält Fremdeintrag: ' . $key);
         }
     }
 
