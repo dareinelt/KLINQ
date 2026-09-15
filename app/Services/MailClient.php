@@ -30,8 +30,9 @@ final class MailClient
      * deaktiviertem/nicht erreichbarem Dienst oder einem Fehler (wird geloggt, nicht geworfen).
      *
      * @param list<array{filename:string,content:string,mime_type:string}> $attachments
+     * @param array<string,string> $headers Zusätzliche Kopfzeilen (Message-ID, In-Reply-To, References, Reply-To, Auto-Submitted)
      */
-    public function send(string $to, string $subject, string $html, array $attachments = []): bool
+    public function send(string $to, string $subject, string $html, array $attachments = [], array $headers = []): bool
     {
         if (!$this->enabled() || !function_exists('curl_init')) {
             return false;
@@ -46,6 +47,7 @@ final class MailClient
             'to' => $to,
             'subject' => $subject,
             'html' => $html,
+            'headers' => $this->safeHeaders($headers),
             'attachments' => array_map(static fn (array $a): array => [
                 'filename' => $a['filename'],
                 'mime_type' => $a['mime_type'],
@@ -81,6 +83,24 @@ final class MailClient
         }
 
         return true;
+    }
+
+    /**
+     * Nur bekannte Kopfzeilen ohne Zeilenumbrüche durchreichen (Schutz vor Header-Injection).
+     * @param array<string,string> $headers @return array<string,string>
+     */
+    private function safeHeaders(array $headers): array
+    {
+        $allowed = ['Message-ID', 'In-Reply-To', 'References', 'Reply-To', 'Auto-Submitted', 'X-Ticket-Number'];
+        $clean = [];
+        foreach ($allowed as $name) {
+            $value = trim((string) ($headers[$name] ?? ''));
+            if ($value !== '' && preg_match('/[\r\n]/', $value) !== 1) {
+                $clean[$name] = mb_substr($value, 0, 998);
+            }
+        }
+
+        return $clean;
     }
 
     /** Erreichbarkeitsprüfung für die Admin-Oberfläche. */

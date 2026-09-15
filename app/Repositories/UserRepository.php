@@ -23,6 +23,17 @@ final class UserRepository extends BaseRepository
         return $this->fetchOne(self::SELECT . ' WHERE u.id = ? LIMIT 1', [$id]);
     }
 
+    /** Aktiver Benutzer zu einer E-Mail-Adresse (Groß-/Kleinschreibung egal). @return array<string,mixed>|null */
+    public function findActiveByEmail(string $email): ?array
+    {
+        $email = mb_strtolower(trim($email));
+        if ($email === '') {
+            return null;
+        }
+
+        return $this->fetchOne(self::SELECT . ' WHERE LOWER(u.email) = ? AND u.is_active = 1 ORDER BY u.id LIMIT 1', [$email]);
+    }
+
     /** @return array<int,array<string,mixed>> */
     public function all(): array
     {

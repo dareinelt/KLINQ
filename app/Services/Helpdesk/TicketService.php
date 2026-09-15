@@ -186,6 +186,19 @@ final class TicketService
         if (empty($data['requester_employee_id']) && empty($data['requester_user_id'])) {
             $data['requester_user_id'] = $userId;
         }
+        // E-Mail-Eingang: externe Absenderadresse und Message-ID für das Threading übernehmen
+        $mailFields = [];
+        if ($source === 'email') {
+            $email = trim((string) ($input['requester_email'] ?? ''));
+            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) !== false) {
+                $mailFields['requester_email'] = mb_substr($email, 0, 255);
+            }
+            $mailFields['mail_message_id'] = isset($input['mail_message_id']) ? mb_substr(trim((string) $input['mail_message_id']), 0, 255) : null;
+            if (!empty($input['external_requester']) && (int) $data['requester_user_id'] === $userId && empty($data['requester_employee_id'])) {
+                // Unbekannter externer Absender: Systembenutzer soll nicht als Melder erscheinen
+                $data['requester_user_id'] = null;
+            }
+        }
 
         $type = $this->masterData->findType((int) $data['ticket_type_id']);
         $priority = $this->resolvePriority($data, null);
@@ -217,7 +230,7 @@ final class TicketService
         $tagNames = $this->parseTags((string) ($input['tags'] ?? ''));
         $assetIds = $this->parseIds($input['asset_ids'] ?? ($input['asset_id'] ?? []));
 
-        $ticketId = $this->tickets->transaction(function () use ($data, $priority, $status, $slaRule, $due, $now, $userId, $source, $tagNames, $assetIds): int {
+        $ticketId = $this->tickets->transaction(function () use ($data, $priority, $status, $slaRule, $due, $now, $userId, $source, $tagNames, $assetIds, $mailFields): int {
             $number = $this->numbers->next($now);
             $id = $this->tickets->create([
                 'number' => $number,
@@ -248,7 +261,7 @@ final class TicketService
                 'created_by' => $userId,
                 'created_by_name' => $this->currentUser->displayName(),
                 'updated_by' => $userId,
-            ]);
+            ] + $mailFields);
             foreach ($tagNames as $name) {
                 $this->tags->attach($id, $this->tags->ensure($name));
             }
@@ -645,6 +658,82 @@ final class TicketService
             'is_requester' => $this->isOwnTicket($ticket) ? 1 : 0,
             'source' => array_key_exists($source, self::SOURCES) ? $source : 'web',
         ]);
+    }
+
+    /**
+     * Kommentar aus einer eingehenden E-Mail. Läuft unter dem Systembenutzer des Mail-Eingangs,
+     * wird aber dem tatsächlichen Absender zugeschrieben: Antworten des Melders beenden „Wartet auf Melder“
+     * automatisch, Antworten von Agenten zählen als Agentenreaktion (Erstreaktion/SLA).
+     *
+     * @param array{user_id:?int,name:string,email:string,is_requester:bool,is_agent:bool} $author
+     * @return array<string,mixed> Kommentar
+     */
+    public function addInboundMailComment(int $id, string $body, array $author, string $messageId): array
+    {
+        $this->currentUser->require('helpdesk.comment');
+        $ticket = $this->get($id);
+        if (!empty($ticket['merged_into_ticket_id'])) {
+            // Antworten auf zusammengeführte Tickets landen im Zielticket
+            $ticket = $this->get((int) $ticket['merged_into_ticket_id']);
+            $id = (int) $ticket['id'];
+        }
+        $body = trim($body);
+        if ($body === '') {
+            $body = '(Leere Nachricht)';
+        }
+        $body = mb_substr($body, 0, 20000);
+
+        $commentId = $this->tickets->transaction(function () use ($ticket, $body, $author, $messageId): int {
+            $commentId = $this->comments->create([
+                'ticket_id' => (int) $ticket['id'],
+                'type' => 'public',
+                'body' => $body,
+                'author_user_id' => $author['user_id'],
+                'author_name' => mb_substr($author['name'] !== '' ? $author['name'] : $author['email'], 0, 150),
+                'is_requester' => $author['is_requester'] ? 1 : 0,
+                'source' => 'email',
+                'mail_message_id' => mb_substr($messageId, 0, 255),
+            ]);
+            $now = gmdate('Y-m-d H:i:s');
+            $update = ['updated_by' => $this->currentUser->id(), 'last_public_comment_at' => $now];
+            if ($author['is_agent'] && !$author['is_requester']) {
+                $update['last_agent_comment_at'] = $now;
+                if ($ticket['first_response_at'] === null) {
+                    $update['first_response_at'] = $now;
+                    $update['sla_response_state'] = $this->sla->evaluate($ticket['response_due_at'], $now, new \DateTimeImmutable($now, new \DateTimeZone('UTC')), $ticket['created_at'], 100);
+                }
+            } elseif ((string) $ticket['status_code'] === TicketWorkflowService::WAITING_USER) {
+                $inProgress = $this->masterData->statusByCode(TicketWorkflowService::IN_PROGRESS);
+                if ($inProgress !== null) {
+                    $paused = $ticket['sla_paused_at'] !== null ? (int) floor((time() - $this->sla->parse((string) $ticket['sla_paused_at'])->getTimestamp()) / 60) : 0;
+                    $update['status_id'] = (int) $inProgress['id'];
+                    $update['sla_paused_at'] = null;
+                    $update['sla_paused_minutes'] = (int) $ticket['sla_paused_minutes'] + max(0, $paused);
+                    $update['resolution_due_at'] = $this->sla->shiftDue($ticket['resolution_due_at'], $paused);
+                    $this->event((int) $ticket['id'], 'status_changed', 'status', (string) $ticket['status_name'], (string) $inProgress['name'], ['auto' => true, 'via' => 'email']);
+                }
+            } elseif ((string) $ticket['status_code'] === TicketWorkflowService::RESOLVED && !$author['is_agent']) {
+                // Melder antwortet auf ein gelöstes Ticket: wieder öffnen statt Antwort zu verlieren
+                $reopened = $this->masterData->statusByCode(TicketWorkflowService::OPEN) ?? $this->masterData->statusByCode(TicketWorkflowService::IN_PROGRESS);
+                if ($reopened !== null) {
+                    $update['status_id'] = (int) $reopened['id'];
+                    $update['resolved_at'] = null;
+                    $this->event((int) $ticket['id'], 'status_changed', 'status', (string) $ticket['status_name'], (string) $reopened['name'], ['auto' => true, 'via' => 'email']);
+                }
+            }
+            $this->tickets->update((int) $ticket['id'], $update);
+            $this->tickets->addEvent((int) $ticket['id'], 'comment', $author['user_id'], $author['name'] !== '' ? $author['name'] : $author['email'], null, null, mb_substr($body, 0, 120), ['comment_id' => $commentId, 'via' => 'email']);
+
+            return $commentId;
+        });
+
+        $comment = $this->comments->find($commentId) ?? [];
+        $fresh = $this->get($id);
+        $this->audit->log('comment', 'ticket', $id, $fresh['number'], null, ['type' => 'public', 'comment_id' => $commentId, 'via' => 'email', 'from' => $author['email']]);
+        $this->rules->apply('comment_added', $fresh, $author['user_id'] ?? $this->currentUser->id(), $author['name']);
+        $this->notifications->commentAdded($fresh, $comment);
+
+        return $comment;
     }
 
     /** Kommentare des Tickets; interne nur für Agenten. @return array<int,array<string,mixed>> */

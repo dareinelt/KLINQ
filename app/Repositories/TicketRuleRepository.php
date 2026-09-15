@@ -58,13 +58,45 @@ final class TicketRuleRepository extends BaseRepository
         return $this->fetchValue('SELECT 1 FROM ticket_notifications WHERE ticket_id = :t AND event_key = :e AND recipient = :r', ['t' => $ticketId, 'e' => $eventKey, 'r' => $recipient]) !== null;
     }
 
-    public function logNotification(int $ticketId, string $eventKey, string $recipient, string $subject, string $status, ?string $error = null): void
+    public function logNotification(int $ticketId, string $eventKey, string $recipient, string $subject, string $status, ?string $error = null, ?string $messageId = null): void
     {
         $this->execute(
-            'INSERT INTO ticket_notifications (ticket_id, event_key, recipient, subject, status, error) VALUES (:t, :e, :r, :s, :st, :err)
-             ON DUPLICATE KEY UPDATE status = VALUES(status), error = VALUES(error), subject = VALUES(subject)',
-            ['t' => $ticketId, 'e' => mb_substr($eventKey, 0, 120), 'r' => mb_substr($recipient, 0, 255), 's' => mb_substr($subject, 0, 255), 'st' => $status, 'err' => $error !== null ? mb_substr($error, 0, 500) : null]
+            'INSERT INTO ticket_notifications (ticket_id, event_key, recipient, subject, status, error, message_id) VALUES (:t, :e, :r, :s, :st, :err, :mid)
+             ON DUPLICATE KEY UPDATE status = VALUES(status), error = VALUES(error), subject = VALUES(subject), message_id = COALESCE(VALUES(message_id), message_id)',
+            ['t' => $ticketId, 'e' => mb_substr($eventKey, 0, 120), 'r' => mb_substr($recipient, 0, 255), 's' => mb_substr($subject, 0, 255), 'st' => $status, 'err' => $error !== null ? mb_substr($error, 0, 500) : null, 'mid' => $messageId !== null ? mb_substr($messageId, 0, 255) : null]
         );
+    }
+
+    /** Ticket zu einer ausgehenden Message-ID (für das Threading eingehender Antworten). */
+    public function ticketIdByMessageId(string $messageId): ?int
+    {
+        $id = $this->fetchValue('SELECT ticket_id FROM ticket_notifications WHERE message_id = :m LIMIT 1', ['m' => mb_substr($messageId, 0, 255)]);
+
+        return $id !== null ? (int) $id : null;
+    }
+
+    // ------------------------------------------------------------------ E-Mail-Eingang
+
+    public function inboundMailExists(string $messageId): bool
+    {
+        return $this->fetchValue('SELECT 1 FROM ticket_inbound_mails WHERE message_id = :m', ['m' => mb_substr($messageId, 0, 255)]) !== null;
+    }
+
+    /** @param array<string,mixed> $data */
+    public function logInboundMail(array $data): int
+    {
+        $data['message_id'] = mb_substr((string) $data['message_id'], 0, 255);
+        $data['from_address'] = mb_substr((string) ($data['from_address'] ?? ''), 0, 255);
+        $data['subject'] = mb_substr((string) ($data['subject'] ?? ''), 0, 255);
+        $data['detail'] = isset($data['detail']) ? mb_substr((string) $data['detail'], 0, 500) : null;
+
+        return $this->insertRow('ticket_inbound_mails', $data);
+    }
+
+    /** @return array<int,array<string,mixed>> */
+    public function recentInboundMails(int $limit = 50): array
+    {
+        return $this->fetchAll('SELECT m.*, t.number AS ticket_number FROM ticket_inbound_mails m LEFT JOIN tickets t ON t.id = m.ticket_id ORDER BY m.id DESC LIMIT ' . max(1, $limit));
     }
 
     /** @return array<int,array<string,mixed>> */

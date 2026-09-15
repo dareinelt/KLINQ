@@ -31,7 +31,7 @@ Browser ──HTTP──▶ Apache ──▶ public/index.php ──▶ Applicat
 | `resources/views/` | PHP-Templates; `partials/` (Layout, Helfer, Filterleiste, Pagination, Flash) |
 | `config/` | Konfiguration aus Umgebungsvariablen (`app.php`, `database.php`, `ldap.php`, `helpdesk.php`, `permissions.php`) |
 | `database/migrations/` | Nummerierte SQL-Migrationen; `database/seeders/001_defaults.sql` Stammdaten (Rollen, Assettypen, Status), `003_helpdesk_defaults.sql` Help-Desk-Stammdaten; `database/fixtures/` Fake-AD |
-| `bin/` | CLI: `migrate.php`, `sync-ad.php`, `helpdesk.php` (SLA-Prüfung, Eskalation, Auto-Close) |
+| `bin/` | CLI: `migrate.php`, `sync-ad.php`, `helpdesk.php` (`process`: SLA-Prüfung, Eskalation, Auto-Close; `mail`: E-Mail-Eingang per IMAP) |
 | `storage/` | Uploads, Logs, temporäre Dateien (außerhalb des Webroots, Docker-Volumes) |
 | `tests/` | Eigener schlanker Test-Runner (`tests/run.php`), Unit- und Integrationstests |
 | `docker/` | Dockerfile (PHP 8.4 + Apache), php.ini, vHost, Entrypoint, Scheduler, MySQL-Init |

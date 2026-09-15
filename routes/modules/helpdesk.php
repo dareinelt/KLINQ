@@ -78,6 +78,7 @@ return static function (Router $router, Container $c): void {
 
     // Administration – je Bereich eigene Berechtigung; der Bereich wird aus dem Pfad gelesen
     $router->get('/helpdesk/admin', static fn (Request $r): Response => $admin()->index($r), 'helpdesk.categories');
+    $router->get('/helpdesk/admin/mail', static fn (Request $r): Response => $admin()->mail($r), 'helpdesk.admin');
     foreach (HelpdeskAdminController::KINDS as $kind => [, $permission]) {
         $router->get('/helpdesk/admin/' . $kind . '/new', static fn (Request $r): Response => $admin()->create($r), $permission);
         $router->post('/helpdesk/admin/' . $kind, static fn (Request $r): Response => $admin()->store($r), $permission);

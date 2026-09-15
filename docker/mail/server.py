@@ -6,6 +6,7 @@ PHP-Anwendung selbst keine SMTP-Zugangsdaten verwalten muss (analog zum "pdf"-Di
 Endpunkte:
   GET  /health → 200 "ok", wenn ein SMTP-Server konfiguriert ist, sonst 503
   POST /send   → Body: JSON {"to": "...", "subject": "...", "html": "...", "text": "...",
+                              "headers": {"Message-ID": "...", "In-Reply-To": "...", "References": "..."},
                               "attachments": [{"filename": "...", "content_base64": "...", "mime_type": "..."}]}
                  Antwort: 200 {"ok": true} bei Erfolg, sonst 4xx/5xx mit {"ok": false, "error": "..."}
 
@@ -61,6 +62,11 @@ def build_message(payload):
     msg["From"] = "%s <%s>" % (SMTP_FROM_NAME, from_addr) if SMTP_FROM_NAME else from_addr
     msg["To"] = to_addr
     msg["Subject"] = subject
+    # Optionale Kopfzeilen für Threading/Auto-Reply-Kennzeichnung (Whitelist, keine Zeilenumbrüche)
+    for name in ("Message-ID", "In-Reply-To", "References", "Reply-To", "Auto-Submitted", "X-Ticket-Number"):
+        value = str((payload.get("headers") or {}).get(name) or "").strip()
+        if value and "\n" not in value and "\r" not in value:
+            msg[name] = value
     msg.set_content(text or "Bitte verwenden Sie einen HTML-fähigen E-Mail-Client, um diese Nachricht anzuzeigen.")
     if html:
         msg.add_alternative(html, subtype="html")

@@ -31,7 +31,7 @@ final class TicketRepository extends BaseRepository
             p.code AS priority_code, p.name AS priority_name, p.color AS priority_color, p.level AS priority_level,
             c.name AS category_name, sc.name AS subcategory_name,
             g.name AS group_name,
-            req.display_name AS requester_name, req.email AS requester_email, req.department AS requester_department, req.phone AS requester_phone,
+            req.display_name AS requester_name, COALESCE(req.email, t.requester_email) AS requester_email, req.department AS requester_department, req.phone AS requester_phone,
             aff.display_name AS affected_name, aff.email AS affected_email,
             au.display_name AS assignee_name, au.email AS assignee_email,
             du.display_name AS deputy_name,
@@ -43,7 +43,10 @@ final class TicketRepository extends BaseRepository
             (SELECT COUNT(*) FROM ticket_comments tc WHERE tc.ticket_id = t.id) AS comment_count,
             (SELECT COUNT(*) FROM ticket_attachments ta WHERE ta.ticket_id = t.id) AS attachment_count,
             (SELECT COUNT(*) FROM ticket_assets tas WHERE tas.ticket_id = t.id) AS asset_count,
-            (SELECT GROUP_CONCAT(tg.name ORDER BY tg.name SEPARATOR \',\') FROM ticket_tag_relations tr JOIN ticket_tags tg ON tg.id = tr.tag_id WHERE tr.ticket_id = t.id) AS tag_names
+            (SELECT GROUP_CONCAT(tg.name ORDER BY tg.name SEPARATOR \',\') FROM ticket_tag_relations tr JOIN ticket_tags tg ON tg.id = tr.tag_id WHERE tr.ticket_id = t.id) AS tag_names'
+        . self::FROM;
+
+    private const FROM = '
         FROM tickets t
         JOIN ticket_types ty ON ty.id = t.ticket_type_id
         JOIN ticket_statuses st ON st.id = t.status_id
@@ -71,6 +74,18 @@ final class TicketRepository extends BaseRepository
     public function findByNumber(string $number): ?array
     {
         return $this->fetchOne(self::SELECT . ' WHERE t.number = :n', ['n' => $number]);
+    }
+
+    /** Ticket-ID zu einer E-Mail-Message-ID (Ursprungsmail des Tickets oder eines Kommentars). */
+    public function idByMailMessageId(string $messageId): ?int
+    {
+        $messageId = mb_substr($messageId, 0, 255);
+        $id = $this->fetchValue('SELECT id FROM tickets WHERE mail_message_id = :m LIMIT 1', ['m' => $messageId]);
+        if ($id === null) {
+            $id = $this->fetchValue('SELECT ticket_id FROM ticket_comments WHERE mail_message_id = :m LIMIT 1', ['m' => $messageId]);
+        }
+
+        return $id !== null ? (int) $id : null;
     }
 
     /** Sperrt die Ticketzeile für Statuswechsel/Zuweisung (innerhalb einer Transaktion). @return array<string,mixed>|null */
@@ -146,7 +161,7 @@ final class TicketRepository extends BaseRepository
     {
         [$where, $params] = $this->whereFor($filters);
 
-        return (int) $this->fetchValue('SELECT COUNT(*) FROM (' . self::SELECT . " {$where}) x", $params);
+        return (int) $this->fetchValue('SELECT COUNT(*)' . self::FROM . " {$where}", $params);
     }
 
     /**

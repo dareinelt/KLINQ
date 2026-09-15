@@ -17,6 +17,7 @@ use App\Repositories\TicketTagRepository;
 use App\Repositories\TicketTemplateRepository;
 use App\Security\CurrentUser;
 use App\Services\Helpdesk\HelpdeskAdminService;
+use App\Services\Helpdesk\TicketMailIngestionService;
 use App\Services\Helpdesk\TicketNotificationService;
 use App\Services\Helpdesk\TicketRuleEvaluator;
 use App\Services\Helpdesk\TicketService;
@@ -52,6 +53,7 @@ final class HelpdeskAdminController extends HelpdeskBaseController
         private readonly TicketRuleRepository $rules,
         private readonly TicketRuleEvaluator $evaluator,
         private readonly TicketNotificationService $notifications,
+        private readonly TicketMailIngestionService $mailIngestion,
         private readonly Config $config
     ) {
         parent::__construct($view, $currentUser);
@@ -103,12 +105,49 @@ final class HelpdeskAdminController extends HelpdeskBaseController
                 'auto_close_days' => (int) $this->config->get('helpdesk.auto_close_days', 5),
                 'reopen_days' => (int) $this->config->get('helpdesk.reopen_days', 14),
                 'notifications_enabled' => $this->notifications->enabled(),
+                'mail_intake_enabled' => $this->mailIngestion->enabled(),
                 'sla_warning_percent' => (int) $this->config->get('helpdesk.sla_warning_percent', 75),
                 'sla_escalation_percent' => (int) $this->config->get('helpdesk.sla_escalation_percent', 90),
             ],
             'colors' => HelpdeskAdminService::COLORS,
             'statusCategories' => HelpdeskAdminService::STATUS_CATEGORIES,
             'triggers' => TicketRuleRepository::TRIGGERS,
+        ]);
+    }
+
+    /** Protokoll des E-Mail-Eingangs (IMAP) mit Konfigurationsübersicht. */
+    public function mail(Request $request): Response
+    {
+        $this->currentUser->require('helpdesk.admin');
+        $rows = $this->rules->recentInboundMails(200);
+        $counts = ['created' => 0, 'comment' => 0, 'ignored' => 0, 'failed' => 0];
+        foreach ($rows as $row) {
+            $counts[(string) $row['action']] = ($counts[(string) $row['action']] ?? 0) + 1;
+        }
+        $driver = (string) $this->config->get('helpdesk.mail.driver', 'imap');
+
+        return $this->render('helpdesk.admin.mail', [
+            'title' => 'E-Mail-Eingang',
+            'activeNav' => 'helpdesk-admin',
+            'areaLabel' => 'Help Desk',
+            'rows' => $rows,
+            'counts' => $counts,
+            'config' => [
+                'enabled' => $this->mailIngestion->enabled(),
+                'driver' => $driver,
+                'host' => $driver === 'file'
+                    ? (string) $this->config->get('helpdesk.mail.file_path', '')
+                    : trim((string) $this->config->get('helpdesk.mail.host', '') . ':' . (string) $this->config->get('helpdesk.mail.port', 993), ':'),
+                'encryption' => (string) $this->config->get('helpdesk.mail.encryption', 'ssl'),
+                'mailbox' => (string) $this->config->get('helpdesk.mail.mailbox', 'INBOX'),
+                'processed_mailbox' => (string) $this->config->get('helpdesk.mail.processed_mailbox', '') ?: '– (nur gelesen markieren)',
+                'interval_minutes' => (int) $this->config->get('helpdesk.mail.interval_minutes', 0),
+                'batch_size' => (int) $this->config->get('helpdesk.mail.batch_size', 50),
+                'system_user' => (string) $this->config->get('helpdesk.mail.system_user', 'admin'),
+                'allow_unknown_senders' => (bool) $this->config->get('helpdesk.mail.allow_unknown_senders', true),
+                'default_type' => (string) $this->config->get('helpdesk.mail.default_type', 'incident'),
+                'mail_domain' => $this->notifications->mailDomain(),
+            ],
         ]);
     }
 

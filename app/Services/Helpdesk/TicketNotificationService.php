@@ -177,17 +177,72 @@ final class TicketNotificationService
                 $this->rules->logNotification($ticketId, $eventKey, $email, $fullSubject, 'skipped', 'Mailversand deaktiviert');
                 continue;
             }
+            $messageId = $this->messageId($ticketId, $eventKey);
             try {
-                $ok = $this->mail->send($email, $fullSubject, $this->wrap($ticket, $html));
-                $this->rules->logNotification($ticketId, $eventKey, $email, $fullSubject, $ok ? 'sent' : 'failed', $ok ? null : 'Mail-Dienst meldete Fehler');
+                $ok = $this->mail->send($email, $fullSubject, $this->wrap($ticket, $html), [], $this->threadHeaders($ticket, $messageId));
+                $this->rules->logNotification($ticketId, $eventKey, $email, $fullSubject, $ok ? 'sent' : 'failed', $ok ? null : 'Mail-Dienst meldete Fehler', $messageId);
                 $sent += $ok ? 1 : 0;
             } catch (\Throwable $e) {
                 $this->logger->warning('Ticket-Benachrichtigung fehlgeschlagen', ['ticket' => $ticket['number'], 'event' => $eventKey, 'error' => $e->getMessage()]);
-                $this->rules->logNotification($ticketId, $eventKey, $email, $fullSubject, 'failed', $e->getMessage());
+                $this->rules->logNotification($ticketId, $eventKey, $email, $fullSubject, 'failed', $e->getMessage(), $messageId);
             }
         }
 
         return $sent;
+    }
+
+    // ------------------------------------------------------------------ Threading
+
+    /**
+     * Eindeutige Message-ID einer ausgehenden Ticket-Mail. Das Präfix „ticket-{id}.“ erlaubt es dem
+     * E-Mail-Eingang, Antworten auch ohne Datenbanktreffer dem Ticket zuzuordnen.
+     */
+    public function messageId(int $ticketId, string $eventKey): string
+    {
+        $key = preg_replace('/[^a-z0-9]+/i', '-', $eventKey) ?? 'event';
+
+        return sprintf('<ticket-%d.%s.%s@%s>', $ticketId, trim($key, '-'), bin2hex(random_bytes(6)), $this->mailDomain());
+    }
+
+    /** Stabile Wurzel-ID je Ticket, unter der Mailclients alle Nachrichten eines Tickets als Unterhaltung gruppieren. */
+    public function threadRootId(int $ticketId): string
+    {
+        return sprintf('<ticket-%d@%s>', $ticketId, $this->mailDomain());
+    }
+
+    /** Ticket-ID aus einer Message-ID im eigenen Format ermitteln (sonst null). */
+    public static function ticketIdFromMessageId(string $messageId): ?int
+    {
+        return preg_match('/<ticket-(\d+)(?:[.@])/i', trim($messageId), $m) === 1 ? (int) $m[1] : null;
+    }
+
+    /** @param array<string,mixed> $ticket @return array<string,string> */
+    private function threadHeaders(array $ticket, string $messageId): array
+    {
+        $root = $this->threadRootId((int) $ticket['id']);
+
+        return [
+            'Message-ID' => $messageId,
+            'In-Reply-To' => $root,
+            'References' => $root,
+            'X-Ticket-Number' => (string) $ticket['number'],
+            'Auto-Submitted' => 'auto-generated',
+        ];
+    }
+
+    public function mailDomain(): string
+    {
+        $domain = (string) $this->config->get('helpdesk.mail_domain', '');
+        if ($domain === '') {
+            $from = (string) $this->config->get('mail.from_address', '');
+            $domain = str_contains($from, '@') ? substr($from, strrpos($from, '@') + 1) : '';
+        }
+        if ($domain === '') {
+            $host = parse_url((string) $this->config->get('app.url', ''), PHP_URL_HOST);
+            $domain = is_string($host) && $host !== '' ? $host : 'helpdesk.local';
+        }
+
+        return preg_replace('/[^a-z0-9.\-]/i', '', $domain) ?: 'helpdesk.local';
     }
 
     /** @param array<string,mixed> $ticket */

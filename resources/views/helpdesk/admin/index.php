@@ -8,7 +8,7 @@ $memberCount = static fn (array $r): int => (int) ($r['member_count'] ?? (is_arr
 ?>
 <div class="page-header">
     <div><h1 class="page-title">Help-Desk-Administration</h1><p class="page-subtitle text-muted">Stammdaten, SLAs, Vorlagen und Automatisierungen.</p></div>
-    <div class="page-actions"><a class="btn btn-primary" href="/helpdesk/admin/<?= e($kind) ?>/new"><?= icon('plus') ?> Neu</a></div>
+    <div class="page-actions"><?php if ($can('helpdesk.admin')): ?><a class="btn btn-secondary" href="/helpdesk/admin/mail"><?= icon('mail') ?> E-Mail-Eingang</a> <?php endif; ?><a class="btn btn-primary" href="/helpdesk/admin/<?= e($kind) ?>/new"><?= icon('plus') ?> Neu</a></div>
 </div>
 <div class="status-tabs admin-tabs" role="tablist" aria-label="Administrationsbereiche">
     <?php foreach ($kinds as $key => $label): ?>

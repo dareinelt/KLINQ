@@ -19,6 +19,17 @@ final class EmployeeRepository extends BaseRepository
         );
     }
 
+    /** Mitarbeiter zu einer E-Mail-Adresse; aktive Datensätze zuerst. @return array<string,mixed>|null */
+    public function findByEmail(string $email): ?array
+    {
+        $email = mb_strtolower(trim($email));
+        if ($email === '') {
+            return null;
+        }
+
+        return $this->fetchOne('SELECT * FROM employees WHERE LOWER(email) = :e ORDER BY is_active DESC, id LIMIT 1', ['e' => $email]);
+    }
+
     /** @return array<string,mixed>|null */
     public function findByUsername(string $username): ?array
     {
