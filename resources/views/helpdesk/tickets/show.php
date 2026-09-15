@@ -195,7 +195,7 @@ $percentBar = static function (?int $percent, string $state): string {
         <?php if ($can('helpdesk.worklog') && !$readOnly): ?>
         <form method="post" action="/helpdesk/tickets/<?= $id ?>/worklogs" class="inline-form form-row">
             <?= csrf_field() ?>
-            <div class="form-group is-narrow"><label for="wl-min">Minuten</label><input id="wl-min" type="number" name="minutes" min="1" max="43200" required value="<?= e(old('minutes', '15')) ?>"></div>
+            <div class="form-group is-narrow"><label for="wl-min">Minuten</label><input id="wl-min" type="number" name="minutes" min="1" max="43200" step="15" required value="<?= e(old('minutes', '15')) ?>"></div>
             <div class="form-group"><label for="wl-act">Tätigkeit</label><select id="wl-act" name="activity"><?php foreach ($worklogActivities as $k => $l): ?><option value="<?= e($k) ?>"<?= selected(old('activity', 'support'), $k) ?>><?= e($l) ?></option><?php endforeach; ?></select></div>
             <div class="form-group is-narrow"><label for="wl-date">Datum</label><input id="wl-date" type="date" name="worked_on" value="<?= e(old('worked_on', gmdate('Y-m-d'))) ?>"></div>
             <div class="form-group"><label for="wl-note">Notiz</label><input id="wl-note" name="note" maxlength="2000" value="<?= e(old('note')) ?>"></div>
