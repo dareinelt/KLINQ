@@ -80,7 +80,7 @@ final class PortalController extends HelpdeskBaseController
 
         return $this->render('helpdesk.portal.tickets', [
             'title' => 'Meine Tickets',
-            'activeNav' => 'portal',
+            'activeNav' => 'portal-tickets',
             'areaLabel' => 'Portal',
             'rows' => $this->tickets->search($filters, 'updated_at', 'desc', $paginator->perPage, $paginator->offset()),
             'view' => $view,
@@ -110,7 +110,7 @@ final class PortalController extends HelpdeskBaseController
 
         return $this->render('helpdesk.portal.form', [
             'title' => 'Neue Anfrage',
-            'activeNav' => 'portal',
+            'activeNav' => 'portal-tickets',
             'areaLabel' => 'Portal',
             'prefill' => $prefill,
             'templateId' => $templateId,
@@ -154,7 +154,7 @@ final class PortalController extends HelpdeskBaseController
 
         return $this->render('helpdesk.portal.show', [
             'title' => $ticket['number'] . ' · ' . $ticket['subject'],
-            'activeNav' => 'portal',
+            'activeNav' => 'portal-tickets',
             'areaLabel' => 'Portal',
             'ticket' => $ticket,
             'comments' => $this->service->comments($ticket),
