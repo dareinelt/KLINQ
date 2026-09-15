@@ -35,6 +35,9 @@
     </ul>
     <?php endif; ?>
 </section>
+<?php if ($personalProcurementTasks): ?>
+<section class="card mt-4"><div class="card-header"><h2><?= icon('cart') ?> Meine Einkaufsaufgaben</h2><a class="btn btn-link btn-sm" href="/orders/requests">Bedarfe</a></div><ul class="task-list"><?php foreach ($personalProcurementTasks as $task): ?><li><a class="task-title" href="<?= e($task['href']) ?>"><?= e($task['label']) ?></a><?= badge($task['level'] === 'warning' ? 'Offen' : 'Gemeldet', $task['level']) ?></li><?php endforeach; ?></ul></section>
+<?php endif; ?>
 
 <section class="grid grid-4 mt-4" aria-label="Kennzahlen">
     <?php if ($can('assets.view')): ?>

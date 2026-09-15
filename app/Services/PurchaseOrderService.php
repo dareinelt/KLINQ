@@ -300,7 +300,10 @@ final class PurchaseOrderService
                 ]);
                 $this->orders->addReceived((int) $item['id'], $line['quantity']);
                 $total += $line['quantity'];
-                if ((int) $item['creates_assets'] !== 1) {
+                if ($item['article_id'] !== null && (int) ($item['is_consumable'] ?? 0) === 1) {
+                    $this->articles->addStock((int) $item['article_id'], $line['quantity']);
+                }
+                if ((int) $item['creates_assets'] !== 1 || (int) ($item['is_consumable'] ?? 0) === 1) {
                     continue;
                 }
                 for ($i = 0; $i < $line['quantity']; $i++) {
@@ -454,6 +457,9 @@ final class PurchaseOrderService
             }
             $data['asset_type_id'] = (int) $article['asset_type_id'];
             $data['description'] ??= trim($article['manufacturer_name'] . ' ' . $article['name']);
+            if ((int) ($article['is_consumable'] ?? 0) === 1) {
+                $data['creates_assets'] = 0;
+            }
         }
         if ($data['description'] === null) {
             throw ValidationException::single('description', 'Bitte eine Bezeichnung angeben oder einen Artikel wählen.');

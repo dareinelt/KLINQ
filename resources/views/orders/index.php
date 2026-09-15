@@ -12,6 +12,8 @@ $today = date('Y-m-d');
 <div class="page-header">
     <div><h1>Bestellungen</h1><p class="page-subtitle text-muted mb-0"><?= $paginator->total ?> Bestellungen</p></div>
     <div class="page-actions">
+        <a class="btn btn-secondary" href="/orders/requests">Bedarfe</a>
+        <a class="btn btn-secondary" href="/orders/templates">Vorlagen</a>
         <?php if ($can('orders.manage')): ?><a class="btn btn-primary" href="/orders/new"><?= icon('plus') ?> Neue Bestellung</a><?php endif; ?>
     </div>
 </div>

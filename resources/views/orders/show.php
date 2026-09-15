@@ -17,6 +17,7 @@ $showItemForm = $editable && ($editing !== null || $old !== null || $items === [
         <?php if ($receivable): ?><a class="btn btn-primary" href="/orders/<?= (int) $row['id'] ?>/receive"><?= icon('download') ?> Wareneingang buchen</a><?php endif; ?>
         <?php if ($editable): ?><a class="btn btn-secondary" href="/orders/<?= (int) $row['id'] ?>/edit"><?= icon('pen') ?> Bearbeiten</a><?php endif; ?>
         <?php if ($can('orders.manage')): ?>
+        <button type="button" class="btn btn-ghost" data-dialog-open="template-dialog"><?= icon('copy') ?> Als Vorlage speichern</button>
             <?php if ($status === 'draft'): ?>
                 <form method="post" action="/orders/<?= (int) $row['id'] ?>/status" data-confirm="Bestellung als bestellt markieren? Positionen sind danach weiterhin änderbar, bis die erste Lieferung gebucht wird."><?= csrf_field() ?><input type="hidden" name="action" value="order"><button type="submit" class="btn btn-secondary"<?= (int) $row['item_count'] === 0 ? ' disabled title="Zuerst Positionen hinzufügen"' : '' ?>><?= icon('cart') ?> Als bestellt markieren</button></form>
             <?php elseif ($status === 'delivered'): ?>
@@ -78,7 +79,7 @@ $showItemForm = $editable && ($editing !== null || $old !== null || $items === [
                 <td class="text-muted"><?= (int) $it['position'] ?></td>
                 <td>
                     <strong><?= e($it['description']) ?></strong>
-                    <?php if ($it['article_id']): ?><br><span class="text-sm text-muted"><a href="/articles/<?= (int) $it['article_id'] ?>/edit"><?= e($it['manufacturer_name']) ?> <?= e($it['article_name']) ?></a><?= $it['article_number'] ? ' · ' . e($it['article_number']) : '' ?></span><?php endif; ?>
+                    <?php if ($it['article_id']): ?><br><span class="text-sm text-muted"><a href="/articles/<?= (int) $it['article_id'] ?>/edit"><?= e($it['manufacturer_name']) ?> <?= e($it['article_name']) ?></a><?= $it['article_number'] ? ' · ' . e($it['article_number']) : '' ?><?= (int) ($it['is_consumable'] ?? 0) ? ' · Verbrauchsmaterial' : '' ?></span><?php endif; ?>
                     <?php if ($it['note']): ?><br><span class="text-sm text-muted"><?= e($it['note']) ?></span><?php endif; ?>
                 </td>
                 <td><?= $it['asset_type_name'] ? icon($it['asset_type_icon'] ?: 'box', 'icon icon-sm icon-muted') . ' ' . e($it['asset_type_name']) : '<span class="text-muted">–</span>' ?><?= (int) $it['creates_assets'] === 0 ? '<br><span class="text-xs text-muted">ohne Asset</span>' : '' ?></td>
@@ -237,6 +238,7 @@ $showItemForm = $editable && ($editing !== null || $old !== null || $items === [
 <?php endif; ?>
 
 <?php if ($can('orders.manage')): ?>
+<dialog id="template-dialog" class="dialog"><form method="post" action="/orders/<?= (int) $row['id'] ?>/templates"><?= csrf_field() ?><h2>Als Bestellvorlage speichern</h2><div class="form-group"><label for="template-name">Name <span class="required">*</span></label><input id="template-name" name="name" maxlength="150" required value="<?= e($row['supplier_name'] . ' – ') ?>"></div><div class="form-actions"><button class="btn btn-primary">Vorlage speichern</button><button type="button" class="btn btn-ghost" data-dialog-close>Abbrechen</button></div></form></dialog>
 <dialog id="cancel-dialog" class="dialog">
     <form method="post" action="/orders/<?= (int) $row['id'] ?>/status">
         <?= csrf_field() ?>

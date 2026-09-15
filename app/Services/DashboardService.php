@@ -136,6 +136,20 @@ final class DashboardService
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /** @return array<int,array{label:string,href:string,level:string}> */
+    public function personalProcurementTasks(int $userId): array
+    {
+        $stmt = $this->pdo->prepare("SELECT id, order_number FROM purchase_orders WHERE created_by = :user AND status = 'draft' ORDER BY updated_at DESC LIMIT 5");
+        $stmt->execute(['user' => $userId]);
+        $tasks = array_map(static fn (array $row): array => ['label' => 'Bestellentwurf ' . $row['order_number'] . ' vervollständigen', 'href' => '/orders/' . $row['id'], 'level' => 'warning'], $stmt->fetchAll(PDO::FETCH_ASSOC));
+        $stmt = $this->pdo->prepare("SELECT id FROM purchase_requests WHERE requested_by = :user AND status = 'open' ORDER BY created_at DESC LIMIT 5");
+        $stmt->execute(['user' => $userId]);
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $tasks[] = ['label' => 'Bedarfsmeldung #' . $row['id'] . ' ist noch offen', 'href' => '/orders/requests', 'level' => 'info'];
+        }
+        return $tasks;
+    }
+
     private function count(string $sql): int
     {
         return (int) $this->pdo->query($sql)->fetchColumn();

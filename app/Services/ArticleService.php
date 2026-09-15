@@ -129,6 +129,9 @@ final class ArticleService
             ->text('description', 'Beschreibung')
             ->bool('is_active')
             ->bool('is_handover_relevant')
+            ->bool('is_consumable')
+            ->int('minimum_stock', 'Mindestbestand', false, 0)
+            ->int('stock_quantity', 'Aktueller Bestand', true, 0)
             ->validated();
 
         if ($this->manufacturers->find((int) $data['manufacturer_id']) === null) {
@@ -141,6 +144,10 @@ final class ArticleService
             $category = $this->assetTypes->findCategory((int) $data['asset_category_id']);
             if ($category === null || (int) $category['asset_type_id'] !== (int) $data['asset_type_id']) {
                 throw ValidationException::single('asset_category_id', 'Die Kategorie passt nicht zum gewählten Assettyp.');
+            }
+            if ((int) $data['is_consumable'] !== 1) {
+                $data['minimum_stock'] = null;
+                $data['stock_quantity'] = 0;
             }
         }
 
