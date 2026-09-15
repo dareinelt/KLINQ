@@ -2,10 +2,11 @@ FROM php:8.4-apache
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libldap2-dev libpng-dev libjpeg-dev libfreetype6-dev libzip-dev default-mysql-client \
+        libapache2-mod-auth-gssapi krb5-user \
     && docker-php-ext-configure gd --with-jpeg --with-freetype \
     && docker-php-ext-configure ldap --with-libdir=lib/$(uname -m)-linux-gnu/ \
     && docker-php-ext-install -j"$(nproc)" pdo pdo_mysql ldap gd zip opcache \
-    && a2enmod rewrite headers \
+    && a2enmod rewrite headers auth_gssapi \
     && rm -rf /var/lib/apt/lists/*
 
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/zz-app.ini

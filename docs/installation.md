@@ -7,6 +7,7 @@ Die Anwendung läuft vollständig in Docker: ein **App-Container** (PHP 8.4 + Ap
 - Docker Engine ≥ 24 mit Docker Compose v2
 - Ein freier Host-Port für die Anwendung (Standard `8080`)
 - Für Active Directory: Netzwerkzugriff vom App-Container auf den Domänencontroller (LDAPS, Port 636)
+- Für Windows-SSO zusätzlich Kerberos zum Domänencontroller (Port 88) und ein SPN `HTTP/<Servername>` auf dem AD-Dienstkonto
 
 ## Erstinstallation
 
@@ -54,6 +55,7 @@ Alle Einstellungen werden über Umgebungsvariablen gelesen (`docker compose` lie
 | Datenbank | `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`, `DB_ROOT_PASSWORD`, `DB_FORWARD_PORT` (nur Entwicklung) |
 | Session | `SESSION_SECURE`, `SESSION_LIFETIME` (Minuten, Standard 480), `SESSION_SAME_SITE` |
 | Uploads | `MAX_UPLOAD_BYTES` (Standard 20 MB), `ALLOWED_UPLOAD_EXTENSIONS` |
+| Windows-SSO (Kerberos) | `KERBEROS_ENABLED`, `KERBEROS_MODE`, `KERBEROS_REALM`, `KERBEROS_KDC`, `KERBEROS_SERVICE_HOST`, `KERBEROS_KVNO`, `KERBEROS_KEYTAB`, `KERBEROS_ENCTYPES`, `KERBEROS_SSL_ONLY`, `KERBEROS_BASIC_FALLBACK`, `KERBEROS_SESSION_TTL_MINUTES` (nutzt das Dienstkonto aus `AD_BIND_DN`/`AD_BIND_PASSWORD`, siehe [Windows-SSO](windows-sso.md)) |
 | Active Directory | `AD_ENABLED`, `AD_DRIVER` (`ldap`/`fake`), `AD_HOST`, `AD_PORT`, `AD_BASE_DN`, `AD_BIND_DN`, `AD_BIND_PASSWORD`, `AD_USER_FILTER`, `AD_ATTR_*` (Attribut-Mapping), `AD_SYNC_INTERVAL_MINUTES`, `AD_AUTH_ENABLED`, `AD_AUTH_DEFAULT_ROLE` |
 
 `APP_DEBUG=true` zeigt Fehlerdetails im Browser und gehört ausschließlich in Entwicklungsumgebungen. In Produktion werden Fehler mit einer Referenz-ID angezeigt und vollständig im Log protokolliert.

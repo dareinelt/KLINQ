@@ -34,8 +34,9 @@ final class RouteInventoryTest extends TestCase
     {
         $permissions = new Permissions(new Config(dirname(__DIR__, 2) . '/config'));
         $known = $permissions->all();
-        // Öffentlich sind nur die Anmeldung, der Health-Check und das Störungsformular für Anwender.
-        $publicAllowed = ['GET /login', 'POST /login', 'GET /health', 'GET /stoerung', 'POST /stoerung', 'GET /stoerung/gesendet'];
+        // Öffentlich sind nur die Anmeldung, der Health-Check, das Störungsformular für Anwender
+        // und die Windows-SSO-Prüfung (liest nur REMOTE_USER aus der Kerberos-Aushandlung).
+        $publicAllowed = ['GET /login', 'POST /login', 'GET /health', 'GET /stoerung', 'POST /stoerung', 'GET /stoerung/gesendet', 'GET /sso/pruefung', 'GET /sso/abbruch'];
         $routes = $this->routes();
 
         $this->assertTrue(count($routes) > 80, 'Routen nicht geladen');

@@ -51,6 +51,11 @@ final class QuickReportController extends HelpdeskBaseController
     public function form(Request $request): Response
     {
         $this->assertAvailable($request);
+        // Einmalige Kerberos-Aushandlung, solange der Windows-Benutzer noch unbekannt ist
+        $probe = $this->identity->ssoProbeRedirect($request);
+        if ($probe !== null) {
+            return $this->redirect($probe);
+        }
 
         return $this->renderForm($request);
     }
