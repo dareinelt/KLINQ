@@ -2,7 +2,9 @@
 
 Webbasierte Inventar- und Assetverwaltung für IT-Hardware (PCs, Mobilgeräte, Netzwerkkomponenten, Zubehör) mit
 QR-Etiketten, mobiler Erfassung (PWA, offlinefähig), Active-Directory-Anbindung, Einkauf/Wareneingang, Lizenzen,
-Historie, Audit-Log und rollenbasierter Benutzerverwaltung.
+Historie, Audit-Log und rollenbasierter Benutzerverwaltung. Ein optionales **Help-Desk-Modul** ergänzt die
+Anwendung um ein vollständiges IT-Ticketsystem mit Status-Workflow, SLA-Fristen und Eskalation, Serviceportal
+für Endanwender sowie einer Wissensdatenbank.
 
 **Technologie:** PHP 8.4, MySQL 8.4, Vanilla JavaScript, HTML, CSS – ohne Frameworks, ohne CDNs, ohne externe Laufzeitabhängigkeiten.
 Betrieb vollständig in Docker; ein separater Python-Container (WeasyPrint) erzeugt die PDF-Archive der Übergabeprotokolle.
