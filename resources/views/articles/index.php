@@ -36,7 +36,7 @@ ob_start(); ?>
     <?php else: ?>
     <div class="table-wrapper">
     <table class="table">
-        <thead><tr><th>Hersteller</th><th>Bezeichnung</th><th>Artikelnummer</th><th>Typ</th><th>Kategorie</th><th>Protokoll</th><th class="num">Assets</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Hersteller</th><th>Bezeichnung</th><th>Artikelnummer</th><th>Typ</th><th>Kategorie</th><th>Protokoll</th><th>Bestand</th><th class="num">Assets</th><th>Status</th><th></th></tr></thead>
         <tbody>
         <?php foreach ($rows as $r): ?>
             <tr class="<?= (int) $r['is_active'] ? '' : 'is-muted' ?>">
@@ -46,6 +46,7 @@ ob_start(); ?>
                 <td><?= e($r['asset_type_name']) ?></td>
                 <td><?= e($r['category_name'] ?? '–') ?></td>
                 <td><?= (int) ($r['is_handover_relevant'] ?? 0) ? badge('Übergabe', 'info') : '<span class="text-muted">–</span>' ?></td>
+                <td><?= (int) ($r['is_consumable'] ?? 0) ? badge((int) $r['stock_quantity'] . ' / ' . (int) $r['minimum_stock'], (int) $r['stock_quantity'] <= (int) $r['minimum_stock'] ? 'warning' : 'info') : '<span class="text-muted">–</span>' ?></td>
                 <td class="num"><a href="/assets?article_id=<?= (int) $r['id'] ?>"><?= (int) $r['asset_count'] ?></a></td>
                 <td><?= active_badge($r['is_active']) ?></td>
                 <td class="table-actions">

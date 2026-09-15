@@ -42,7 +42,7 @@ final class ArticleRepository extends BaseRepository
     /** @return array<int,array<string,mixed>> */
     public function activeForSelect(?int $assetTypeId = null): array
     {
-        $sql = 'SELECT a.id, a.name, a.article_number, a.asset_type_id, a.asset_category_id, a.manufacturer_id, m.name AS manufacturer_name
+        $sql = 'SELECT a.id, a.name, a.article_number, a.asset_type_id, a.asset_category_id, a.manufacturer_id, a.is_consumable, m.name AS manufacturer_name
                 FROM articles a JOIN manufacturers m ON m.id = a.manufacturer_id WHERE a.is_active = 1';
         $params = [];
         if ($assetTypeId !== null) {
@@ -156,6 +156,22 @@ final class ArticleRepository extends BaseRepository
     public function update(int $id, array $data): void
     {
         $this->updateRow('articles', $id, $data);
+    }
+
+    /** @return array<int,array<string,mixed>> Nachbestellvorschläge für aktive Verbrauchsartikel. */
+    public function replenishmentSuggestions(): array
+    {
+        return $this->fetchAll(
+            'SELECT a.id, a.name, a.article_number, a.stock_quantity, a.minimum_stock, m.name AS manufacturer_name
+             FROM articles a JOIN manufacturers m ON m.id = a.manufacturer_id
+             WHERE a.is_active = 1 AND a.is_consumable = 1 AND a.minimum_stock IS NOT NULL AND a.stock_quantity <= a.minimum_stock
+             ORDER BY m.name, a.name'
+        );
+    }
+
+    public function addStock(int $id, int $quantity): void
+    {
+        $this->execute('UPDATE articles SET stock_quantity = stock_quantity + ? WHERE id = ?', [$quantity, $id]);
     }
 
     /** @return array{0:string,1:array<string,mixed>} */

@@ -313,6 +313,19 @@ final class PurchaseOrderServiceIntegrationTest extends DatabaseTestCase
         $this->assertThrows(ConflictException::class, fn () => $this->service()->receive($id, $this->order($id), ['received_at' => date('Y-m-d'), 'items' => [$phoneItem => ['quantity' => '1']]]));
     }
 
+    public function testConsumableReceiptOnlyIncreasesStockWithoutCreatingAsset(): void
+    {
+        $this->pdo->prepare('UPDATE articles SET is_consumable = 1, minimum_stock = 5, stock_quantity = 2 WHERE id = ?')->execute([$this->articleId]);
+        $id = $this->service()->create(['supplier_id' => (string) $this->supplierId]);
+        $itemId = $this->service()->addItem($id, $this->order($id), ['article_id' => (string) $this->articleId, 'quantity' => '4', 'creates_assets' => '1']);
+        $this->service()->markOrdered($id, $this->order($id));
+
+        $result = $this->service()->receive($id, $this->order($id), ['received_at' => date('Y-m-d'), 'items' => [$itemId => ['quantity' => '4']]]);
+
+        $this->assertSame([], $result['asset_ids']);
+        $this->assertSame(6, (int) $this->pdo->query('SELECT stock_quantity FROM articles WHERE id = ' . $this->articleId)->fetchColumn());
+    }
+
     // ------------------------------------------------------------------ Berechtigungen
 
     public function testLagerMayReceiveButNotManageOrders(): void

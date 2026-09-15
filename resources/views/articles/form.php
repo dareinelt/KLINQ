@@ -72,6 +72,11 @@ $selectedType = form_value($row, 'asset_type_id');
         <label class="checkbox-field"><input type="checkbox" name="is_active" value="1"<?= form_checked($row, 'is_active') ?>> <span>Aktiv</span></label>
         <label class="checkbox-field"><input type="checkbox" name="is_handover_relevant" value="1"<?= form_checked($row, 'is_handover_relevant', false) ?>> <span>Relevant für Übergabeprotokoll</span></label>
         <span class="form-hint">Assets dieses Artikels erscheinen im Übergabeprotokoll des Mitarbeiters (z. B. Notebook, Smartphone – nicht Kabel oder Verbrauchsmaterial).</span>
+        <label class="checkbox-field mt-3"><input type="checkbox" name="is_consumable" value="1"<?= form_checked($row, 'is_consumable', false) ?>> <span>Verbrauchsmaterial</span></label>
+        <div class="form-row">
+            <div class="form-group"><label for="f-min-stock">Mindestbestand</label><input id="f-min-stock" type="number" name="minimum_stock" min="0" value="<?= e(form_value($row, 'minimum_stock')) ?>"><span class="form-hint">Bei Unterschreitung wird ein Bestellvorschlag angezeigt.</span></div>
+            <div class="form-group"><label for="f-stock">Aktueller Bestand</label><input id="f-stock" type="number" name="stock_quantity" min="0" value="<?= e(form_value($row, 'stock_quantity', '0')) ?>"></div>
+        </div>
         <div class="form-actions">
             <button type="submit" class="btn <?= $duplicates ? 'btn-warning' : 'btn-primary' ?>"><?= icon('check') ?> <?= $duplicates ? 'Trotzdem speichern' : 'Speichern' ?></button>
             <a class="btn btn-ghost" href="/articles">Abbrechen</a>

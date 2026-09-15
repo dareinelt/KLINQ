@@ -70,6 +70,13 @@ Weitere Felder: Menge (1–10 000), Netto-Einzelpreis (deutsche oder englische S
 - Die Menge kann nicht unter die bereits gelieferte Menge gesenkt werden; Positionen mit Lieferungen lassen sich nicht löschen.
 - Positionsnummern werden nicht wiederverwendet.
 
+### Vorlagen, Bedarfe und Verbrauchsmaterial
+
+- Bestehende Bestellungen lassen sich als **Bestellvorlage** speichern und erzeugen später mit einem Klick einen neuen Entwurf samt Positionen.
+- Über **Bedarfsmeldungen** können Anwender Artikel oder freie Bedarfe mit Menge, Kostenstelle und Hinweis an den Einkauf übergeben. Der Einkauf übernimmt offene Meldungen mit einem ausgewählten Lieferanten in einen Bestellentwurf.
+- Artikel können als **Verbrauchsmaterial** mit aktuellem Bestand und Mindestbestand markiert werden. Diese Artikel erzeugen niemals Assets oder Inventarnummern; beim Wareneingang erhöht sich ausschließlich ihr Lagerbestand.
+- Liegt der Bestand auf oder unter dem Mindestbestand, erscheint der Artikel unter **Bestellvorschläge**. Dort wird ein Entwurf bis zum doppelten Mindestbestand erzeugt.
+
 ## Wareneingang
 
 ![Wareneingang buchen](screenshots/order-receive.png)

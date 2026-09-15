@@ -101,6 +101,7 @@ final class ArticleController extends CrudController
             'category_name' => $a['category_name'],
             'article_number' => $a['article_number'],
             'is_handover_relevant' => (bool) $a['is_handover_relevant'],
+            'is_consumable' => (bool) $a['is_consumable'],
         ], $rows)]);
     }
 
