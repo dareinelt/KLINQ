@@ -24,6 +24,7 @@ use App\Repositories\SupplierRepository;
 use App\Repositories\TicketRepository;
 use App\Security\CurrentUser;
 use App\Services\AssetService;
+use App\Services\InventoryNumberService;
 use App\Services\LocationService;
 use App\Support\Paginator;
 
@@ -45,6 +46,7 @@ final class AssetController extends BaseController
         private readonly MovementRepository $movements,
         private readonly LicenseRepository $licenses,
         private readonly AssetService $service,
+        private readonly InventoryNumberService $numbers,
         private readonly ?TicketRepository $tickets = null,
         private readonly bool $helpdeskEnabled = true
     ) {
@@ -206,6 +208,22 @@ final class AssetController extends BaseController
             'location' => $r['location_path'],
             'url' => '/assets/' . (int) $r['id'],
         ], $rows)]);
+    }
+
+    /** Zeigt die zuletzt vergebene Inventarnummer für ein Präfix, ohne die Sequenz zu verändern. */
+    public function lastInventoryNumber(Request $request): Response
+    {
+        $prefix = trim($request->queryString('prefix'));
+        $last = null;
+        if ($prefix !== '') {
+            try {
+                $last = $this->numbers->last($prefix);
+            } catch (\InvalidArgumentException $e) {
+                $last = null;
+            }
+        }
+
+        return $this->json(['last_number' => $last]);
     }
 
     /** Live-Dublettenprüfung im Formular (Seriennummer / MAC / IMEI). */

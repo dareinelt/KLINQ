@@ -54,6 +54,21 @@ final class AssetServiceIntegrationTest extends DatabaseTestCase
         $this->assertSame('PC27001', $next->next('PC'));
     }
 
+    public function testLastReturnsPreviewWithoutAdvancingSequence(): void
+    {
+        $numbers = new InventoryNumberService($this->pdo, new \DateTimeImmutable('2026-05-01'));
+
+        // Noch keine Nummer vergeben: kein Vorschlag
+        $this->assertNull($numbers->last('PC'));
+
+        $this->assertSame('PC26001', $numbers->next('PC'));
+        // last() zeigt die zuletzt vergebene Nummer, verändert die Sequenz aber nicht
+        $this->assertSame('PC26001', $numbers->last('PC'));
+        $this->assertSame('PC26001', $numbers->last('PC'));
+        $this->assertSame('PC26002', $numbers->next('PC'));
+        $this->assertSame('PC26002', $numbers->last('PC'));
+    }
+
     public function testCreateAssignsNumberWritesHistoryAndDerivesStatus(): void
     {
         $this->loginAs('assetmanagement');

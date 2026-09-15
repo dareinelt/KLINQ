@@ -58,6 +58,25 @@ final class InventoryNumberService extends BaseRepository
         });
     }
 
+    /**
+     * Liefert die zuletzt vergebene Nummer für Präfix (aktuelles Jahr), ohne die Sequenz zu verändern.
+     * Null, wenn für dieses Präfix/Jahr noch keine Nummer vergeben wurde.
+     */
+    public function last(string $prefix, bool $legacy = false): ?string
+    {
+        $prefix = self::normalizePrefix($prefix);
+        $yearCode = $legacy ? self::LEGACY_YEAR_CODE : ($this->now ?? new \DateTimeImmutable())->format('y');
+
+        $current = (int) $this->fetchValue(
+            'SELECT last_number FROM inventory_sequences WHERE prefix = :p AND year_code = :y',
+            ['p' => $prefix, 'y' => $yearCode]
+        );
+        $highest = $this->highestExisting($prefix, $yearCode);
+        $number = max($current, $highest);
+
+        return $number > 0 ? self::format($prefix, $yearCode, $number) : null;
+    }
+
     /** Prüft eine manuell eingegebene Nummer (Import/Altbestand) gegen das Format. */
     public static function isValid(string $number): bool
     {

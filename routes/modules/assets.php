@@ -23,6 +23,7 @@ return static function (Router $router, Container $c): void {
 
     $router->get('/api/assets/search', static fn (Request $r): Response => $ctl()->search($r), 'assets.view');
     $router->get('/api/assets/check', static fn (Request $r): Response => $ctl()->check($r), 'assets.view');
+    $router->get('/api/assets/last-inventory-number', static fn (Request $r): Response => $ctl()->lastInventoryNumber($r), 'assets.manage');
 
     $search = static fn (): SearchController => $c->get(SearchController::class);
     $router->get('/api/search', static fn (Request $r): Response => $search()->api($r), 'dashboard.view');

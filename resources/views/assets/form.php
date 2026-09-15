@@ -17,7 +17,7 @@
             <div class="form-group">
                 <label for="f-type">Assettyp *</label>
                 <?php if ($isNew): ?>
-                <select id="f-type" name="asset_type_id" required data-category-filter autofocus>
+                <select id="f-type" name="asset_type_id" required data-category-filter data-inventory-type autofocus>
                     <option value="">Bitte wählen …</option>
                     <?php foreach ($types as $t): ?>
                         <option value="<?= (int) $t['id'] ?>"<?= selected(form_value($row, 'asset_type_id'), $t['id']) ?>
@@ -194,17 +194,19 @@
         </div>
 
         <?php if ($isNew): ?>
-        <details class="mt-3"<?= form_value($row, 'is_legacy') === '1' || has_error('inventory_number') ? ' open' : '' ?>>
+        <div class="form-row mt-3" data-manual-invno-row<?= form_value($row, 'inventory_number') !== '' || has_error('inventory_number') ? '' : ' hidden' ?>>
+            <div class="form-group">
+                <label for="f-invno">Inventarnummer</label>
+                <input id="f-invno" name="inventory_number" class="mono" maxlength="20" value="<?= e(form_value($row, 'inventory_number')) ?>" placeholder="z. B. PC24006" autocapitalize="characters" data-manual-invno>
+                <?= field_error('inventory_number') ?>
+                <span class="form-hint">Manuell vergebene Inventarnummer für den gewählten Gerätetyp (Format PRÄFIX + JJ + Nummer).</span>
+            </div>
+        </div>
+        <details class="mt-3"<?= form_value($row, 'is_legacy') === '1' ? ' open' : '' ?>>
             <summary class="text-sm">Altbestand nachinventarisieren</summary>
             <div class="form-row mt-3">
                 <div class="form-group">
                     <label class="checkbox-field"><input type="checkbox" name="is_legacy" value="1"<?= form_checked($row, 'is_legacy', false) ?>> <span>Altbestand – Inventarnummer mit Jahrescode <strong>88</strong> vergeben (z. B. PC88001)</span></label>
-                </div>
-                <div class="form-group">
-                    <label for="f-invno">Vorhandene Inventarnummer übernehmen</label>
-                    <input id="f-invno" name="inventory_number" class="mono" maxlength="20" value="<?= e(form_value($row, 'inventory_number')) ?>" placeholder="leer = automatisch vergeben" autocapitalize="characters">
-                    <?= field_error('inventory_number') ?>
-                    <span class="form-hint">Nur wenn bereits ein Etikett mit gültiger Nummer existiert (Format PRÄFIX + JJ + Nummer).</span>
                 </div>
             </div>
         </details>
@@ -216,5 +218,17 @@
             <a class="btn btn-ghost" href="<?= e($back) ?>">Abbrechen</a>
         </div>
     </form>
+    <?php if ($isNew): ?>
+    <dialog id="inventory-number-dialog" class="dialog" data-inventory-dialog>
+        <div class="dialog-header"><h2>Inventarnummer</h2><button type="button" class="btn btn-ghost btn-sm" data-dialog-close aria-label="Schließen"><?= icon('x') ?></button></div>
+        <div class="dialog-body">
+            <p data-inventory-dialog-message></p>
+        </div>
+        <div class="dialog-footer">
+            <button type="button" class="btn btn-ghost" data-inventory-dialog-no>Nein</button>
+            <button type="button" class="btn btn-primary" data-inventory-dialog-yes>Ja</button>
+        </div>
+    </dialog>
+    <?php endif; ?>
 </div>
 <?php $innerContent = ob_get_clean(); $scripts = ['/js/category-filter.js', '/js/picker.js', '/js/asset-form.js']; include __DIR__ . '/../partials/app_layout.php'; ?>
