@@ -26,6 +26,7 @@ final class CurrentUser
             'username' => (string) $user['username'],
             'display_name' => (string) ($user['display_name'] ?? $user['username']),
             'role' => (string) $user['role'],
+            'groups' => self::normalizeGroups($user['groups'] ?? []),
             'logged_in_at' => time(),
         ];
     }
@@ -45,6 +46,7 @@ final class CurrentUser
             return;
         }
         $_SESSION[self::SESSION_KEY]['role'] = (string) $user['role'];
+        $_SESSION[self::SESSION_KEY]['groups'] = self::normalizeGroups($user['groups'] ?? []);
         $_SESSION[self::SESSION_KEY]['display_name'] = (string) ($user['display_name'] ?? $user['username']);
     }
 
@@ -68,6 +70,7 @@ final class CurrentUser
             'username' => (string) $user['username'],
             'display_name' => (string) ($user['display_name'] ?? $user['username']),
             'role' => (string) $user['role'],
+            'groups' => self::normalizeGroups($user['groups'] ?? []),
             'logged_in_at' => time(),
         ];
         try {
@@ -108,9 +111,15 @@ final class CurrentUser
         return (string) ($this->user()['role'] ?? '');
     }
 
+    /** Zugewiesene Berechtigungsgruppen (zusätzlich zur Rolle). @return array<int,string> */
+    public function groups(): array
+    {
+        return (array) ($this->user()['groups'] ?? []);
+    }
+
     public function can(string $permission): bool
     {
-        return $this->isAuthenticated() && $this->permissions->roleHas($this->role(), $permission);
+        return $this->isAuthenticated() && $this->permissions->hasEffective($this->role(), $this->groups(), $permission);
     }
 
     public function require(string $permission): void
@@ -123,6 +132,20 @@ final class CurrentUser
     /** @return array<int,string> */
     public function permissions(): array
     {
-        return $this->isAuthenticated() ? $this->permissions->forRole($this->role()) : [];
+        if (!$this->isAuthenticated()) {
+            return [];
+        }
+        $permissions = $this->permissions->forRole($this->role());
+        foreach ($this->groups() as $group) {
+            $permissions = array_merge($permissions, $this->permissions->forGroup($group));
+        }
+
+        return array_values(array_unique($permissions));
+    }
+
+    /** @param mixed $groups @return array<int,string> */
+    private static function normalizeGroups(mixed $groups): array
+    {
+        return array_values(array_unique(array_map('strval', (array) $groups)));
     }
 }

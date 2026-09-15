@@ -117,6 +117,28 @@ final class UserServiceIntegrationTest extends DatabaseTestCase
         $this->assertSame($before['password_hash'], $after['password_hash']);
     }
 
+    public function testGroupsCanBeAssignedAndAreMultiValued(): void
+    {
+        $this->loginAs($this->seedAdmin());
+        $svc = $this->c->get(UserService::class);
+        $users = $this->c->get(UserRepository::class);
+        $statistik = array_values(array_filter($users->permissionGroups(), static fn (array $g): bool => $g['name'] === 'statistik'))[0];
+
+        $id = $svc->create($this->input(['groups' => [(string) $statistik['id']]]));
+        $created = $users->find($id);
+        $this->assertSame(['statistik'], $created['groups']);
+        $this->assertSame([(int) $statistik['id']], $users->groupIdsForUser($id));
+
+        // Ungültige/fremde IDs werden ignoriert, mehrere Gruppen bleiben zuweisbar.
+        $svc->update($id, $created, ['username' => 'ignored', 'display_name' => 'Max Muster', 'role' => 'lager', 'is_active' => '1', 'groups' => [(string) $statistik['id'], '999999']]);
+        $after = $users->find($id);
+        $this->assertSame(['statistik'], $after['groups']);
+
+        // Gruppen entfernen, indem das Feld weggelassen wird
+        $svc->update($id, $after, ['display_name' => 'Max Muster', 'role' => 'lager', 'is_active' => '1']);
+        $this->assertSame([], $users->find($id)['groups']);
+    }
+
     public function testGuardsProtectOwnAccountAndLastAdmin(): void
     {
         $adminId = $this->seedAdmin();

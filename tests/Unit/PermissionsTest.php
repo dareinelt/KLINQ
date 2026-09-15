@@ -65,4 +65,29 @@ final class PermissionsTest extends TestCase
         $user->logout();
         $this->assertFalse($user->isAuthenticated());
     }
+
+    // ------------------------------------------------------------------ Berechtigungsgruppen
+
+    public function testGroupGrantsPermissionInAdditionToRole(): void
+    {
+        $this->assertTrue($this->permissions->groupExists('statistik'));
+        $this->assertTrue($this->permissions->groupHas('statistik', 'helpdesk.reports'));
+        $this->assertFalse($this->permissions->roleHas('helpdesk_agent', 'helpdesk.reports'), 'Ticket-Berichte werden nur über die Gruppe „Statistik“ vergeben');
+
+        $this->assertFalse($this->permissions->hasEffective('helpdesk_agent', [], 'helpdesk.reports'));
+        $this->assertTrue($this->permissions->hasEffective('helpdesk_agent', ['statistik'], 'helpdesk.reports'));
+        // Admins haben das Recht bereits über die Rolle, unabhängig von Gruppen.
+        $this->assertTrue($this->permissions->hasEffective('admin', [], 'helpdesk.reports'));
+    }
+
+    public function testCurrentUserCanCombinesRoleAndGroups(): void
+    {
+        $user = new CurrentUser($this->permissions);
+        $user->login(['id' => 2, 'username' => 'agent', 'display_name' => 'Agent', 'role' => 'helpdesk_agent']);
+        $this->assertFalse($user->can('helpdesk.reports'));
+
+        $user->login(['id' => 2, 'username' => 'agent', 'display_name' => 'Agent', 'role' => 'helpdesk_agent', 'groups' => ['statistik']]);
+        $this->assertTrue($user->can('helpdesk.reports'));
+        $this->assertSame(['statistik'], $user->groups());
+    }
 }

@@ -43,6 +43,18 @@
             <?= field_error('role') ?>
             <?php if ($isSelf): ?><p class="form-hint" id="role-hint">Die eigene Administratorrolle kann nicht entzogen werden.</p><?php endif; ?>
         </div>
+        <?php if ($groups): ?>
+        <div class="form-group">
+            <label>Berechtigungsgruppen</label>
+            <div class="checkbox-row">
+                <?php $checkedGroups = $_SESSION['_old_input']['groups'] ?? $selectedGroups; ?>
+                <?php foreach ($groups as $g): ?>
+                    <label class="checkbox-field"><input type="checkbox" name="groups[]" value="<?= (int) $g['id'] ?>"<?= in_array((int) $g['id'], array_map('intval', (array) $checkedGroups), true) ? ' checked' : '' ?>> <span><?= e($g['label']) ?></span></label>
+                <?php endforeach; ?>
+            </div>
+            <p class="form-hint">Zusätzlich zur Rolle zuweisbare Rechte, z. B. „Statistik“ für die Help-Desk-Ticket-Berichte. Einem Benutzer können mehrere Gruppen zugeordnet werden.</p>
+        </div>
+        <?php endif; ?>
         <?php if ($isNew): ?>
         <div class="form-row">
             <div class="form-group">

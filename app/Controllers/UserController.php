@@ -42,6 +42,7 @@ final class UserController extends BaseController
             'rows' => $this->users->search($filters),
             'filters' => $filters,
             'roleLabels' => $this->permissions->roleLabels(),
+            'groupLabels' => $this->permissions->groupLabels(),
             'basePath' => '/admin/users',
         ]);
     }
@@ -128,6 +129,8 @@ final class UserController extends BaseController
             'areaLabel' => 'Administration',
             'row' => $row,
             'roleLabels' => $this->permissions->roleLabels(),
+            'groups' => $this->users->permissionGroups(),
+            'selectedGroups' => $row === null ? [] : $this->users->groupIdsForUser((int) $row['id']),
             'isSelf' => $row !== null && (int) $row['id'] === $this->currentUser->id(),
             'passwordMin' => UserService::PASSWORD_MIN_LENGTH,
         ]);
