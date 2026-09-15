@@ -20,7 +20,7 @@ Mitarbeiter werden nicht manuell gepflegt, sondern aus dem Active Directory (LDA
 ```ini
 AD_ENABLED=true
 AD_DRIVER=ldap                    # ldap (produktiv) | fake (Entwicklung/Tests)
-AD_HOST=dc01.example.local
+AD_HOST=dc01.example.local        # Hostname, FQDN oder IP; Schema (ldaps://) optional
 AD_PORT=636                       # 636 = LDAPS, 389 = LDAP
 AD_BASE_DN=OU=Users,DC=example,DC=local
 AD_BIND_DN=CN=svc-assets,OU=Service,DC=example,DC=local
