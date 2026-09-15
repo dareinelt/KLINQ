@@ -117,8 +117,8 @@ $percentBar = static function (?int $percent, string $state): string {
         <form method="post" action="/helpdesk/tickets/<?= $id ?>/comments" enctype="multipart/form-data" class="comment-form" data-hd-comment-form>
             <?= csrf_field() ?>
             <div class="radio-group" role="radiogroup" aria-label="Kommentartyp">
-                <label><input type="radio" name="type" value="public" checked> Öffentliche Antwort (für Melder sichtbar)</label>
-                <?php if ($isAgent): ?><label><input type="radio" name="type" value="internal"> Interne Notiz</label><?php endif; ?>
+                <?php if ($isAgent): ?><label><input type="radio" name="type" value="internal" checked> Interne Notiz</label><?php endif; ?>
+                <label><input type="radio" name="type" value="public"<?= $isAgent ? '' : ' checked' ?>> Öffentliche Antwort (für Melder sichtbar)</label>
             </div>
             <div class="form-group">
                 <label for="comment-body" class="sr-only">Kommentar</label>
@@ -132,10 +132,11 @@ $percentBar = static function (?int $percent, string $state): string {
         <?php endif; ?>
     </section>
 
-    <section class="card" id="attachments">
-        <div class="card-header-row">
+    <details class="card card-collapsible" id="attachments">
+        <summary class="card-summary">
             <h2 class="card-title">Anhänge <span class="text-muted">(<?= count($attachments) ?>)</span></h2>
-        </div>
+        </summary>
+        <div class="card-collapsible-body">
         <?php if ($attachments === []): ?>
             <p class="empty-state">Keine Anhänge.</p>
         <?php else: ?>
@@ -164,12 +165,14 @@ $percentBar = static function (?int $percent, string $state): string {
             <div class="form-group is-narrow"><button type="submit" class="btn btn-secondary"><?= icon('upload') ?> Hochladen</button></div>
         </form>
         <?php endif; ?>
-    </section>
-
-    <section class="card" id="worklog">
-        <div class="card-header-row">
-            <h2 class="card-title">Arbeitszeit <span class="text-muted">(<?= (int) $worklogTotal ?> min gesamt)</span></h2>
         </div>
+    </details>
+
+    <details class="card card-collapsible" id="worklog">
+        <summary class="card-summary">
+            <h2 class="card-title">Arbeitszeit <span class="text-muted">(<?= (int) $worklogTotal ?> min gesamt)</span></h2>
+        </summary>
+        <div class="card-collapsible-body">
         <?php if ($worklogs !== []): ?>
         <table class="table table-compact">
             <thead><tr><th>Datum</th><th>Bearbeiter</th><th>Tätigkeit</th><th class="text-right">Minuten</th><th>Notiz</th><th></th></tr></thead>
@@ -199,7 +202,8 @@ $percentBar = static function (?int $percent, string $state): string {
             <div class="form-group is-narrow"><button type="submit" class="btn btn-secondary"><?= icon('timer') ?> Buchen</button></div>
         </form>
         <?php endif; ?>
-    </section>
+        </div>
+    </details>
 
     <section class="card" id="history">
         <h2 class="card-title">Verlauf</h2>
@@ -268,8 +272,8 @@ $percentBar = static function (?int $percent, string $state): string {
             <?php if ($ticket['deputy_name']): ?><dt>Vertretung</dt><dd><?= e($ticket['deputy_name']) ?></dd><?php endif; ?>
         </dl>
         <?php if ($can('helpdesk.assign') && !$readOnly): ?>
-        <details<?= empty($ticket['assignee_user_id']) ? ' open' : '' ?>>
-            <summary class="text-sm">Zuweisung ändern</summary>
+        <details class="side-edit"<?= empty($ticket['assignee_user_id']) ? ' open' : '' ?>>
+            <summary class="side-edit-summary"><?= icon('pen', 'icon icon-xs') ?> Zuweisung ändern</summary>
             <form method="post" action="/helpdesk/tickets/<?= $id ?>/assign" class="stack-form">
                 <?= csrf_field() ?>
                 <input type="hidden" name="version" value="<?= (int) $ticket['version'] ?>">
@@ -323,12 +327,15 @@ $percentBar = static function (?int $percent, string $state): string {
         <h2 class="card-title">Tags</h2>
         <?php if ($tags !== []): ?><div class="tag-list"><?php foreach ($tags as $t): ?><a class="tag-chip is-<?= e($t['color'] ?? 'neutral') ?>" href="/helpdesk/tickets?view=all&amp;tag=<?= urlencode((string) $t['name']) ?>"><?= e($t['name']) ?></a><?php endforeach; ?></div><?php else: ?><p class="text-muted text-sm">Keine Tags.</p><?php endif; ?>
         <?php if ($canUpdate): ?>
-        <form method="post" action="/helpdesk/tickets/<?= $id ?>/tags" class="inline-form">
-            <?= csrf_field() ?>
-            <div class="form-group"><label for="tags-input" class="sr-only">Tags</label><input id="tags-input" name="tags" list="tags-datalist" data-hd-tags value="<?= e(implode(', ', array_map(static fn (array $t): string => (string) $t['name'], $tags))) ?>" placeholder="tag1, tag2 …"></div>
-            <datalist id="tags-datalist"></datalist>
-            <button type="submit" class="btn btn-secondary btn-sm">Speichern</button>
-        </form>
+        <details class="side-edit">
+            <summary class="side-edit-summary"><?= icon('pen', 'icon icon-xs') ?> Tags bearbeiten</summary>
+            <form method="post" action="/helpdesk/tickets/<?= $id ?>/tags" class="inline-form">
+                <?= csrf_field() ?>
+                <div class="form-group"><label for="tags-input" class="sr-only">Tags</label><input id="tags-input" name="tags" list="tags-datalist" data-hd-tags value="<?= e(implode(', ', array_map(static fn (array $t): string => (string) $t['name'], $tags))) ?>" placeholder="tag1, tag2 …"></div>
+                <datalist id="tags-datalist"></datalist>
+                <button type="submit" class="btn btn-secondary btn-sm">Speichern</button>
+            </form>
+        </details>
         <?php endif; ?>
     </section>
 
@@ -345,19 +352,22 @@ $percentBar = static function (?int $percent, string $state): string {
         </ul>
         <?php endif; ?>
         <?php if ($canUpdate): ?>
-        <form method="post" action="/helpdesk/tickets/<?= $id ?>/assets" class="stack-form">
-            <?= csrf_field() ?>
-            <div class="form-group">
-                <label for="asset-select">Asset verknüpfen</label>
-                <select id="asset-select" name="asset_id" required>
-                    <option value="">– Asset des Melders wählen –</option>
-                    <?php foreach ($employeeAssets as $ea): ?><option value="<?= (int) $ea['id'] ?>"><?= e($ea['inventory_number']) ?> · <?= e($ea['name'] ?? $ea['article_name'] ?? '') ?></option><?php endforeach; ?>
-                </select>
-                <p class="form-hint">Es werden die dem Melder zugeordneten Assets angeboten. Andere Assets über <a href="/assets">Assets</a> → „Ticket erstellen“ verknüpfen.</p>
-            </div>
-            <div class="form-group"><label for="asset-note">Notiz</label><input id="asset-note" name="note" maxlength="255"></div>
-            <button type="submit" class="btn btn-secondary btn-sm"><?= icon('link') ?> Verknüpfen</button>
-        </form>
+        <details class="side-edit">
+            <summary class="side-edit-summary"><?= icon('link', 'icon icon-xs') ?> Asset verknüpfen</summary>
+            <form method="post" action="/helpdesk/tickets/<?= $id ?>/assets" class="stack-form">
+                <?= csrf_field() ?>
+                <div class="form-group">
+                    <label for="asset-select">Asset verknüpfen</label>
+                    <select id="asset-select" name="asset_id" required>
+                        <option value="">– Asset des Melders wählen –</option>
+                        <?php foreach ($employeeAssets as $ea): ?><option value="<?= (int) $ea['id'] ?>"><?= e($ea['inventory_number']) ?> · <?= e($ea['name'] ?? $ea['article_name'] ?? '') ?></option><?php endforeach; ?>
+                    </select>
+                    <p class="form-hint">Es werden die dem Melder zugeordneten Assets angeboten. Andere Assets über <a href="/assets">Assets</a> → „Ticket erstellen“ verknüpfen.</p>
+                </div>
+                <div class="form-group"><label for="asset-note">Notiz</label><input id="asset-note" name="note" maxlength="255"></div>
+                <button type="submit" class="btn btn-secondary btn-sm"><?= icon('link') ?> Verknüpfen</button>
+            </form>
+        </details>
         <?php endif; ?>
     </section>
 
@@ -379,18 +389,21 @@ $percentBar = static function (?int $percent, string $state): string {
         <ul class="side-list"><?php foreach ($merged as $m): ?><li><div class="side-list-main"><a href="/helpdesk/tickets/<?= (int) $m['id'] ?>"><?= e($m['number']) ?></a> <?= e($m['subject']) ?></div></li><?php endforeach; ?></ul>
         <?php endif; ?>
         <?php if ($canUpdate): ?>
-        <form method="post" action="/helpdesk/tickets/<?= $id ?>/relations" class="stack-form">
-            <?= csrf_field() ?>
-            <div class="form-row">
-                <div class="form-group"><label for="rel-type">Typ</label><select id="rel-type" name="type"><?php foreach ($relationLabels as $k => $l): ?><option value="<?= e($k) ?>"<?= selected('related', $k) ?>><?= e($l) ?></option><?php endforeach; ?></select></div>
-                <div class="form-group"><label for="rel-ticket">Ticket</label><input id="rel-ticket" name="related" list="rel-tickets" data-hd-ticket-search="<?= $id ?>" placeholder="Nummer oder Betreff" required autocomplete="off"><datalist id="rel-tickets"></datalist></div>
-            </div>
-            <button type="submit" class="btn btn-secondary btn-sm"><?= icon('link') ?> Verknüpfen</button>
-        </form>
+        <details class="side-edit">
+            <summary class="side-edit-summary"><?= icon('link', 'icon icon-xs') ?> Ticket verknüpfen</summary>
+            <form method="post" action="/helpdesk/tickets/<?= $id ?>/relations" class="stack-form">
+                <?= csrf_field() ?>
+                <div class="form-row">
+                    <div class="form-group"><label for="rel-type">Typ</label><select id="rel-type" name="type"><?php foreach ($relationLabels as $k => $l): ?><option value="<?= e($k) ?>"<?= selected('related', $k) ?>><?= e($l) ?></option><?php endforeach; ?></select></div>
+                    <div class="form-group"><label for="rel-ticket">Ticket</label><input id="rel-ticket" name="related" list="rel-tickets" data-hd-ticket-search="<?= $id ?>" placeholder="Nummer oder Betreff" required autocomplete="off"><datalist id="rel-tickets"></datalist></div>
+                </div>
+                <button type="submit" class="btn btn-secondary btn-sm"><?= icon('link') ?> Verknüpfen</button>
+            </form>
+        </details>
         <?php endif; ?>
         <?php if ($can('helpdesk.merge') && !$readOnly && !$closed): ?>
-        <details id="merge" class="mt-2">
-            <summary class="text-sm">Ticket zusammenführen</summary>
+        <details id="merge" class="side-edit">
+            <summary class="side-edit-summary"><?= icon('merge', 'icon icon-xs') ?> Ticket zusammenführen</summary>
             <form method="post" action="/helpdesk/tickets/<?= $id ?>/merge" class="stack-form" data-confirm="Dieses Ticket in das Zielticket zusammenführen? Kommentare, Anhänge und Beobachter werden übertragen; dieses Ticket wird storniert.">
                 <?= csrf_field() ?>
                 <div class="form-group"><label for="merge-target">Zielticket</label><input id="merge-target" name="target" list="merge-tickets" data-hd-ticket-search="<?= $id ?>" placeholder="Nummer oder Betreff" required autocomplete="off"><datalist id="merge-tickets"></datalist></div>
@@ -410,11 +423,14 @@ $percentBar = static function (?int $percent, string $state): string {
         </ul>
         <?php endif; ?>
         <?php if ($canUpdate): ?>
-        <form method="post" action="/helpdesk/tickets/<?= $id ?>/watchers" class="inline-form">
-            <?= csrf_field() ?>
-            <div class="form-group"><label for="watcher-user" class="sr-only">Benutzer</label><select id="watcher-user" name="user_id" required><option value="">– Benutzer –</option><?php foreach ($agents as $a): ?><option value="<?= (int) $a['id'] ?>"><?= e($a['display_name']) ?></option><?php endforeach; ?></select></div>
-            <button type="submit" class="btn btn-secondary btn-sm"><?= icon('plus') ?></button>
-        </form>
+        <details class="side-edit">
+            <summary class="side-edit-summary"><?= icon('plus', 'icon icon-xs') ?> Beobachter hinzufügen</summary>
+            <form method="post" action="/helpdesk/tickets/<?= $id ?>/watchers" class="inline-form">
+                <?= csrf_field() ?>
+                <div class="form-group"><label for="watcher-user" class="sr-only">Benutzer</label><select id="watcher-user" name="user_id" required><option value="">– Benutzer –</option><?php foreach ($agents as $a): ?><option value="<?= (int) $a['id'] ?>"><?= e($a['display_name']) ?></option><?php endforeach; ?></select></div>
+                <button type="submit" class="btn btn-secondary btn-sm"><?= icon('plus') ?></button>
+            </form>
+        </details>
         <?php endif; ?>
     </section>
 

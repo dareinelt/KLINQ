@@ -18,6 +18,7 @@ select, textarea {
 
 input[type="file"] { padding: var(--space-2) 0; }
 textarea { min-height: 100px; resize: vertical; }
+input[readonly], textarea[readonly] { background: var(--color-surface-alt); color: var(--color-text-muted); cursor: not-allowed; }
 
 input:focus, select:focus, textarea:focus {
     border-color: var(--color-primary);

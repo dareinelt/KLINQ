@@ -47,10 +47,15 @@ $tagValue = form_value($row, 'tags', $isEdit ? implode(', ', array_map(static fn
             <?= field_error('subject') ?>
         </div>
         <?php if ($can('knowledgebase.view')): ?><div id="kb-suggest" class="kb-suggest" hidden></div><?php endif; ?>
+        <?php $canEditDescription = !$isEdit || $can('helpdesk.admin'); ?>
         <div class="form-group<?= has_error('description') ? ' has-error' : '' ?>">
-            <label for="f-description">Beschreibung *</label>
-            <textarea id="f-description" name="description" rows="8" required maxlength="20000"><?= e(form_value($row, 'description')) ?></textarea>
+            <label for="f-description">Beschreibung<?= $canEditDescription ? ' *' : '' ?></label>
+            <textarea id="f-description" name="description" rows="8" required maxlength="20000"<?= $canEditDescription ? '' : ' readonly aria-readonly="true"' ?>><?= e(form_value($row, 'description')) ?></textarea>
+            <?php if ($canEditDescription): ?>
             <p class="form-hint">Was ist passiert, seit wann, welche Fehlermeldung, was wurde bereits versucht?</p>
+            <?php else: ?>
+            <p class="form-hint"><?= icon('shield', 'icon icon-xs') ?> Der Beschreibungstext kann nur von Administratoren geändert werden. Ergänzungen bitte als Kommentar oder interne Notiz erfassen.</p>
+            <?php endif; ?>
             <?= field_error('description') ?>
         </div>
         <div class="form-row form-row-3">

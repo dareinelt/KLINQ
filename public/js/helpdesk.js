@@ -175,6 +175,22 @@
         apply();
     });
 
+    // ---------------------------------------------------------------- Aufklappbare Karten: per Link-Anker (#attachments, #worklog) öffnen
+    function openTargetDetails() {
+        const hash = window.location.hash;
+        if (hash.length < 2) { return; }
+        let target = null;
+        try { target = document.querySelector(hash); } catch (e) { return; }
+        if (!target) { return; }
+        const details = target.closest("details");
+        if (details && !details.open) {
+            details.open = true;
+            target.scrollIntoView();
+        }
+    }
+    openTargetDetails();
+    window.addEventListener("hashchange", openTargetDetails);
+
     // ---------------------------------------------------------------- Kommentarfilter (alle / öffentlich / intern)
     document.querySelectorAll("[data-hd-comment-filter]").forEach(function (bar) {
         const list = document.querySelector(bar.getAttribute("data-hd-comment-filter"));
