@@ -84,11 +84,11 @@ final class EmployeeController extends CrudController
         ]);
     }
 
-    /** JSON-Suche für Auswahlfelder (Picker). */
+    /** JSON-Suche für Auswahlfelder (Picker); mit phonetischer Autovervollständigung (Kölner Phonetik). */
     public function search(Request $request): Response
     {
         $term = trim($request->queryString('q'));
-        $rows = $this->employees->search(['q' => $term, 'active' => '1'], 30, 0);
+        $rows = $this->service->searchAutocomplete($term, 30);
 
         return $this->json(['items' => array_map(static fn (array $r): array => [
             'id' => (int) $r['id'],

@@ -91,6 +91,21 @@
         });
     });
 
+    // ---------------------------------------------------------------- Melder-Picker (phonetische Autovervollständigung) → Assets
+    document.querySelectorAll("[data-picker][data-hd-employee-assets]").forEach(function (picker) {
+        const target = document.querySelector(picker.getAttribute("data-hd-employee-assets"));
+        if (!target) { return; }
+        picker.addEventListener("picker:change", async function (e) {
+            const id = e.detail && e.detail.id;
+            if (!id) { fillSelect(target, [], undefined, "– kein Asset –"); target.disabled = false; return; }
+            try {
+                const data = await api("/api/helpdesk/employees/" + encodeURIComponent(id) + "/assets");
+                fillSelect(target, data.items || [], undefined, "– kein Asset –");
+                target.disabled = false;
+            } catch (err) { /* ignorieren */ }
+        });
+    });
+
     // ---------------------------------------------------------------- Vorlage wählen → Formular mit ?template= neu laden
     document.querySelectorAll("select[data-hd-template]").forEach(function (select) {
         select.addEventListener("change", function () {

@@ -16,6 +16,14 @@ if (is_array($oldAssets)) {
     $selectedAssets = array_map('intval', $oldAssets);
 }
 $tagValue = form_value($row, 'tags', $isEdit ? implode(', ', array_map(static fn (array $t): string => (string) $t['name'], $tags)) : '');
+$requesterId = (int) form_value($row, 'requester_employee_id');
+$selectedRequester = null;
+foreach ($employees as $emp) {
+    if ((int) $emp['id'] === $requesterId) {
+        $selectedRequester = ['id' => $emp['id'], 'name' => $emp['display_name'], 'meta' => $emp['department'] ?? ''];
+        break;
+    }
+}
 ?>
 <div class="page-header">
     <div>
@@ -129,12 +137,19 @@ $tagValue = form_value($row, 'tags', $isEdit ? implode(', ', array_map(static fn
     <fieldset>
         <legend>Personen &amp; Zuordnung</legend>
         <div class="form-row">
-            <div class="form-group<?= has_error('requester_employee_id') ? ' has-error' : '' ?>">
+            <div class="form-group picker<?= has_error('requester_employee_id') ? ' has-error' : '' ?>" data-picker data-search-url="/api/employees/search" data-hd-employee-assets="#f-assets">
                 <label for="f-requester">Melder</label>
-                <select id="f-requester" name="requester_employee_id" data-hd-employee-assets="#f-assets">
-                    <option value="">– unbekannt / extern –</option>
-                    <?php foreach ($employees as $emp): ?><option value="<?= (int) $emp['id'] ?>"<?= selected(form_value($row, 'requester_employee_id'), $emp['id']) ?>><?= e($emp['display_name']) ?><?= $emp['department'] ? ' · ' . e($emp['department']) : '' ?></option><?php endforeach; ?>
-                </select>
+                <input type="hidden" name="requester_employee_id" value="<?= e((string) ($selectedRequester['id'] ?? '')) ?>" data-picker-value>
+                <div class="picker-selected" data-picker-selected<?= $selectedRequester ? '' : ' hidden' ?>>
+                    <span class="picker-selected-text">
+                        <span class="picker-selected-label" data-picker-label><?= e($selectedRequester['name'] ?? '') ?></span>
+                        <span class="text-muted text-sm" data-picker-meta><?= e($selectedRequester['meta'] ?? '') ?></span>
+                    </span>
+                    <button type="button" class="btn btn-ghost btn-sm picker-clear" data-picker-clear aria-label="Auswahl entfernen"><?= icon('x') ?></button>
+                </div>
+                <input id="f-requester" type="search" class="picker-input" placeholder="Name, Benutzername oder Personalnr. …" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" data-picker-input<?= $selectedRequester ? ' hidden' : '' ?>>
+                <ul class="picker-results" role="listbox" hidden data-picker-results></ul>
+                <p class="form-hint">Phonetische Suche – auch bei abweichender Schreibweise (z. B. „Meier“ statt „Maier“). Leer lassen für unbekannt/extern.</p>
                 <?= field_error('requester_employee_id') ?>
             </div>
             <div class="form-group<?= has_error('affected_employee_id') ? ' has-error' : '' ?>">
