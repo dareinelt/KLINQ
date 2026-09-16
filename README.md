@@ -5,10 +5,12 @@ aktuell **Assetverwaltung** und **Help Desk**, weitere Funktionen folgen. Zwisch
 Oberfläche über ein Dropdown in der Kopfzeile gewechselt.
 
 - **Assetverwaltung**: Inventar- und Assetverwaltung für IT-Hardware (PCs, Mobilgeräte, Netzwerkkomponenten,
-  Zubehör) mit QR-Etiketten, mobiler Erfassung (PWA, offlinefähig), Active-Directory-Anbindung,
-  Einkauf/Wareneingang, Lizenzen, Historie, Audit-Log und rollenbasierter Benutzerverwaltung.
+  Zubehör) mit QR-Etiketten, mobiler Erfassung (PWA, offlinefähig), optionaler elektronischer Signatur am
+  Desktop, Active-Directory-Anbindung, Windows-SSO per Kerberos, Einkauf/Wareneingang, Lizenzen, Historie,
+  Audit-Log und rollenbasierter Benutzerverwaltung mit zusätzlichen Berechtigungsgruppen.
 - **Help Desk** (optional abschaltbar): vollständiges IT-Ticketsystem mit Status-Workflow, SLA-Fristen und
-  Eskalation, Serviceportal für Endanwender sowie einer Wissensdatenbank.
+  Eskalation, Ticketregeln, Benutzerportal für Endanwender, anonymem Störungsmeldeformular, E-Mail-Eingang
+  per IMAP sowie einer Wissensdatenbank.
 
 **Technologie:** PHP 8.4, MySQL 8.4, Vanilla JavaScript, HTML, CSS – ohne Frameworks, ohne CDNs, ohne externe Laufzeitabhängigkeiten.
 Betrieb vollständig in Docker; ein separater Python-Container (WeasyPrint) erzeugt die PDF-Archive der Übergabeprotokolle.
@@ -25,6 +27,12 @@ docker compose up --build -d  # Migrationen laufen automatisch beim Start
 Anwendung: <http://localhost:8080> – Anmeldung mit `ADMIN_USERNAME` / `ADMIN_PASSWORD` aus der `.env`.
 
 Alternativ ohne Docker (Debian/Ubuntu, inkl. SSL-Zertifikat): `sudo bin/install.sh`, siehe [Docker-freie Installation](docs/installation.md#docker-freie-installation-binstallsh).
+
+Alle Konfigurationsoptionen (Datenbank, AD/LDAP, Windows-SSO per Kerberos, Mail-/PDF-Dienst, Uploads,
+Help Desk inkl. IMAP-Postfach und Störungsmeldeformular) sind in [`.env.example`](.env.example) beschrieben.
+Der Scheduler im App-Container erledigt AD-Sync sowie die Help-Desk-Jobs (Eskalation/Auto-Close,
+Mailabholung) automatisch; alternativ per Cron auf dem Host: `php bin/sync-ad.php`,
+`php bin/helpdesk.php process`.
 
 ## Dokumentation
 
