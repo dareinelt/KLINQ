@@ -6,6 +6,7 @@ use App\Controllers\Helpdesk\HelpdeskAdminController;
 use App\Controllers\Helpdesk\HelpdeskApiController;
 use App\Controllers\Helpdesk\HelpdeskDashboardController;
 use App\Controllers\Helpdesk\HelpdeskReportController;
+use App\Controllers\Helpdesk\HelpdeskSupportShiftController;
 use App\Controllers\Helpdesk\KnowledgeBaseController;
 use App\Controllers\Helpdesk\PortalController;
 use App\Controllers\Helpdesk\QuickReportController;
@@ -23,6 +24,7 @@ use App\Core\Router;
  */
 return static function (Router $router, Container $c): void {
     $dash = static fn (): HelpdeskDashboardController => $c->get(HelpdeskDashboardController::class);
+    $shifts = static fn (): HelpdeskSupportShiftController => $c->get(HelpdeskSupportShiftController::class);
     $tickets = static fn (): TicketController => $c->get(TicketController::class);
     $files = static fn (): TicketAttachmentController => $c->get(TicketAttachmentController::class);
     $kb = static fn (): KnowledgeBaseController => $c->get(KnowledgeBaseController::class);
@@ -41,6 +43,7 @@ return static function (Router $router, Container $c): void {
 
     // ------------------------------------------------------------------ Agentenbereich
     $router->get('/helpdesk', static fn (Request $r): Response => $dash()->index($r), 'helpdesk.view');
+    $router->post('/helpdesk/support-shift/claim', static fn (Request $r): Response => $shifts()->claim($r), 'helpdesk.view');
 
     $router->get('/helpdesk/tickets', static fn (Request $r): Response => $tickets()->index($r), 'helpdesk.view');
     $router->get('/helpdesk/tickets/export', static fn (Request $r): Response => $tickets()->export($r), 'helpdesk.export');
@@ -51,6 +54,7 @@ return static function (Router $router, Container $c): void {
     $router->post('/helpdesk/tickets/{id}', static fn (Request $r): Response => $tickets()->update($r), 'helpdesk.update');
     $router->post('/helpdesk/tickets/{id}/status', static fn (Request $r): Response => $tickets()->status($r), 'helpdesk.update');
     $router->post('/helpdesk/tickets/{id}/assign', static fn (Request $r): Response => $tickets()->assign($r), 'helpdesk.assign');
+    $router->post('/helpdesk/tickets/{id}/assign-second-level', static fn (Request $r): Response => $tickets()->assignSecondLevel($r), 'helpdesk.assign');
     $router->post('/helpdesk/tickets/{id}/take', static fn (Request $r): Response => $tickets()->takeOver($r), 'helpdesk.assign');
     $router->post('/helpdesk/tickets/{id}/merge', static fn (Request $r): Response => $tickets()->merge($r), 'helpdesk.merge');
     $router->post('/helpdesk/tickets/{id}/tags', static fn (Request $r): Response => $tickets()->tags($r), 'helpdesk.update');

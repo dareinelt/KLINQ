@@ -55,10 +55,14 @@ $barList = static function (array $rows): void {
         <p class="page-subtitle text-muted">Tickets, Warteschlangen und SLA-Status im Überblick.</p>
     </div>
     <div class="page-actions">
+        <button type="button" class="btn btn-secondary" data-dialog-open="shift-dialog"><?= icon('shield') ?> Zuständigkeit</button>
         <?php if ($can('helpdesk.create')): ?><a class="btn btn-primary" href="/helpdesk/tickets/new"><?= icon('plus') ?> Neues Ticket</a><?php endif; ?>
         <a class="btn btn-secondary" href="/helpdesk/tickets"><?= icon('list') ?> Ticketliste</a>
     </div>
 </div>
+<?php if ($isFirstLevel && ($supportShift['second'] ?? null) !== null): ?>
+<div class="alert alert-info mb-4"><?= icon('users', 'icon icon-xs') ?> Zuständiger 2nd Level für dich ist heute <strong><?= e($supportShift['second']['user_display_name']) ?></strong>.</div>
+<?php endif; ?>
 <div class="grid grid-4 mb-4">
     <a class="card stat-card is-info" href="/helpdesk/tickets?view=mine_open"><span class="stat-value"><?= (int) ($counts['new_count'] ?? 0) ?></span><span class="stat-label">Neu</span></a>
     <a class="card stat-card" href="/helpdesk/tickets?view=open"><span class="stat-value"><?= (int) ($counts['open_count'] ?? 0) ?> <span class="text-sm text-muted">/ <?= (int) ($counts['in_progress'] ?? 0) ?></span></span><span class="stat-label">Offen / in Bearbeitung</span></a>
@@ -101,4 +105,27 @@ $barList = static function (array $rows): void {
         </div>
     </div>
 </div>
+<dialog id="shift-dialog" class="dialog">
+    <div class="dialog-header"><h2>Zuständigkeit übernehmen</h2><button type="button" class="btn btn-ghost btn-sm" data-dialog-close aria-label="Schließen"><?= icon('x') ?></button></div>
+    <div class="dialog-body">
+        <p class="text-muted text-sm">Übernimm die Zuständigkeit für den 1st- oder 2nd-Level-Support des heutigen Tages (<?= fmt_date($supportShift['date']) ?>). Die Zuständigkeit endet automatisch um 19:00 Uhr.</p>
+        <ul class="side-list">
+            <li>
+                <div class="side-list-main">
+                    <strong>1st Level Support</strong>
+                    <div class="text-xs text-muted"><?= ($supportShift['first'] ?? null) !== null ? 'Aktuell: ' . e($supportShift['first']['user_display_name']) : 'Noch nicht übernommen' ?></div>
+                </div>
+                <form method="post" action="/helpdesk/support-shift/claim" class="inline-form"><?= csrf_field() ?><input type="hidden" name="level" value="1"><button type="submit" class="btn btn-secondary btn-sm">Übernehmen</button></form>
+            </li>
+            <li>
+                <div class="side-list-main">
+                    <strong>2nd Level Support</strong>
+                    <div class="text-xs text-muted"><?= ($supportShift['second'] ?? null) !== null ? 'Aktuell: ' . e($supportShift['second']['user_display_name']) : 'Noch nicht übernommen' ?></div>
+                </div>
+                <form method="post" action="/helpdesk/support-shift/claim" class="inline-form" data-confirm="Beim Übernehmen des 2nd Level Supports werden dir automatisch alle offenen Tickets zugewiesen, die nicht von heute stammen. Fortfahren?"><?= csrf_field() ?><input type="hidden" name="level" value="2"><button type="submit" class="btn btn-secondary btn-sm">Übernehmen</button></form>
+            </li>
+        </ul>
+    </div>
+    <div class="dialog-footer"><button type="button" class="btn btn-secondary" data-dialog-close>Schließen</button></div>
+</dialog>
 <?php $innerContent = ob_get_clean(); include __DIR__ . '/../partials/app_layout.php'; ?>

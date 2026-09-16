@@ -47,6 +47,9 @@ $percentBar = static function (?int $percent, string $state): string {
         <?php if ($isAgent && $can('helpdesk.assign') && !$readOnly && !$closed && (int) ($ticket['assignee_user_id'] ?? 0) !== (int) $user['id']): ?>
             <form method="post" action="/helpdesk/tickets/<?= $id ?>/take" class="inline-form"><?= csrf_field() ?><button type="submit" class="btn btn-secondary btn-sm"><?= icon('user') ?> Übernehmen</button></form>
         <?php endif; ?>
+        <?php if (($isFirstLevelSupport ?? false) && $secondLevelSupport !== null && !$readOnly && !$closed): ?>
+            <button type="button" class="btn btn-secondary btn-sm" data-dialog-open="second-level-dialog"><?= icon('shield') ?> An 2nd Level zuweisen</button>
+        <?php endif; ?>
         <?php if ($canUpdate): ?><a class="btn btn-secondary btn-sm" href="/helpdesk/tickets/<?= $id ?>/edit"><?= icon('pen') ?> Bearbeiten</a><?php endif; ?>
         <a class="btn btn-ghost btn-sm" href="/helpdesk/tickets/<?= $id ?>?print=1" target="_blank" rel="noopener"><?= icon('print') ?></a>
     </div>
@@ -497,6 +500,23 @@ $percentBar = static function (?int $percent, string $state): string {
             </div>
         </div>
         <div class="dialog-footer"><button type="button" class="btn btn-secondary" data-dialog-close>Abbrechen</button><button type="submit" class="btn btn-primary">Status setzen</button></div>
+    </form>
+</dialog>
+<?php endif; ?>
+
+<?php if (($isFirstLevelSupport ?? false) && $secondLevelSupport !== null): ?>
+<dialog id="second-level-dialog" class="dialog">
+    <form method="post" action="/helpdesk/tickets/<?= $id ?>/assign-second-level">
+        <?= csrf_field() ?>
+        <div class="dialog-header"><h2>An 2nd Level zuweisen</h2><button type="button" class="btn btn-ghost btn-sm" data-dialog-close aria-label="Schließen"><?= icon('x') ?></button></div>
+        <div class="dialog-body">
+            <p class="text-muted text-sm">Das Ticket wird <strong><?= e($secondLevelSupport['user_display_name']) ?></strong> (2nd Level Support von heute) zugewiesen.</p>
+            <div class="form-group">
+                <label for="sl-note">Kommentar <span class="text-muted">(Pflicht)</span></label>
+                <textarea id="sl-note" name="note" rows="4" required></textarea>
+            </div>
+        </div>
+        <div class="dialog-footer"><button type="button" class="btn btn-secondary" data-dialog-close>Abbrechen</button><button type="submit" class="btn btn-primary">Zuweisen</button></div>
     </form>
 </dialog>
 <?php endif; ?>
