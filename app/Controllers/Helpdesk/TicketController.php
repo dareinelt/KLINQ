@@ -24,6 +24,7 @@ use App\Repositories\TicketTemplateRepository;
 use App\Repositories\TicketWorklogRepository;
 use App\Security\CurrentUser;
 use App\Services\Helpdesk\KnowledgeBaseService;
+use App\Services\Helpdesk\SupportShiftService;
 use App\Services\Helpdesk\TicketMergeService;
 use App\Services\Helpdesk\TicketPriorityMatrix;
 use App\Services\Helpdesk\TicketReportService;
@@ -57,7 +58,8 @@ final class TicketController extends HelpdeskBaseController
         private readonly AssetRepository $assets,
         private readonly LocationRepository $locations,
         private readonly CostCenterRepository $costCenters,
-        private readonly Config $config
+        private readonly Config $config,
+        private readonly SupportShiftService $supportShifts
     ) {
         parent::__construct($view, $currentUser);
     }
@@ -199,6 +201,7 @@ final class TicketController extends HelpdeskBaseController
         $ticket = $this->service->getVisible($request->paramInt('id'));
         $id = (int) $ticket['id'];
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $shift = $this->supportShifts->today();
         $sla = !empty($ticket['sla_id']) ? $this->slas->find((int) $ticket['sla_id']) : null;
         $warning = $sla !== null ? $this->slaService->warningPercent($sla) : (int) $this->config->get('helpdesk.sla_warning_percent', 75);
         $slaInfo = [
@@ -252,6 +255,8 @@ final class TicketController extends HelpdeskBaseController
             'urgencyLabels' => TicketPriorityMatrix::URGENCY_LABELS,
             'isAgent' => $this->service->isAgent(),
             'now' => $now,
+            'isFirstLevelSupport' => $shift['first'] !== null && (int) $shift['first']['user_id'] === (int) $this->currentUser->id(),
+            'secondLevelSupport' => $shift['second'],
             'scripts' => ['/js/helpdesk.js'],
         ]);
     }
@@ -298,6 +303,17 @@ final class TicketController extends HelpdeskBaseController
         }, '/helpdesk/tickets/' . $id . '#assign', false);
 
         return $response ?? $this->respond($request, 'Zuweisung gespeichert.', '/helpdesk/tickets/' . $id);
+    }
+
+    /** Weist das Ticket dem 2nd Level des Tages zu (nur der heutige 1st Level); Kommentar ist Pflicht. */
+    public function assignSecondLevel(Request $request): Response
+    {
+        $id = $request->paramInt('id');
+        $response = $this->attempt($request, function () use ($request, $id): void {
+            $this->supportShifts->assignToSecondLevel($id, $request->string('note'));
+        }, '/helpdesk/tickets/' . $id . '#second-level', false);
+
+        return $response ?? $this->respond($request, 'An den 2nd Level Support zugewiesen.', '/helpdesk/tickets/' . $id);
     }
 
     public function takeOver(Request $request): Response

@@ -8,6 +8,7 @@ use App\Controllers\Helpdesk\HelpdeskDashboardController;
 use App\Controllers\Helpdesk\HelpdeskReportController;
 use App\Controllers\Helpdesk\KnowledgeBaseController;
 use App\Controllers\Helpdesk\PortalController;
+use App\Controllers\Helpdesk\HelpdeskSupportShiftController;
 use App\Controllers\Helpdesk\QuickReportController;
 use App\Controllers\Helpdesk\TicketAttachmentController;
 use App\Controllers\Helpdesk\TicketController;
@@ -19,6 +20,7 @@ use App\Core\View;
 use App\Repositories\AssetRepository;
 use App\Repositories\CostCenterRepository;
 use App\Repositories\EmployeeRepository;
+use App\Repositories\HelpdeskSupportShiftRepository;
 use App\Repositories\KnowledgeBaseRepository;
 use App\Repositories\LocationRepository;
 use App\Repositories\TicketAttachmentRepository;
@@ -44,6 +46,7 @@ use App\Services\Helpdesk\HelpdeskAdminService;
 use App\Services\Helpdesk\HelpdeskSchedulerService;
 use App\Services\Helpdesk\KnowledgeBaseService;
 use App\Services\Helpdesk\ReporterIdentityService;
+use App\Services\Helpdesk\SupportShiftService;
 use App\Services\Helpdesk\Mail\FileMailboxClient;
 use App\Services\Helpdesk\Mail\ImapMailboxClient;
 use App\Services\Helpdesk\Mail\MailboxClientFactory;
@@ -70,7 +73,7 @@ return static function (Container $c): void {
         TicketRepository::class, TicketMasterDataRepository::class, TicketCategoryRepository::class, TicketSlaRepository::class,
         TicketTagRepository::class, TicketCommentRepository::class, TicketAttachmentRepository::class, TicketWorklogRepository::class,
         TicketRelationRepository::class, TicketTemplateRepository::class, TicketRuleRepository::class, TicketReportRepository::class,
-        KnowledgeBaseRepository::class,
+        KnowledgeBaseRepository::class, HelpdeskSupportShiftRepository::class,
     ] as $repository) {
         $c->singleton($repository, static fn (Container $c): object => new $repository($c->get(PDO::class)));
     }
@@ -169,6 +172,14 @@ return static function (Container $c): void {
         $c->get(TicketRelationRepository::class),
         $c->get(CurrentUser::class)
     ));
+    $c->singleton(SupportShiftService::class, static fn (Container $c): SupportShiftService => new SupportShiftService(
+        $c->get(HelpdeskSupportShiftRepository::class),
+        $c->get(TicketRepository::class),
+        $c->get(TicketService::class),
+        $c->get(CurrentUser::class),
+        $c->get(AuditLogService::class),
+        $c->get(Config::class)
+    ));
     $c->singleton(HelpdeskSchedulerService::class, static fn (Container $c): HelpdeskSchedulerService => new HelpdeskSchedulerService(
         $c->get(TicketRepository::class),
         $c->get(TicketSlaRepository::class),
@@ -176,6 +187,7 @@ return static function (Container $c): void {
         $c->get(TicketSlaService::class),
         $c->get(TicketNotificationService::class),
         $c->get(TicketRuleService::class),
+        $c->get(SupportShiftService::class),
         $c->get(Config::class),
         $c->get(Logger::class)
     ));
@@ -225,7 +237,8 @@ return static function (Container $c): void {
         $c->get(View::class),
         $c->get(CurrentUser::class),
         $c->get(TicketReportService::class),
-        $c->get(TicketRepository::class)
+        $c->get(TicketRepository::class),
+        $c->get(SupportShiftService::class)
     ));
     $c->singleton(TicketController::class, static fn (Container $c): TicketController => new TicketController(
         $c->get(View::class),
@@ -248,7 +261,8 @@ return static function (Container $c): void {
         $c->get(AssetRepository::class),
         $c->get(LocationRepository::class),
         $c->get(CostCenterRepository::class),
-        $c->get(Config::class)
+        $c->get(Config::class),
+        $c->get(SupportShiftService::class)
     ));
     $c->singleton(TicketAttachmentController::class, static fn (Container $c): TicketAttachmentController => new TicketAttachmentController(
         $c->get(View::class),
@@ -344,5 +358,10 @@ return static function (Container $c): void {
         $c->get(KnowledgeBaseService::class),
         $c->get(KnowledgeBaseRepository::class),
         $c->get(Config::class)
+    ));
+    $c->singleton(HelpdeskSupportShiftController::class, static fn (Container $c): HelpdeskSupportShiftController => new HelpdeskSupportShiftController(
+        $c->get(View::class),
+        $c->get(CurrentUser::class),
+        $c->get(SupportShiftService::class)
     ));
 };

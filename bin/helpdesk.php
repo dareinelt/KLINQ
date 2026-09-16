@@ -110,12 +110,13 @@ try {
 
 if (!$quiet) {
     printf(
-        "OK: %d Tickets geprüft, %d Warnungen, %d SLA-Verletzungen, %d Eskalationen, %d automatisch geschlossen.\n",
+        "OK: %d Tickets geprüft, %d Warnungen, %d SLA-Verletzungen, %d Eskalationen, %d automatisch geschlossen, %d Zuständigkeiten beendet.\n",
         $summary['checked'] ?? 0,
         $summary['warnings'] ?? 0,
         $summary['breaches'] ?? 0,
         $summary['escalated'] ?? 0,
-        $summary['auto_closed'] ?? 0
+        $summary['auto_closed'] ?? 0,
+        $summary['shifts_ended'] ?? 0
     );
 }
 exit(0);
