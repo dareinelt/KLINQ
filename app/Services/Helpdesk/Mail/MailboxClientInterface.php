@@ -19,6 +19,12 @@ interface MailboxClientInterface
      */
     public function fetchUnprocessed(int $limit): array;
 
+    /**
+     * Verfügbare Postfachverzeichnisse (für die Auswahl des Zielordners in der Administration).
+     * @return list<string>
+     */
+    public function listMailboxes(): array;
+
     /** Nachricht als verarbeitet markieren (gelesen setzen und ggf. in Zielordner verschieben). */
     public function markProcessed(string $uid): void;
 

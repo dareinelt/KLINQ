@@ -61,7 +61,7 @@ final class ImapMailboxClient implements MailboxClientInterface
         if ($target === '' || $target === $this->mailbox()) {
             return;
         }
-        $quoted = $this->quote($target);
+        $quoted = $this->quoteMailbox($target);
         if ($this->supportsMove()) {
             $this->command(sprintf('UID MOVE %s %s', $uid, $quoted), true);
 
@@ -78,6 +78,50 @@ final class ImapMailboxClient implements MailboxClientInterface
     {
         $this->connect();
         $this->command(sprintf('UID STORE %s +FLAGS.SILENT (\Seen %s)', $uid, self::FAILED_FLAG), true);
+    }
+
+    /**
+     * Alle Ordner des Postfachs (LIST "" "*"), z. B. für die Auswahl des Zielverzeichnisses.
+     * @return list<string>
+     */
+    public function listMailboxes(): array
+    {
+        $this->connect();
+        $folders = [];
+        foreach ($this->command('LIST "" "*"', true) as $line) {
+            // * LIST (\HasNoChildren) "/" "INBOX/Erledigt"   |   … "/" INBOX
+            if (preg_match('/^\* LIST \(([^)]*)\) (?:"[^"]*"|NIL) (?:"((?:[^"\\\\]|\\\\.)*)"|(\S+))\s*$/i', rtrim($line), $m) !== 1) {
+                continue;
+            }
+            if (stripos($m[1], '\Noselect') !== false) {
+                continue;
+            }
+            $name = isset($m[2]) && $m[2] !== '' ? stripcslashes($m[2]) : ($m[3] ?? '');
+            $name = self::decodeUtf7($name);
+            if ($name !== '') {
+                $folders[] = $name;
+            }
+        }
+        sort($folders, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return array_values(array_unique($folders));
+    }
+
+    /**
+     * Verbindung und Anmeldung prüfen.
+     * @return array{mailbox:string,folders:list<string>,messages:int}
+     */
+    public function check(): array
+    {
+        $this->connect();
+        $messages = 0;
+        foreach ($this->command('STATUS ' . $this->quoteMailbox($this->mailbox()) . ' (MESSAGES)', true) as $line) {
+            if (preg_match('/MESSAGES\s+(\d+)/i', $line, $m) === 1) {
+                $messages = (int) $m[1];
+            }
+        }
+
+        return ['mailbox' => $this->mailbox(), 'folders' => $this->listMailboxes(), 'messages' => $messages];
     }
 
     public function close(): void
@@ -106,7 +150,7 @@ final class ImapMailboxClient implements MailboxClientInterface
         }
         $host = (string) ($this->options['host'] ?? '');
         if ($host === '') {
-            throw new \RuntimeException('IMAP: kein Host konfiguriert (HELPDESK_IMAP_HOST).');
+            throw new \RuntimeException('IMAP: kein Server konfiguriert (Administration → E-Mail-Postfach).');
         }
         $encryption = strtolower((string) ($this->options['encryption'] ?? 'ssl'));
         $port = (int) ($this->options['port'] ?? ($encryption === 'ssl' ? 993 : 143));
@@ -142,7 +186,7 @@ final class ImapMailboxClient implements MailboxClientInterface
         if (!str_starts_with($greeting, '* PREAUTH')) {
             $this->command(sprintf('LOGIN %s %s', $this->quote((string) ($this->options['username'] ?? '')), $this->quote((string) ($this->options['password'] ?? ''))), false, true);
         }
-        $this->command('SELECT ' . $this->quote($this->mailbox()));
+        $this->command('SELECT ' . $this->quoteMailbox($this->mailbox()));
         $this->selected = true;
     }
 
@@ -265,6 +309,53 @@ final class ImapMailboxClient implements MailboxClientInterface
     private function quote(string $value): string
     {
         return '"' . addcslashes($value, "\\\"\r\n") . '"';
+    }
+
+    /** Ordnername für das Protokoll aufbereiten (modifiziertes UTF-7 nach RFC 3501 + Quoting). */
+    private function quoteMailbox(string $name): string
+    {
+        return $this->quote(self::encodeUtf7($name));
+    }
+
+    /** UTF-8 → modifiziertes UTF-7 (IMAP-Ordnernamen). */
+    public static function encodeUtf7(string $value): string
+    {
+        $result = '';
+        $buffer = '';
+        $flush = static function (string &$buffer): string {
+            if ($buffer === '') {
+                return '';
+            }
+            $utf16 = mb_convert_encoding($buffer, 'UTF-16BE', 'UTF-8');
+            $buffer = '';
+
+            return '&' . rtrim(strtr(base64_encode((string) $utf16), '/', ','), '=') . '-';
+        };
+        foreach (preg_split('//u', $value, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $char) {
+            $code = mb_ord($char, 'UTF-8');
+            if ($code !== false && $code >= 0x20 && $code <= 0x7E) {
+                $result .= $flush($buffer);
+                $result .= $char === '&' ? '&-' : $char;
+                continue;
+            }
+            $buffer .= $char;
+        }
+
+        return $result . $flush($buffer);
+    }
+
+    /** Modifiziertes UTF-7 → UTF-8. */
+    public static function decodeUtf7(string $value): string
+    {
+        return (string) preg_replace_callback('/&([A-Za-z0-9+,]*)-/', static function (array $m): string {
+            if ($m[1] === '') {
+                return '&';
+            }
+            $base64 = strtr($m[1], ',', '/');
+            $decoded = base64_decode($base64 . str_repeat('=', (4 - strlen($base64) % 4) % 4), true);
+
+            return $decoded === false ? $m[0] : (string) mb_convert_encoding($decoded, 'UTF-8', 'UTF-16BE');
+        }, $value);
     }
 
     private function mailbox(): string

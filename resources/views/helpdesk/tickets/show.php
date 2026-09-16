@@ -36,6 +36,9 @@ $percentBar = static function (?int $percent, string $state): string {
             <?php if ($isMerged): ?><span class="badge is-neutral"><?= icon('merge', 'icon icon-xs') ?> Zusammengeführt in <a href="/helpdesk/tickets/<?= (int) $ticket['merged_into_ticket_id'] ?>"><?= e($ticket['merged_into_number']) ?></a></span><?php endif; ?>
             <?php if ((int) $ticket['escalation_level'] > 0): ?><span class="badge is-danger">Eskalationsstufe <?= (int) $ticket['escalation_level'] ?></span><?php endif; ?>
             <?php if ((int) $ticket['reopen_count'] > 0): ?><span class="badge is-warning"><?= (int) $ticket['reopen_count'] ?>× wiedereröffnet</span><?php endif; ?>
+            <?php if ($ticket['source'] === 'email'): ?>
+                <span class="badge badge-info"><?= icon('mail', 'icon icon-xs') ?> Per E-Mail eröffnet<?= !empty($ticket['mail_from_address']) ? ' von ' . e(trim(($ticket['mail_from_name'] ?? '') . ' <' . $ticket['mail_from_address'] . '>')) : '' ?></span>
+            <?php endif; ?>
             <span class="text-muted text-sm">Quelle: <?= e($sources[$ticket['source']] ?? $ticket['source']) ?> · erstellt <?= fmt_datetime($ticket['created_at']) ?> von <?= e($ticket['created_by_name'] ?? 'system') ?></span>
         </div>
     </div>
@@ -99,6 +102,7 @@ $percentBar = static function (?int $percent, string $state): string {
                     <span class="comment-author"><?= e($c['author_name']) ?></span>
                     <?php if ((int) $c['is_requester'] === 1): ?><span class="badge is-neutral">Melder</span><?php endif; ?>
                     <?php if ($c['type'] === 'internal'): ?><span class="badge is-warning">Intern</span><?php endif; ?>
+                    <?php if ($c['source'] === 'email'): ?><span class="badge badge-info" title="<?= e(!empty($c['mail_from_address']) ? 'Absender: ' . $c['mail_from_address'] : 'Per E-Mail eingegangen') ?>"><?= icon('mail', 'icon icon-xs') ?> Per E-Mail<?= !empty($c['mail_from_address']) ? ' von ' . e($c['mail_from_address']) : '' ?></span><?php endif; ?>
                     <span class="text-muted text-xs"><?= fmt_datetime($c['created_at']) ?> · <?= e($sources[$c['source']] ?? $c['source']) ?></span>
                 </div>
                 <div class="comment-body"><?= nl2br_e($c['body']) ?></div>

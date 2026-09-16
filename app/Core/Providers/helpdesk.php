@@ -11,6 +11,7 @@ use App\Controllers\Helpdesk\PortalController;
 use App\Controllers\Helpdesk\QuickReportController;
 use App\Controllers\Helpdesk\TicketAttachmentController;
 use App\Controllers\Helpdesk\TicketController;
+use App\Controllers\HelpdeskMailboxController;
 use App\Core\Config;
 use App\Core\Container;
 use App\Core\Logger;
@@ -45,8 +46,10 @@ use App\Services\Helpdesk\KnowledgeBaseService;
 use App\Services\Helpdesk\ReporterIdentityService;
 use App\Services\Helpdesk\Mail\FileMailboxClient;
 use App\Services\Helpdesk\Mail\ImapMailboxClient;
+use App\Services\Helpdesk\Mail\MailboxClientFactory;
 use App\Services\Helpdesk\Mail\MailboxClientInterface;
 use App\Services\Helpdesk\Mail\MimeMessageParser;
+use App\Services\Helpdesk\MailboxSettingsService;
 use App\Services\Helpdesk\TicketMailIngestionService;
 use App\Services\Helpdesk\TicketMergeService;
 use App\Services\Helpdesk\TicketNotificationService;
@@ -58,6 +61,8 @@ use App\Services\Helpdesk\TicketService;
 use App\Services\Helpdesk\TicketSlaService;
 use App\Services\Helpdesk\TicketWorkflowService;
 use App\Services\MailClient;
+use App\Services\SettingsService;
+use App\Support\Secret;
 
 return static function (Container $c): void {
     // Repositories
@@ -175,15 +180,27 @@ return static function (Container $c): void {
         $c->get(Logger::class)
     ));
     $c->singleton(MimeMessageParser::class, static fn (): MimeMessageParser => new MimeMessageParser());
-    // Postfach-Client je Konfiguration (imap = Socket-IMAP-Client, file = .eml-Verzeichnis)
-    $c->singleton(MailboxClientInterface::class, static function (Container $c): MailboxClientInterface {
+    $c->singleton(Secret::class, static function (Container $c): Secret {
         $config = $c->get(Config::class);
-        $mail = (array) $config->get('helpdesk.mail', []);
-        if (($mail['driver'] ?? 'imap') === 'file') {
-            return new FileMailboxClient((string) ($mail['file_path'] ?? (dirname(__DIR__, 3) . '/storage/mail-inbox')));
-        }
 
-        return new ImapMailboxClient($mail);
+        return Secret::fromEnvironment(
+            (string) $config->get('app.key', ''),
+            (string) $config->get('database.password', '') . '|' . (string) $config->get('app.url', '')
+        );
+    });
+    $c->singleton(MailboxSettingsService::class, static fn (Container $c): MailboxSettingsService => new MailboxSettingsService(
+        $c->get(SettingsService::class),
+        $c->get(Config::class),
+        $c->get(Secret::class),
+        $c->get(AuditLogService::class),
+        $c->get(CurrentUser::class),
+        $c->get(UserRepository::class),
+        $c->get(Permissions::class),
+        $c->get(TicketMasterDataRepository::class)
+    ));
+    // Postfach-Client je Konfiguration aus der Administration (imap = Socket-IMAP-Client, file = .eml-Verzeichnis)
+    $c->singleton(MailboxClientInterface::class, static function (Container $c): MailboxClientInterface {
+        return MailboxClientFactory::create($c->get(MailboxSettingsService::class)->mailboxOptions(), dirname(__DIR__, 3));
     });
     $c->singleton(TicketMailIngestionService::class, static fn (Container $c): TicketMailIngestionService => new TicketMailIngestionService(
         $c->get(Config::class),
@@ -199,7 +216,8 @@ return static function (Container $c): void {
         $c->get(TicketService::class),
         $c->get(DocumentService::class),
         $c->get(MimeMessageParser::class),
-        static fn (): MailboxClientInterface => $c->get(MailboxClientInterface::class)
+        $c->get(MailboxSettingsService::class),
+        static fn (): MailboxClientInterface => MailboxClientFactory::create($c->get(MailboxSettingsService::class)->mailboxOptions(), dirname(__DIR__, 3))
     ));
 
     // Controller
@@ -301,7 +319,18 @@ return static function (Container $c): void {
         $c->get(TicketRuleEvaluator::class),
         $c->get(TicketNotificationService::class),
         $c->get(TicketMailIngestionService::class),
+        $c->get(MailboxSettingsService::class),
         $c->get(Config::class)
+    ));
+    $c->singleton(HelpdeskMailboxController::class, static fn (Container $c): HelpdeskMailboxController => new HelpdeskMailboxController(
+        $c->get(View::class),
+        $c->get(CurrentUser::class),
+        $c->get(MailboxSettingsService::class),
+        $c->get(TicketMailIngestionService::class),
+        $c->get(TicketRuleRepository::class),
+        $c->get(TicketMasterDataRepository::class),
+        $c->get(Config::class),
+        dirname(__DIR__, 3)
     ));
     $c->singleton(HelpdeskApiController::class, static fn (Container $c): HelpdeskApiController => new HelpdeskApiController(
         $c->get(View::class),

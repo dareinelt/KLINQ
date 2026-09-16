@@ -16,10 +16,10 @@ $configLabels = [
     <div class="page-actions"><a class="btn btn-secondary" href="/helpdesk/admin"><?= icon('arrow-left') ?> Administration</a></div>
 </div>
 <?php if (!$config['enabled']): ?>
-    <div class="alert alert-info mb-4"><?= icon('info', 'icon icon-xs') ?> Der E-Mail-Eingang ist deaktiviert (<code>HELPDESK_MAIL_ENABLED=false</code>). Bereits protokollierte Nachrichten werden weiterhin angezeigt.</div>
+    <div class="alert alert-info mb-4"><?= icon('info', 'icon icon-xs') ?> Der E-Mail-Eingang ist deaktiviert. Er wird unter <a href="/admin/helpdesk-mail">Administration → E-Mail-Postfach</a> eingeschaltet. Bereits protokollierte Nachrichten werden weiterhin angezeigt.</div>
 <?php endif; ?>
 <div class="card mb-4">
-    <div class="card-header"><h2>Konfiguration</h2><span class="text-muted text-sm">aus Umgebung · <code>php bin/helpdesk.php mail</code></span></div>
+    <div class="card-header"><h2>Konfiguration</h2><span class="text-muted text-sm">letzter Abruf: <?= $lastRun !== null ? fmt_datetime($lastRun) : '–' ?><?php if ($canConfigure): ?> · <a href="/admin/helpdesk-mail">bearbeiten</a><?php endif; ?></span></div>
     <div class="grid grid-4">
         <?php foreach ($config as $key => $value): ?>
             <div><span class="kpi-value text-sm"><?= is_bool($value) ? e($yesNo($value)) : e((string) ($value !== '' ? $value : '–')) ?></span><span class="kpi-label"><?= e($configLabels[$key] ?? $key) ?></span></div>
