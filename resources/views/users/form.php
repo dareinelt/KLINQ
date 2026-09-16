@@ -73,6 +73,9 @@
         <label class="checkbox-field"><input type="checkbox" name="is_active" value="1"<?= form_checked($row, 'is_active') ?><?= $isSelf ? ' disabled' : '' ?>> <span>Aktiv</span></label>
         <?php if ($isSelf): ?><input type="hidden" name="is_active" value="1"><?php endif; ?>
         <?= field_error('is_active') ?>
+        <label class="checkbox-field"><input type="checkbox" name="can_sign_electronically" value="1"<?= form_checked($row, 'can_sign_electronically', false) ?>> <span>Digitale Signatur (Entnahme/Rückgabe) erlauben</span></label>
+        <p class="form-hint">Opt-in: Erlaubt die manuelle Erfassung von Entnahme/Rückgabe am Desktop, bei der der Vorgang durch erneute Eingabe des eigenen Passworts elektronisch signiert wird.</p>
+        <?= field_error('can_sign_electronically') ?>
         <div class="form-actions">
             <button type="submit" class="btn btn-primary"><?= icon('check') ?> Speichern</button>
             <a class="btn btn-ghost" href="/admin/users">Abbrechen</a>

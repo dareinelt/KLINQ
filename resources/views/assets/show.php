@@ -22,8 +22,8 @@ $eventClass = ['status_changed' => 'is-warning', 'created' => 'is-success', 'che
     </div>
     <div class="page-actions">
         <?php if ($can('labels.print')): ?><a class="btn btn-secondary" href="/labels?ids=<?= (int) $row['id'] ?>"><?= icon('print') ?> Etikett</a><?php endif; ?>
-        <?php if ($can('movements.checkout') && (int) $row['status_available'] === 1): ?><a class="btn btn-secondary" href="/m/checkout?asset=<?= e(rawurlencode($row['inventory_number'])) ?>"><?= icon('checkout') ?> Entnahme</a><?php endif; ?>
-        <?php if ($can('movements.return') && $row['employee_id']): ?><a class="btn btn-secondary" href="/m/return?asset=<?= e(rawurlencode($row['inventory_number'])) ?>"><?= icon('return') ?> Rückgabe</a><?php endif; ?>
+        <?php if ($can('movements.checkout') && (int) $row['status_available'] === 1): ?><a class="btn btn-secondary" href="/movements/checkout?asset=<?= e(rawurlencode($row['inventory_number'])) ?>"><?= icon('checkout') ?> Entnahme</a><?php endif; ?>
+        <?php if ($can('movements.return') && $row['employee_id']): ?><a class="btn btn-secondary" href="/movements/return?asset=<?= e(rawurlencode($row['inventory_number'])) ?>"><?= icon('return') ?> Rückgabe</a><?php endif; ?>
         <?php if ($can('assets.manage')): ?>
             <button type="button" class="btn btn-secondary" data-dialog-open="status-dialog"><?= icon('swap') ?> Status</button>
             <a class="btn btn-primary" href="/assets/<?= (int) $row['id'] ?>/edit"><?= icon('pen') ?> Bearbeiten</a>

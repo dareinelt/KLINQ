@@ -20,6 +20,7 @@ use App\Repositories\MovementRepository;
 use App\Security\CurrentUser;
 use App\Services\AssetService;
 use App\Services\AuditLogService;
+use App\Services\AuthService;
 use App\Services\DocumentService;
 use App\Services\MailClient;
 use App\Services\MovementService;
@@ -73,7 +74,8 @@ return static function (Container $c): void {
         $c->get(EmployeeRepository::class),
         $c->get(LocationRepository::class),
         $c->get(CostCenterRepository::class),
-        $c->get(AssetTypeRepository::class)
+        $c->get(AssetTypeRepository::class),
+        $c->get(AuthService::class)
     ));
     $c->singleton(MobileController::class, static fn (Container $c): MobileController => new MobileController(
         $c->get(View::class),

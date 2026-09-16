@@ -194,6 +194,17 @@ final class Request
         return mb_substr((string) ($this->server['HTTP_USER_AGENT'] ?? ''), 0, 255);
     }
 
+    /**
+     * Grobe Geräteerkennung anhand des User-Agent-Headers (kein Fingerprinting, nur Mobil/Desktop).
+     * Wird genutzt, um die Kamera-Scan-Erfassung (`/m`) auf Mobilgeräte zu beschränken.
+     */
+    public function isMobile(): bool
+    {
+        $ua = $this->userAgent();
+
+        return $ua !== '' && (bool) preg_match('/Mobi|Android|iPhone|iPad|iPod|Windows Phone|BlackBerry|IEMobile|Opera Mini/i', $ua);
+    }
+
     /** @param array<string,string> $params */
     public function withRouteParams(array $params): self
     {

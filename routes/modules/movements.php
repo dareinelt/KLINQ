@@ -18,6 +18,10 @@ return static function (Router $router, Container $c): void {
     // Desktop
     $router->get('/movements', static fn (Request $r): Response => $mv()->index($r), 'movements.view');
     $router->get('/movements/open', static fn (Request $r): Response => $mv()->open($r), 'movements.view');
+    $router->get('/movements/checkout', static fn (Request $r): Response => $mv()->checkoutCaptureForm($r), 'movements.checkout');
+    $router->post('/movements/checkout', static fn (Request $r): Response => $mv()->checkoutCaptureSubmit($r), 'movements.checkout');
+    $router->get('/movements/return', static fn (Request $r): Response => $mv()->returnCaptureForm($r), 'movements.return');
+    $router->post('/movements/return', static fn (Request $r): Response => $mv()->returnCaptureSubmit($r), 'movements.return');
     $router->get('/movements/{id}', static fn (Request $r): Response => $mv()->show($r), 'movements.view');
     $router->post('/movements/{id}', static fn (Request $r): Response => $mv()->update($r), 'movements.complete');
     $router->post('/movements/{id}/cancel', static fn (Request $r): Response => $mv()->cancel($r), 'movements.complete');

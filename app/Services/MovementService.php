@@ -82,9 +82,10 @@ final class MovementService
     /**
      * Entnahme speichern.
      * @param array<string,mixed> $input asset_id|inventory_number, employee_id, location_id, cost_center_id, movement_date, expected_return_at, note, client_transaction_id, asset_version
+     * @param bool $signedElectronically Desktop-Erfassung ohne Kamera-Scan: Vorgang wurde durch erneute Passworteingabe elektronisch signiert
      * @return array<string,mixed> Bewegung inkl. Asset-Daten
      */
-    public function checkout(array $input, string $source = 'web'): array
+    public function checkout(array $input, string $source = 'web', bool $signedElectronically = false): array
     {
         $this->currentUser->require('movements.checkout');
         if ($existing = $this->existingByTransaction($input)) {
@@ -132,7 +133,7 @@ final class MovementService
         $movementDate = $data['movement_date'] ?? date('Y-m-d');
         $issued = $this->statuses->requireByCode('issued');
 
-        $movement = $this->movements->transaction(function () use ($asset, $employee, $location, $costCenter, $missing, $movementDate, $data, $source, $issued): array {
+        $movement = $this->movements->transaction(function () use ($asset, $employee, $location, $costCenter, $missing, $movementDate, $data, $source, $issued, $signedElectronically): array {
             $movementId = $this->movements->create([
                 'type' => 'checkout',
                 'status' => $missing === [] ? 'completed' : 'open',
@@ -147,6 +148,8 @@ final class MovementService
                 'note' => $data['note'],
                 'client_transaction_id' => $data['client_transaction_id'] ?: null,
                 'source' => $source,
+                'signed_electronically' => $signedElectronically ? 1 : 0,
+                'signed_at' => $signedElectronically ? gmdate('Y-m-d H:i:s') : null,
                 'notify_email' => $data['send_email'] ? 1 : 0,
                 'created_by' => $this->currentUser->id(),
                 'created_by_name' => $this->currentUser->displayName(),
@@ -168,7 +171,7 @@ final class MovementService
             $this->assetService->addMovementEvent((int) $asset['id'], $movementId, 'checkout', $asset['location_path'] ?? null, $summary, $data['note']);
             $this->assetService->recordDiff((int) $asset['id'], $asset, $fresh, null, $movementId);
             $this->audit->log('checkout', 'movement', $movementId, $asset['inventory_number'] . ' → ' . $employee['display_name'], null, [
-                'asset_id' => (int) $asset['id'], 'employee_id' => (int) $employee['id'], 'location_id' => $location['id'] ?? null, 'missing' => $missing, 'source' => $source,
+                'asset_id' => (int) $asset['id'], 'employee_id' => (int) $employee['id'], 'location_id' => $location['id'] ?? null, 'missing' => $missing, 'source' => $source, 'signed_electronically' => $signedElectronically,
             ]);
 
             return $this->movements->find($movementId) ?? [];
@@ -184,7 +187,7 @@ final class MovementService
      *                                   to_location_id, cost_center_id, target_status_code, movement_date, note, client_transaction_id, asset_version
      * @return array<string,mixed>
      */
-    public function returnAsset(array $input, string $source = 'web'): array
+    public function returnAsset(array $input, string $source = 'web', bool $signedElectronically = false): array
     {
         $this->currentUser->require('movements.return');
         if ($existing = $this->existingByTransaction($input)) {
@@ -225,7 +228,7 @@ final class MovementService
         $missing = $location === null ? ['location'] : [];
         $movementDate = $data['movement_date'] ?? date('Y-m-d');
 
-        $movement = $this->movements->transaction(function () use ($asset, $location, $costCenter, $target, $missing, $movementDate, $data, $source): array {
+        $movement = $this->movements->transaction(function () use ($asset, $location, $costCenter, $target, $missing, $movementDate, $data, $source, $signedElectronically): array {
             $movementId = $this->movements->create([
                 'type' => 'return',
                 'status' => $missing === [] ? 'completed' : 'open',
@@ -246,6 +249,8 @@ final class MovementService
                 'note' => $data['note'],
                 'client_transaction_id' => $data['client_transaction_id'] ?: null,
                 'source' => $source,
+                'signed_electronically' => $signedElectronically ? 1 : 0,
+                'signed_at' => $signedElectronically ? gmdate('Y-m-d H:i:s') : null,
                 'notify_email' => $data['send_email'] ? 1 : 0,
                 'created_by' => $this->currentUser->id(),
                 'created_by_name' => $this->currentUser->displayName(),
@@ -268,7 +273,7 @@ final class MovementService
             $this->assetService->addMovementEvent((int) $asset['id'], $movementId, 'return', $asset['employee_name'] !== null ? 'von ' . $asset['employee_name'] : null, $summary, $note !== '' ? $note : null);
             $this->assetService->recordDiff((int) $asset['id'], $asset, $fresh, null, $movementId);
             $this->audit->log('return', 'movement', $movementId, $asset['inventory_number'] . ' ← ' . ($asset['employee_name'] ?? '–'), null, [
-                'asset_id' => (int) $asset['id'], 'condition' => $data['condition_code'], 'has_damage' => (bool) $data['has_damage'], 'target_status' => $target['code'], 'missing' => $missing, 'source' => $source,
+                'asset_id' => (int) $asset['id'], 'condition' => $data['condition_code'], 'has_damage' => (bool) $data['has_damage'], 'target_status' => $target['code'], 'missing' => $missing, 'source' => $source, 'signed_electronically' => $signedElectronically,
             ]);
 
             return $this->movements->find($movementId) ?? [];
