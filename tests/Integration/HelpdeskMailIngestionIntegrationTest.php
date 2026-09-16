@@ -92,6 +92,8 @@ final class HelpdeskMailIngestionIntegrationTest extends DatabaseTestCase
         $this->assertFalse(str_contains((string) $ticket['description'], '> alt'));
         $this->assertStringContains('Eingegangen per E-Mail von Gast Nutzer <gast@extern.test>', (string) $ticket['description']);
         $this->assertNotNull($ticket['mail_message_id']);
+        $this->assertSame('gast@extern.test', $ticket['mail_from_address']);
+        $this->assertSame('Gast Nutzer', $ticket['mail_from_name']);
 
         $log = $this->c->get(TicketRuleRepository::class)->recentInboundMails(5)[0];
         $this->assertSame('created', $log['action']);
@@ -132,6 +134,7 @@ final class HelpdeskMailIngestionIntegrationTest extends DatabaseTestCase
         $this->assertCount(1, $comments);
         $this->assertSame('Es flackert weiterhin.', $comments[0]['body']);
         $this->assertSame('email', $comments[0]['source']);
+        $this->assertSame('rita@example.test', $comments[0]['mail_from_address']);
         $this->assertSame(1, (int) $comments[0]['is_requester']);
         $this->assertSame('Rita Requester', $comments[0]['author_name']);
         $this->assertNull($comments[0]['author_user_id']);

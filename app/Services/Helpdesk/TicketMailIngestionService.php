@@ -55,12 +55,13 @@ final class TicketMailIngestionService
         private readonly TicketService $ticketService,
         private readonly DocumentService $documents,
         private readonly MimeMessageParser $parser,
+        private readonly MailboxSettingsService $settings,
         private readonly \Closure $mailboxFactory
     ) {}
 
     public function enabled(): bool
     {
-        return (bool) $this->config->get('helpdesk.mail.enabled', false);
+        return $this->settings->enabled();
     }
 
     /**
@@ -69,7 +70,7 @@ final class TicketMailIngestionService
      */
     public function pull(?int $limit = null): array
     {
-        $limit ??= max(1, (int) $this->config->get('helpdesk.mail.batch_size', 50));
+        $limit ??= max(1, (int) $this->settings->get('batch_size', 50));
         $this->loginSystemUser();
 
         /** @var MailboxClientInterface $mailbox */
@@ -102,6 +103,7 @@ final class TicketMailIngestionService
             $mailbox->close();
         }
         $this->logger->info('Mail-Eingang verarbeitet', array_diff_key($result, ['items' => true]));
+        $this->settings->recordRun(array_diff_key($result, ['items' => true]));
 
         return $result;
     }
@@ -155,7 +157,7 @@ final class TicketMailIngestionService
             $author = $this->resolveAuthor($mail, $ticket);
 
             if ($ticket !== null) {
-                $comment = $this->ticketService->addInboundMailComment((int) $ticket['id'], $this->commentBody($mail), $author, $mail->messageId);
+                $comment = $this->ticketService->addInboundMailComment((int) $ticket['id'], $this->commentBody($mail), $author, $mail->messageId, $mail->fromAddress);
                 $targetId = (int) ($comment['ticket_id'] ?? $ticket['id']);
                 $this->storeAttachments($mail, $targetId, (int) ($comment['id'] ?? 0), $author);
                 $target = $this->tickets->find($targetId) ?? $ticket;
@@ -163,7 +165,7 @@ final class TicketMailIngestionService
                 return $this->finish($log, self::ACTION_COMMENT, (int) $target['id'], (int) ($comment['id'] ?? 0), sprintf('Kommentar von %s (%s)', $author['email'], $matchedBy), true, (string) $target['number']);
             }
 
-            if ($author['user_id'] === null && $author['employee_id'] === null && !(bool) $this->config->get('helpdesk.mail.allow_unknown_senders', true)) {
+            if ($author['user_id'] === null && $author['employee_id'] === null && !(bool) $this->settings->get('allow_unknown_senders', true)) {
                 return $this->finish($log, self::ACTION_IGNORED, null, null, 'Unbekannter Absender (allow_unknown_senders = false)');
             }
 
@@ -278,7 +280,7 @@ final class TicketMailIngestionService
     /** @param array{user_id:?int,employee_id:?int,name:string,email:string} $author @return array<string,mixed> */
     private function ticketInput(InboundMail $mail, array $author): array
     {
-        $typeCode = (string) $this->config->get('helpdesk.mail.default_type', 'incident');
+        $typeCode = (string) $this->settings->get('default_type', 'incident');
         $type = $this->masterData->typeByCode($typeCode) ?? $this->masterData->typeByCode('incident');
         if ($type === null) {
             throw ValidationException::single('ticket_type_id', 'Kein Tickettyp für den E-Mail-Eingang konfiguriert.');
@@ -299,6 +301,8 @@ final class TicketMailIngestionService
             'urgency' => 2,
             'requester_email' => $author['email'],
             'mail_message_id' => $mail->messageId,
+            'mail_from_address' => $mail->fromAddress,
+            'mail_from_name' => $mail->fromName,
         ];
         if ($author['employee_id'] !== null) {
             $input['requester_employee_id'] = $author['employee_id'];
@@ -356,10 +360,10 @@ final class TicketMailIngestionService
     /** Systembenutzer des Mail-Eingangs anmelden (muss helpdesk.create besitzen). */
     public function loginSystemUser(): void
     {
-        $username = (string) $this->config->get('helpdesk.mail.system_user', 'admin');
+        $username = (string) $this->settings->get('system_user', 'admin');
         $user = $this->users->findByUsername($username);
         if ($user === null || empty($user['is_active'])) {
-            throw new \RuntimeException(sprintf('Systembenutzer „%s“ für den E-Mail-Eingang fehlt oder ist inaktiv (HELPDESK_MAIL_SYSTEM_USER).', $username));
+            throw new \RuntimeException(sprintf('Systembenutzer „%s“ für den E-Mail-Eingang fehlt oder ist inaktiv (Administration → E-Mail-Postfach).', $username));
         }
         if (!$this->permissions->roleHas((string) $user['role'], 'helpdesk.create')) {
             throw new \RuntimeException(sprintf('Systembenutzer „%s“ hat keine Berechtigung helpdesk.create (Rolle %s).', $username, (string) $user['role']));
@@ -374,7 +378,7 @@ final class TicketMailIngestionService
         }
         $own = array_filter([
             mb_strtolower(trim((string) $this->config->get('mail.from_address', ''))),
-            mb_strtolower(trim((string) $this->config->get('helpdesk.mail.username', ''))),
+            mb_strtolower(trim((string) $this->settings->get('username', ''))),
         ]);
 
         return in_array($email, $own, true);

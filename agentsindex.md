@@ -107,7 +107,7 @@ Jedes Modul folgt demselben Schnitt: **Routendatei → Controller → Service �
 | Berichte | `routes/modules/reports.php` | `ReportController` | `ReportService`, `Support\CsvWriter` | `reports/` | [berichte](docs/berichte.md) |
 | Import | `routes/modules/imports.php` | `ImportController` | `ImportService`, `Support\CsvReader` | `imports/` | [import](docs/import.md) |
 | Benutzer/Profil | `routes/modules/users.php` | `UserController`, `ProfileController`, `AuthController` | `UserService`, `AuthService` | `users/`, `profile/`, `auth/` | [audit](docs/audit.md) |
-| Audit & Admin | `routes/modules/audit.php`, `admin.php` | `AuditController`, `AdminController` | `AuditLogService`, `SettingsService` | `audit/`, `admin/` | [audit](docs/audit.md) |
+| Audit & Admin | `routes/modules/audit.php`, `admin.php` | `AuditController`, `AdminController`, `HelpdeskMailboxController` | `AuditLogService`, `SettingsService`, `Helpdesk\MailboxSettingsService`, `Support\Secret` | `audit/`, `admin/` | [audit](docs/audit.md), [helpdesk](docs/helpdesk.md) |
 
 ### Fachliche Kernregeln (häufige Fehlerquellen)
 

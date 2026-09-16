@@ -40,6 +40,21 @@ final class FileMailboxClient implements MailboxClientInterface
         $this->moveTo($uid, 'processed');
     }
 
+    /** Unterverzeichnisse der Mailquelle (analog zu IMAP-Ordnern). @return list<string> */
+    public function listMailboxes(): array
+    {
+        if (!is_dir($this->directory)) {
+            return [];
+        }
+        $folders = [];
+        foreach (glob(rtrim($this->directory, '/\\') . DIRECTORY_SEPARATOR . '*', GLOB_ONLYDIR) ?: [] as $dir) {
+            $folders[] = basename($dir);
+        }
+        sort($folders, SORT_NATURAL);
+
+        return $folders;
+    }
+
     public function markFailed(string $uid): void
     {
         $this->moveTo($uid, 'failed');

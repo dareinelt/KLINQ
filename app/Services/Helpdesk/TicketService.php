@@ -208,6 +208,10 @@ final class TicketService
                 $mailFields['requester_email'] = mb_substr($email, 0, 255);
             }
             $mailFields['mail_message_id'] = isset($input['mail_message_id']) ? mb_substr(trim((string) $input['mail_message_id']), 0, 255) : null;
+            $from = trim((string) ($input['mail_from_address'] ?? ''));
+            $mailFields['mail_from_address'] = $from !== '' ? mb_substr($from, 0, 255) : null;
+            $fromName = trim((string) ($input['mail_from_name'] ?? ''));
+            $mailFields['mail_from_name'] = $fromName !== '' ? mb_substr($fromName, 0, 150) : null;
             if (!empty($input['external_requester']) && (int) $data['requester_user_id'] === $userId && empty($data['requester_employee_id'])) {
                 // Unbekannter externer Absender: Systembenutzer soll nicht als Melder erscheinen
                 $data['requester_user_id'] = null;
@@ -288,7 +292,9 @@ final class TicketService
             if (!empty($data['assignee_user_id'])) {
                 $this->event($id, 'assigned', null, null, $this->userName((int) $data['assignee_user_id']));
             }
-            $this->event($id, 'created', null, null, $number, ['source' => $source]);
+            $this->event($id, 'created', null, null, $number, ['source' => $source] + (isset($extraFields['mail_from_address']) && $extraFields['mail_from_address'] !== null
+                ? ['mail_from' => $extraFields['mail_from_address'], 'mail_from_name' => $extraFields['mail_from_name'] ?? null]
+                : []));
 
             return $id;
         });
@@ -696,7 +702,7 @@ final class TicketService
      * @param array{user_id:?int,name:string,email:string,is_requester:bool,is_agent:bool} $author
      * @return array<string,mixed> Kommentar
      */
-    public function addInboundMailComment(int $id, string $body, array $author, string $messageId): array
+    public function addInboundMailComment(int $id, string $body, array $author, string $messageId, string $fromAddress = ''): array
     {
         $this->currentUser->require('helpdesk.comment');
         $ticket = $this->get($id);
@@ -711,7 +717,8 @@ final class TicketService
         }
         $body = mb_substr($body, 0, 20000);
 
-        $commentId = $this->tickets->transaction(function () use ($ticket, $body, $author, $messageId): int {
+        $commentId = $this->tickets->transaction(function () use ($ticket, $body, $author, $messageId, $fromAddress): int {
+            $sender = trim($fromAddress) !== '' ? trim($fromAddress) : $author['email'];
             $commentId = $this->comments->create([
                 'ticket_id' => (int) $ticket['id'],
                 'type' => 'public',
@@ -721,6 +728,7 @@ final class TicketService
                 'is_requester' => $author['is_requester'] ? 1 : 0,
                 'source' => 'email',
                 'mail_message_id' => mb_substr($messageId, 0, 255),
+                'mail_from_address' => $sender !== '' ? mb_substr($sender, 0, 255) : null,
             ]);
             $now = gmdate('Y-m-d H:i:s');
             $update = ['updated_by' => $this->currentUser->id(), 'last_public_comment_at' => $now];
@@ -750,7 +758,7 @@ final class TicketService
                 }
             }
             $this->tickets->update((int) $ticket['id'], $update);
-            $this->tickets->addEvent((int) $ticket['id'], 'comment', $author['user_id'], $author['name'] !== '' ? $author['name'] : $author['email'], null, null, mb_substr($body, 0, 120), ['comment_id' => $commentId, 'via' => 'email']);
+            $this->tickets->addEvent((int) $ticket['id'], 'comment', $author['user_id'], $author['name'] !== '' ? $author['name'] : $author['email'], null, null, mb_substr($body, 0, 120), ['comment_id' => $commentId, 'via' => 'email', 'mail_from' => $sender]);
 
             return $commentId;
         });

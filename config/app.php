@@ -8,6 +8,9 @@ return [
     'env' => Env::get('APP_ENV', 'production'),
     'debug' => Env::bool('APP_DEBUG', false),
     'name' => Env::get('APP_NAME', 'Assetverwaltung'),
+    // Schlüssel für in der Datenbank gespeicherte Zugangsdaten (z. B. Postfachpasswort des Help Desks).
+    // Leer = aus DB-Passwort und APP_URL abgeleitet; für den Produktivbetrieb bitte fest setzen.
+    'key' => Env::get('APP_KEY', ''),
     'company_name' => Env::get('APP_COMPANY_NAME', 'Firma'),
     'url' => rtrim((string) Env::get('APP_URL', 'http://localhost:8080'), '/'),
     'timezone' => Env::get('APP_TIMEZONE', 'Europe/Berlin'),

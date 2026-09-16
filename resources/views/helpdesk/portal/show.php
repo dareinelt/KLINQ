@@ -8,6 +8,7 @@ $userId = (int) ($user['id'] ?? 0);
     <div>
         <p class="page-subtitle text-muted"><a href="/portal/tickets"><?= icon('arrow-left') ?> Meine Tickets</a></p>
         <h1 class="page-title"><span class="ticket-number"><?= e($ticket['number']) ?></span> · <?= e($ticket['subject']) ?> <?= badge($ticket['status_name'] ?? '–', $ticket['status_color'] ?? 'neutral') ?></h1>
+        <?php if (($ticket['source'] ?? '') === 'email'): ?><p class="text-muted text-sm mb-0"><?= icon('mail', 'icon icon-xs') ?> Per E-Mail eröffnet<?= !empty($ticket['mail_from_address']) ? ' von ' . e($ticket['mail_from_address']) : '' ?>.</p><?php endif; ?>
     </div>
     <div class="page-actions">
         <?php if ($canReopen): ?><button type="button" class="btn btn-secondary" data-dialog-open="reopen-dialog"><?= icon('refresh') ?> Wieder öffnen</button><?php endif; ?>
@@ -21,7 +22,7 @@ $userId = (int) ($user['id'] ?? 0);
         <div class="card" id="comments">
             <div class="card-header"><h2>Kommentare</h2><span class="text-muted text-sm"><?= count($comments) ?></span></div>
             <?php if ($comments === []): ?><p class="text-muted">Noch keine Kommentare.</p><?php else: ?>
-            <ul class="comment-list"><?php foreach ($comments as $c): $own = (int) ($c['author_user_id'] ?? 0) === $userId || !empty($c['is_requester']); ?><li class="comment<?= $own ? ' is-requester' : '' ?>" data-comment-type="<?= e($c['type'] ?? 'public') ?>"><div class="comment-head"><span class="comment-author"><?= e($c['author_name'] ?? 'system') ?></span><span class="text-muted"><?= fmt_datetime($c['created_at'] ?? null) ?></span><?php if (($c['source'] ?? '') === 'portal'): ?><?= badge('Portal', 'info') ?><?php endif; ?></div><div class="comment-body"><?= nl2br_e($c['body'] ?? '') ?></div></li><?php endforeach; ?></ul>
+            <ul class="comment-list"><?php foreach ($comments as $c): $own = (int) ($c['author_user_id'] ?? 0) === $userId || !empty($c['is_requester']); ?><li class="comment<?= $own ? ' is-requester' : '' ?>" data-comment-type="<?= e($c['type'] ?? 'public') ?>"><div class="comment-head"><span class="comment-author"><?= e($c['author_name'] ?? 'system') ?></span><span class="text-muted"><?= fmt_datetime($c['created_at'] ?? null) ?></span><?php if (($c['source'] ?? '') === 'portal'): ?><?= badge('Portal', 'info') ?><?php elseif (($c['source'] ?? '') === 'email'): ?><?= badge('Per E-Mail', 'info') ?><?php endif; ?></div><div class="comment-body"><?= nl2br_e($c['body'] ?? '') ?></div></li><?php endforeach; ?></ul>
             <?php endif; ?>
             <?php if ($canComment): ?>
             <form method="post" action="/portal/tickets/<?= (int) $ticket['id'] ?>/comments" enctype="multipart/form-data" class="comment-form mt-4" data-hd-comment-form>
