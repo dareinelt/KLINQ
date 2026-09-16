@@ -1,7 +1,13 @@
 <?php
-/** Basis-HTML. Erwartet: $content, optional $title, $bodyClass, $scripts, $appName */
+/**
+ * Basis-HTML. Erwartet: $content; optional $moduleTitle, $bodyClass, $scripts, $appName
+ *
+ * Der Fenstertitel lautet immer "<App-Name> - <Modul>" (z. B. "KLINQ - Assetverwaltung");
+ * das aktive Modul liefern die Layouts über $moduleTitle.
+ */
 require_once __DIR__ . '/helpers.php';
-$appName = $appName ?? 'Assetverwaltung';
+$appName = $appName ?? 'KLINQ';
+$documentTitle = $appName . (($moduleTitle ?? '') !== '' ? ' - ' . $moduleTitle : '');
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -14,7 +20,7 @@ $appName = $appName ?? 'Assetverwaltung';
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="<?= e($appName) ?>">
     <meta name="csrf-token" content="<?= e($csrf ?? '') ?>">
-    <title><?= e($title ?? $appName) ?></title>
+    <title><?= e($documentTitle) ?></title>
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="icon" href="/img/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/img/icon-192.png">

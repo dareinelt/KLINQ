@@ -1,4 +1,4 @@
-/* Assetverwaltung – zentrales Stylesheet: bindet alle Module ein */
+/* KLINQ – zentrales Stylesheet: bindet alle Module ein */
 @import url("themes/tokens.css");
 @import url("base/reset.css");
 @import url("base/typography.css");

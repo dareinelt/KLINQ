@@ -1,4 +1,4 @@
--- 001_initial.sql – Vollständiges initiales Schema der Assetverwaltung
+-- 001_initial.sql – Vollständiges initiales Schema von KLINQ
 -- Alle Tabellen InnoDB / utf8mb4. Zeitstempel in UTC.
 
 SET NAMES utf8mb4;

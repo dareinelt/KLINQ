@@ -1,5 +1,5 @@
 /* Service Worker: App-Shell-Cache für den mobilen Bereich; API-Aufrufe werden nicht gecacht. */
-const CACHE_NAME = "assets-shell-v4";
+const CACHE_NAME = "klinq-shell-v5";
 const SHELL = [
     "/m",
     "/css/app.css",

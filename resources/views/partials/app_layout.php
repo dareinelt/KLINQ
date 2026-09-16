@@ -12,18 +12,18 @@ require_once __DIR__ . '/helpers.php';
 
 $user = $user ?? [];
 $activeNav = $activeNav ?? '';
-$appName = $appName ?? 'Assetverwaltung';
+$appName = $appName ?? 'KLINQ';
 $can = $can ?? static fn (string $p): bool => false;
 $roleLabels = $roleLabels ?? [];
 $openCounts = $openCounts ?? ['checkouts' => 0, 'returns' => 0];
 $helpdeskEnabled = $helpdeskEnabled ?? false;
 
-$modules = \App\Support\ModuleNavigation::modules($can, $helpdeskEnabled, $appName);
+$modules = \App\Support\ModuleNavigation::modules($can, $helpdeskEnabled);
 $activeModule = $activeModule ?? \App\Support\ModuleNavigation::moduleFor($activeNav);
 if (!in_array($activeModule, array_column($modules, 'key'), true)) {
     $activeModule = \App\Support\ModuleNavigation::ASSETS;
 }
-$moduleLabel = \App\Support\ModuleNavigation::label($activeModule, $appName);
+$moduleLabel = \App\Support\ModuleNavigation::label($activeModule);
 $moduleIcon = match ($activeModule) {
     \App\Support\ModuleNavigation::HELPDESK => 'lifebuoy',
     \App\Support\ModuleNavigation::SYSTEM => 'chart',
@@ -127,5 +127,6 @@ ob_start();
 <?php
 unset($_SESSION['_old_input'], $_SESSION['_errors']);
 $content = ob_get_clean();
+$moduleTitle = $moduleLabel;
 $scripts = array_merge(['/js/search.js', '/js/pwa.js'], $scripts ?? []);
 include __DIR__ . '/layout.php';

@@ -4,7 +4,7 @@
         <div class="login-brand">
             <span class="brand-logo" aria-hidden="true"><?= icon('box') ?></span>
             <div>
-                <h1 class="mb-0 text-lg"><?= e($appName ?? 'Assetverwaltung') ?></h1>
+                <h1 class="mb-0 text-lg"><?= e($appName ?? 'KLINQ') ?></h1>
                 <p class="text-muted text-sm mb-0"><?= e($companyName ?? '') ?></p>
             </div>
         </div>
@@ -27,4 +27,4 @@
         </form>
     </div>
 </div>
-<?php $content = ob_get_clean(); $title = 'Anmeldung – ' . ($appName ?? 'Assetverwaltung'); include __DIR__ . '/../partials/layout.php'; ?>
+<?php $content = ob_get_clean(); include __DIR__ . '/../partials/layout.php'; ?>

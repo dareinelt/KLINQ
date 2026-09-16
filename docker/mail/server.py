@@ -1,5 +1,5 @@
 """
-Minimaler E-Mail-Versanddienst für die Assetverwaltung (Entnahme-/Retourennachweise,
+Minimaler E-Mail-Versanddienst für KLINQ (Entnahme-/Retourennachweise,
 Übergabeprotokolle). Kapselt die SMTP-Anbindung an einen echten Mailserver, damit die
 PHP-Anwendung selbst keine SMTP-Zugangsdaten verwalten muss (analog zum "pdf"-Dienst).
 
