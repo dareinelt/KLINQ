@@ -16,15 +16,22 @@ $listTable = static function (array $rows) use ($ticketUrl, $slaRemaining): void
             <thead><tr><th>Nr.</th><th>Betreff</th><th>Prio</th><th>Status</th><th>SLA</th></tr></thead>
             <tbody>
             <?php foreach ($rows as $r):
+                $closed = in_array((string) ($r['status_category'] ?? ''), ['resolved', 'closed', 'cancelled'], true);
                 $state = (string) ($r['sla_resolution_state'] ?? '');
-                $rowClass = trim('ticket-row ' . (($r['status_category'] ?? '') === 'closed' ? 'is-closed ' : '') . ($state === 'breached' ? 'is-overdue ' : ($state === 'warning' ? 'is-warning ' : '')));
+                $rowClass = trim('ticket-row ' . ($closed ? 'is-closed ' : '') . (!$closed && $state === 'breached' ? 'is-overdue ' : (!$closed && $state === 'warning' ? 'is-warning ' : '')));
             ?>
                 <tr class="<?= e($rowClass) ?>" data-href="<?= e($ticketUrl($r)) ?>">
                     <td class="ticket-number"><a href="<?= e($ticketUrl($r)) ?>"><?= e($r['number'] ?? '–') ?></a></td>
                     <td class="ticket-subject"><a href="<?= e($ticketUrl($r)) ?>"><?= e($r['subject'] ?? '–') ?></a><div class="ticket-meta"><?= e($r['requester_name'] ?? $r['requester_user_name'] ?? '–') ?> · <?= fmt_datetime($r['updated_at'] ?? null) ?></div></td>
                     <td class="nowrap"><span class="prio-dot is-<?= e($r['priority_color'] ?? 'neutral') ?>"></span><?= e($r['priority_name'] ?? '–') ?></td>
                     <td><?= badge($r['status_name'] ?? '–', $r['status_color'] ?? 'neutral') ?></td>
-                    <td class="sla-cell"><span class="sla-remaining<?= $state === 'breached' ? ' is-overdue' : '' ?>"<?= !empty($r['resolution_due_at']) ? ' data-hd-due="' . e($r['resolution_due_at']) . '"' : '' ?>><?= e($slaRemaining($r['resolution_due_at'] ?? null)) ?></span></td>
+                    <td class="sla-cell">
+                        <?php if ($closed): ?>
+                            <?= $state === 'met' ? badge('Eingehalten', 'success') : ($state === 'breached' ? badge('Verletzt', 'danger') : '<span class="text-muted">–</span>') ?>
+                        <?php else: ?>
+                            <span class="sla-remaining<?= $state === 'breached' ? ' is-overdue' : '' ?>"<?= !empty($r['resolution_due_at']) ? ' data-hd-due="' . e($r['resolution_due_at']) . '"' : '' ?>><?= e($slaRemaining($r['resolution_due_at'] ?? null)) ?></span>
+                        <?php endif; ?>
+                    </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>
