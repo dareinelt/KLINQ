@@ -92,7 +92,7 @@
                 <ul class="field-hint-list" data-check-hints="serial_number" hidden></ul>
             </div>
         </div>
-        <div class="form-row">
+        <div class="form-row<?= $isNew ? ' form-row-3' : '' ?>">
             <div class="form-group" data-field="mac">
                 <label for="f-mac">MAC-Adresse</label>
                 <input id="f-mac" name="mac_address" value="<?= e(form_value($row, 'mac_address')) ?>" maxlength="40" class="mono" placeholder="00:1A:2B:3C:4D:5E" autocomplete="off" data-check="mac_address">
@@ -105,6 +105,12 @@
                 <?= field_error('imei') ?>
                 <ul class="field-hint-list" data-check-hints="imei" hidden></ul>
             </div>
+            <?php if ($isNew): ?>
+            <div class="form-group" data-accepted-invno-group hidden>
+                <label for="f-accepted-invno">Inventarnummer</label>
+                <input id="f-accepted-invno" class="mono" readonly data-accepted-invno-display>
+            </div>
+            <?php endif; ?>
         </div>
 
         <h3 class="text-sm text-muted">Beschaffung</h3>

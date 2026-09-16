@@ -131,11 +131,14 @@
         const dialog = document.querySelector("[data-inventory-dialog]");
         const manualRow = form.querySelector("[data-manual-invno-row]");
         const manualInput = form.querySelector("[data-manual-invno]");
+        const acceptedGroup = form.querySelector("[data-accepted-invno-group]");
+        const acceptedDisplay = form.querySelector("[data-accepted-invno-display]");
         if (!dialog || !manualRow || !manualInput) { return; }
         const message = dialog.querySelector("[data-inventory-dialog-message]");
         const yesBtn = dialog.querySelector("[data-inventory-dialog-yes]");
         const noBtn = dialog.querySelector("[data-inventory-dialog-no]");
         let lastPrefix = null;
+        let pendingNextNumber = null;
 
         function showManual(prefix) {
             manualRow.hidden = false;
@@ -152,32 +155,51 @@
             manualInput.value = "";
         }
 
+        function hideAccepted() {
+            if (!acceptedGroup || !acceptedDisplay) { return; }
+            acceptedGroup.hidden = true;
+            acceptedDisplay.value = "";
+        }
+
+        function showAccepted(number) {
+            if (!acceptedGroup || !acceptedDisplay) { return; }
+            acceptedDisplay.value = number;
+            acceptedGroup.hidden = false;
+        }
+
         async function handleTypeChange() {
             const opt = selectedTypeOption();
             const prefix = opt ? opt.getAttribute("data-prefix") : "";
             hideManual();
+            hideAccepted();
+            pendingNextNumber = null;
             if (!prefix || prefix === lastPrefix) { lastPrefix = prefix || null; return; }
             lastPrefix = prefix;
             let lastNumber = null;
+            let nextNumber = null;
             try {
                 const data = await AppUI.api("/api/assets/last-inventory-number?prefix=" + encodeURIComponent(prefix));
                 lastNumber = data.last_number;
-            } catch (e) { lastNumber = null; }
-            if (!lastNumber) { return; }
-            message.textContent = "Die zuletzt vergebene Inventarnummer für den gewählten Gerätetyp lautet " + lastNumber + ". Übernehmen?";
+                nextNumber = data.next_number;
+            } catch (e) { lastNumber = null; nextNumber = null; }
+            if (!lastNumber || !nextNumber) { return; }
+            pendingNextNumber = nextNumber;
+            message.textContent = "Die zuletzt vergebene Inventarnummer für den gewählten Gerätetyp lautet " + lastNumber + ". " + nextNumber + " übernehmen?";
             dialog.setAttribute("data-inventory-dialog-prefix", prefix);
             AppUI.openDialog(dialog.id);
         }
 
         yesBtn.addEventListener("click", function () {
             hideManual();
+            if (pendingNextNumber) { showAccepted(pendingNextNumber); }
             dialog.close();
         });
         noBtn.addEventListener("click", function () {
+            hideAccepted();
             showManual(dialog.getAttribute("data-inventory-dialog-prefix") || "");
             dialog.close();
         });
-        dialog.addEventListener("cancel", function () { hideManual(); });
+        dialog.addEventListener("cancel", function () { hideManual(); hideAccepted(); });
 
         typeField.addEventListener("change", handleTypeChange);
     }
