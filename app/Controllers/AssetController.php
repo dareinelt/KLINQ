@@ -215,15 +215,18 @@ final class AssetController extends BaseController
     {
         $prefix = trim($request->queryString('prefix'));
         $last = null;
+        $next = null;
         if ($prefix !== '') {
             try {
                 $last = $this->numbers->last($prefix);
+                $next = $this->numbers->peekNext($prefix);
             } catch (\InvalidArgumentException $e) {
                 $last = null;
+                $next = null;
             }
         }
 
-        return $this->json(['last_number' => $last]);
+        return $this->json(['last_number' => $last, 'next_number' => $next]);
     }
 
     /** Live-Dublettenprüfung im Formular (Seriennummer / MAC / IMEI). */
