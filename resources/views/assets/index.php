@@ -112,4 +112,13 @@
     <?php endif; ?>
 </div>
 <?php include __DIR__ . '/../partials/pagination.php'; ?>
+<dialog id="scan-choice-dialog" class="dialog" data-auto-open-if-query="scan">
+    <h2><?= icon('qr') ?> Scannen</h2>
+    <p class="text-muted">Die Scan-Funktion ist nur auf Mobilgeräten verfügbar. Bitte den gewünschten Vorgang für die manuelle Erfassung am Desktop wählen:</p>
+    <div class="form-actions">
+        <?php if ($can('movements.checkout')): ?><a class="btn btn-primary" href="/movements/checkout"><?= icon('checkout') ?> Entnahme</a><?php endif; ?>
+        <?php if ($can('movements.return')): ?><a class="btn btn-primary" href="/movements/return"><?= icon('return') ?> Retoure</a><?php endif; ?>
+        <button type="button" class="btn btn-ghost" data-dialog-close>Abbrechen</button>
+    </div>
+</dialog>
 <?php $innerContent = ob_get_clean(); include __DIR__ . '/../partials/app_layout.php'; ?>

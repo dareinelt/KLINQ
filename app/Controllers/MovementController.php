@@ -51,7 +51,16 @@ final class MovementController extends BaseController
         if (($guard = $this->requireSignatureOptIn()) !== null) {
             return $guard;
         }
-        $asset = $this->assetOrFail($request->queryString('asset'));
+        $code = $request->queryString('asset');
+        if ($code === '') {
+            return $this->pickAssetForm('checkout');
+        }
+        $asset = $this->service->resolveAsset($code);
+        if ($asset === null) {
+            $this->flash('error', 'Asset „' . $code . '“ nicht gefunden.');
+
+            return $this->pickAssetForm('checkout');
+        }
         if ($asset['employee_id'] !== null) {
             $this->flash('warning', 'Das Asset ist bereits an ' . $asset['employee_name'] . ' ausgegeben. Bitte zuerst die Rückgabe erfassen.');
 
@@ -108,7 +117,16 @@ final class MovementController extends BaseController
         if (($guard = $this->requireSignatureOptIn()) !== null) {
             return $guard;
         }
-        $asset = $this->assetOrFail($request->queryString('asset'));
+        $code = $request->queryString('asset');
+        if ($code === '') {
+            return $this->pickAssetForm('return');
+        }
+        $asset = $this->service->resolveAsset($code);
+        if ($asset === null) {
+            $this->flash('error', 'Asset „' . $code . '“ nicht gefunden.');
+
+            return $this->pickAssetForm('return');
+        }
         if ($asset['employee_id'] === null && !in_array($asset['status_code'], ['issued', 'return_expected'], true)) {
             $this->flash('warning', 'Das Asset ist derzeit nicht ausgegeben (' . $asset['status_name'] . ').');
 
@@ -338,6 +356,19 @@ final class MovementController extends BaseController
     private function assetOrFail(string $inventory): array
     {
         return $this->findOrFail($this->service->resolveAsset($inventory), 'Asset „' . $inventory . '“ nicht gefunden');
+    }
+
+    /**
+     * Zwischenschritt, wenn beim Aufruf der Entnahme-/Rückgabe-Erfassung noch kein Asset feststeht
+     * (z. B. nach der Wahl „Entnahme“/„Retoure“ im Scan-Overlay auf dem Desktop).
+     */
+    private function pickAssetForm(string $action): Response
+    {
+        return $this->render('movements.pick_asset', [
+            'title' => ($action === 'checkout' ? 'Entnahme' : 'Rückgabe') . ' – Asset wählen',
+            'activeNav' => 'assets',
+            'action' => $action,
+        ]);
     }
 
     /**
