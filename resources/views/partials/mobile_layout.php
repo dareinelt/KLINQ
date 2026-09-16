@@ -36,6 +36,7 @@ ob_start();
 <?php
 unset($_SESSION['_old_input'], $_SESSION['_errors']);
 $content = ob_get_clean();
+$moduleTitle = \App\Support\ModuleNavigation::label(\App\Support\ModuleNavigation::ASSETS);
 $bodyClass = trim(($bodyClass ?? '') . ' m-body');
 $scripts = array_merge(['/js/offline.js', '/js/pwa.js'], $scripts ?? []);
 include __DIR__ . '/layout.php';

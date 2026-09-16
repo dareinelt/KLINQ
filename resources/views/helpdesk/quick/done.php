@@ -10,5 +10,5 @@
 </div>
 <?php
 $content = ob_get_clean();
-$title = ($title ?? 'Meldung eingegangen') . ' – ' . ($appName ?? 'Assetverwaltung');
+$moduleTitle = \App\Support\ModuleNavigation::label(\App\Support\ModuleNavigation::HELPDESK);
 include __DIR__ . '/../../partials/layout.php';

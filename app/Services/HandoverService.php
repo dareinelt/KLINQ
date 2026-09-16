@@ -246,7 +246,7 @@ final class HandoverService
             $employeeName = (string) (($protocol['employee_snapshot'] ?? [])['display_name'] ?? '');
             $body = '<p>Hallo ' . htmlspecialchars($employeeName, ENT_QUOTES, 'UTF-8') . ',</p>'
                 . '<p>im Anhang finden Sie Ihr unterschriebenes Übergabeprotokoll ' . htmlspecialchars((string) $protocol['protocol_number'], ENT_QUOTES, 'UTF-8') . '.</p>'
-                . '<p>Diese E-Mail wurde automatisch von der Assetverwaltung erzeugt.</p>';
+                . '<p>Diese E-Mail wurde automatisch von KLINQ erzeugt.</p>';
             $sent = $this->mail->send($email, $subject, $body, [
                 ['filename' => $protocol['protocol_number'] . '.pdf', 'content' => $pdf, 'mime_type' => 'application/pdf'],
             ]);

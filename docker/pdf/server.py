@@ -1,5 +1,5 @@
 """
-Minimaler HTML→PDF-Dienst für die Assetverwaltung (Übergabeprotokolle).
+Minimaler HTML→PDF-Dienst für KLINQ (Übergabeprotokolle).
 
 Endpunkte:
   GET  /health   → 200 "ok"

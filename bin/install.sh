@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Docker-freie Installation der Assetverwaltung (PHP 8.4 + Apache, MySQL, Python-Dienste
+# Docker-freie Installation von KLINQ (PHP 8.4 + Apache, MySQL, Python-Dienste
 # für PDF/E-Mail) auf einem Debian/Ubuntu-Host. Richtet alle Abhängigkeiten, eine Datenbank,
 # die Anwendung samt Migrationen sowie ein SSL-Zertifikat für Apache ein.
 #
@@ -314,7 +314,7 @@ setup_python_services() {
 
     cat > /etc/systemd/system/assets-pdf.service <<UNIT
 [Unit]
-Description=Assetverwaltung PDF-Dienst (WeasyPrint)
+Description=KLINQ PDF-Dienst (WeasyPrint)
 After=network.target
 
 [Service]
@@ -331,7 +331,7 @@ UNIT
 
     cat > /etc/systemd/system/assets-mail.service <<UNIT
 [Unit]
-Description=Assetverwaltung E-Mail-Dienst (SMTP-Relay)
+Description=KLINQ E-Mail-Dienst (SMTP-Relay)
 After=network.target
 
 [Service]
@@ -349,7 +349,7 @@ UNIT
 
     cat > /etc/systemd/system/assets-scheduler.service <<UNIT
 [Unit]
-Description=Assetverwaltung Scheduler (AD-Sync, Help Desk)
+Description=KLINQ Scheduler (AD-Sync, Help Desk)
 After=network.target mysql.service
 
 [Service]

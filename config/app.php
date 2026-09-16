@@ -7,7 +7,7 @@ use App\Core\Env;
 return [
     'env' => Env::get('APP_ENV', 'production'),
     'debug' => Env::bool('APP_DEBUG', false),
-    'name' => Env::get('APP_NAME', 'Assetverwaltung'),
+    'name' => Env::get('APP_NAME', 'KLINQ'),
     // Schlüssel für in der Datenbank gespeicherte Zugangsdaten (z. B. Postfachpasswort des Help Desks).
     // Leer = aus DB-Passwort und APP_URL abgeleitet; für den Produktivbetrieb bitte fest setzen.
     'key' => Env::get('APP_KEY', ''),

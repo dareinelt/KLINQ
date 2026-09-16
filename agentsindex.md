@@ -1,4 +1,4 @@
-# Agentsindex – Überblick über das Projekt „Assetverwaltung“
+# Agentsindex – Überblick über das Projekt „KLINQ“
 
 Dieser Index richtet sich an KI-Agenten und neue Entwickler. Er beschreibt kompakt, **was** das Projekt tut,
 **wie** es aufgebaut ist und **wo** welche Datei liegt, damit Änderungen zielsicher und ohne Suchaufwand
@@ -9,7 +9,11 @@ am Ende der Abschnitte verlinkt.
 
 ## 1. Zweck der Anwendung
 
-Webbasierte Inventar- und Assetverwaltung für IT-Hardware (PCs, Mobilgeräte, Netzwerkkomponenten, Zubehör) mit:
+KLINQ ist eine multifunktionale Web-Anwendung für die IT und bündelt mehrere Module unter einem Dach –
+aktuell **Assetverwaltung** und **Help Desk**, weitere Funktionen folgen.
+
+Modul **Assetverwaltung** – Inventar- und Assetverwaltung für IT-Hardware (PCs, Mobilgeräte,
+Netzwerkkomponenten, Zubehör) mit:
 
 - Assetstamm inkl. automatisch vergebener Inventarnummern, Historie und optimistischer Sperre
 - Entnahme/Retoure („Bewegungen“) am Desktop und mobil per QR-/Barcode-Scan, auch offline (PWA)
@@ -169,6 +173,9 @@ ER-Diagramm und Feldbeschreibungen: [`docs/datenmodell.md`](docs/datenmodell.md)
 - CSS ist nach `base/`, `layout/`, `components/`, `pages/`, `utilities/` gegliedert und wird über
   `public/css/app.css` importiert; Design-Tokens als CSS-Variablen.
 - **Keine Inline-Styles und keine Inline-Skripte** – die CSP verbietet `unsafe-inline`.
+- Der Fenstertitel lautet immer `KLINQ - <Modul>` (z. B. `KLINQ - Help Desk`). Er wird zentral in
+  `resources/views/partials/layout.php` aus `$appName` (`APP_NAME`) und `$moduleTitle` gebildet; die Layouts
+  (`app_layout.php`, `mobile_layout.php`) setzen `$moduleTitle` aus `ModuleNavigation::label()`.
 
 ## 9. Konfiguration und Betrieb
 

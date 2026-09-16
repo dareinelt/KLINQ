@@ -21,7 +21,7 @@ $detected[] = ['Rechner', $reporter['host'] ?? (($reporter['ip'] ?? '') !== '' ?
             <span class="brand-logo" aria-hidden="true"><?= icon('ticket') ?></span>
             <div>
                 <h1 class="mb-0 text-lg">Störung melden</h1>
-                <p class="text-muted text-sm mb-0"><?= e($appName ?? 'Assetverwaltung') ?> · Help Desk</p>
+                <p class="text-muted text-sm mb-0"><?= e($appName ?? 'KLINQ') ?> · Help Desk</p>
             </div>
         </div>
         <?php if (!empty($error)): ?>
@@ -59,6 +59,6 @@ $detected[] = ['Rechner', $reporter['host'] ?? (($reporter['ip'] ?? '') !== '' ?
 </div>
 <?php
 $content = ob_get_clean();
-$title = ($title ?? 'Störung melden') . ' – ' . ($appName ?? 'Assetverwaltung');
+$moduleTitle = \App\Support\ModuleNavigation::label(\App\Support\ModuleNavigation::HELPDESK);
 unset($_SESSION['_old_input'], $_SESSION['_errors']);
 include __DIR__ . '/../../partials/layout.php';

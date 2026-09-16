@@ -15,4 +15,4 @@ ob_start();
         </div>
     </div>
 </div>
-<?php $content = ob_get_clean(); $title = $status . ' – ' . ($titles[$status] ?? 'Fehler'); include __DIR__ . '/../partials/layout.php'; ?>
+<?php $content = ob_get_clean(); include __DIR__ . '/../partials/layout.php'; ?>

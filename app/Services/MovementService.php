@@ -477,7 +477,7 @@ final class MovementService
             $body = '<p>Hallo ' . htmlspecialchars((string) ($movement['employee_name'] ?? ''), ENT_QUOTES, 'UTF-8') . ',</p>'
                 . '<p>im Anhang finden Sie Ihren ' . ($movement['type'] === 'checkout' ? 'Entnahmenachweis' : 'Retourennachweis')
                 . ' für ' . htmlspecialchars((string) $movement['inventory_number'], ENT_QUOTES, 'UTF-8') . '.</p>'
-                . '<p>Diese E-Mail wurde automatisch von der Assetverwaltung erzeugt.</p>';
+                . '<p>Diese E-Mail wurde automatisch von KLINQ erzeugt.</p>';
             $sent = $this->mail->send($email, $subject, $body, $attachments);
             if ($sent) {
                 $this->movements->update((int) $movement['id'], ['email_sent_at' => gmdate('Y-m-d H:i:s'), 'email_sent_to' => $email]);

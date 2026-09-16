@@ -1,6 +1,6 @@
 {
-  "name": "Assetverwaltung",
-  "short_name": "Assets",
+  "name": "KLINQ",
+  "short_name": "KLINQ",
   "start_url": "/m",
   "scope": "/",
   "display": "standalone",

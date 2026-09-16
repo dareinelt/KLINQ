@@ -10,4 +10,4 @@
         </div>
     </div>
 </div>
-<?php $content = ob_get_clean(); $title = ($title ?? 'Windows-Anmeldung') . ' – ' . ($appName ?? 'Assetverwaltung'); include __DIR__ . '/../partials/layout.php'; ?>
+<?php $content = ob_get_clean(); include __DIR__ . '/../partials/layout.php'; ?>

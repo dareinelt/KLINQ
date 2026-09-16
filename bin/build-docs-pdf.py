@@ -26,7 +26,7 @@ from weasyprint import HTML
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
 OUTPUT = DOCS / "handbuch.pdf"
-TITLE = "Assetverwaltung – Handbuch"
+TITLE = "KLINQ – Handbuch"
 
 CSS = """
 @page {
@@ -127,7 +127,7 @@ def build() -> Path:
         chapters.append(chapter)
         entries.extend(headings)
     cover = (f'<section class="cover"><h1>{html.escape(TITLE)}</h1>'
-             f"<p>Inventar- und Assetverwaltung für IT-Hardware</p>"
+             f"<p>Assetverwaltung und Help Desk für die IT</p>"
              f"<p>Gesamtdokumentation aus dem Verzeichnis <code>docs/</code></p></section>")
     document = (f"<!DOCTYPE html><html lang=\"de\"><head><meta charset=\"utf-8\">"
                 f"<title>{html.escape(TITLE)}</title><style>{CSS}</style></head>"

@@ -44,12 +44,12 @@ final class ModuleNavigation
         return self::ASSETS;
     }
 
-    public static function label(string $module, string $appName = 'Assetverwaltung'): string
+    public static function label(string $module): string
     {
         return match ($module) {
             self::HELPDESK => 'Help Desk',
             self::SYSTEM => 'Auswertung & System',
-            default => $appName,
+            default => 'Assetverwaltung',
         };
     }
 
@@ -77,11 +77,11 @@ final class ModuleNavigation
      *
      * @return list<array{key:string,label:string,icon:string,href:string,description:string}>
      */
-    public static function modules(callable $can, bool $helpdeskEnabled, string $appName = 'Assetverwaltung'): array
+    public static function modules(callable $can, bool $helpdeskEnabled): array
     {
         $modules = [[
             'key' => self::ASSETS,
-            'label' => self::label(self::ASSETS, $appName),
+            'label' => self::label(self::ASSETS),
             'icon' => 'box',
             'href' => self::home(self::ASSETS, $can),
             'description' => 'Assets, Bewegungen und Stammdaten',
@@ -90,7 +90,7 @@ final class ModuleNavigation
         if ($helpdeskEnabled && ($can('helpdesk.view') || $can('portal.view'))) {
             $modules[] = [
                 'key' => self::HELPDESK,
-                'label' => self::label(self::HELPDESK, $appName),
+                'label' => self::label(self::HELPDESK),
                 'icon' => 'lifebuoy',
                 'href' => self::home(self::HELPDESK, $can),
                 'description' => $can('helpdesk.view') ? 'Tickets, Wissensdatenbank und Berichte' : 'Eigene Tickets und Anleitungen',
@@ -101,7 +101,7 @@ final class ModuleNavigation
         if ($can('settings.manage')) {
             $modules[] = [
                 'key' => self::SYSTEM,
-                'label' => self::label(self::SYSTEM, $appName),
+                'label' => self::label(self::SYSTEM),
                 'icon' => 'chart',
                 'href' => self::home(self::SYSTEM, $can),
                 'description' => 'Berichte, Import, Audit-Log und Administration',
