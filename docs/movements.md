@@ -6,11 +6,11 @@ Der Ablauf ist für das Lager auf dem Smartphone optimiert: Etikett scannen → 
 
 ## Mobile Erfassung (`/m`)
 
-Die mobile Oberfläche liegt unter `/m` und nutzt ein eigenes Layout mit großen Touch-Zielen (mind. 44 px), unterer Navigationsleiste und Offline-Hinweis. **Der gesamte Bereich `/m` (inkl. Scanner) ist ausschließlich auf Mobilgeräten nutzbar.** Erkennt der Server anhand des User-Agents (`Request::isMobile()`) ein Desktop-Gerät, wird auf die passende Desktop-Erfassungsseite (`/movements/checkout` bzw. `/movements/return`) umgeleitet.
+Die mobile Oberfläche liegt unter `/m` und nutzt ein eigenes Layout mit großen Touch-Zielen (mind. 44 px), unterer Navigationsleiste und Offline-Hinweis. **Der gesamte Bereich `/m` (inkl. Scanner) ist ausschließlich auf Mobilgeräten nutzbar.** Erkennt der Server anhand des User-Agents (`Request::isMobile()`) ein Desktop-Gerät, öffnet die Assetliste (`/assets`) ein Overlay zur Auswahl von **Entnahme** oder **Retoure**; die Auswahl führt zur passenden Desktop-Erfassungsseite (`/movements/checkout` bzw. `/movements/return`).
 
 ### Desktop-Erfassung mit elektronischer Signatur (`/movements/checkout`, `/movements/return`)
 
-Auf dem Desktop gibt es statt des Kamera-Scanners ein manuelles Formular (Asset wird vorab über die Assetliste/-detailseite ausgewählt). Anstelle einer Unterschrift bestätigt der angemeldete Benutzer den Vorgang durch **erneute Eingabe des eigenen Passworts** („elektronische Signatur“); dafür wird die bestehende Anmeldeprüfung (inkl. Sperr-Logik) wiederverwendet. Abgeschlossene Bewegungen zeigen auf der Detailseite (`/movements/{id}`) das Merkmal „Elektronische Signatur verwendet“.
+Auf dem Desktop gibt es statt des Kamera-Scanners ein manuelles Formular. Das Asset wird entweder vorab über die Assetliste/-detailseite ausgewählt (Link enthält bereits `?asset=…`) oder – z. B. nach der Wahl im Scan-Overlay – in einem vorgeschalteten Auswahlschritt per Inventar-/Seriennummer gesucht (Autocomplete über `/api/assets/search`). Anstelle einer Unterschrift bestätigt der angemeldete Benutzer den Vorgang durch **erneute Eingabe des eigenen Passworts** („elektronische Signatur“); dafür wird die bestehende Anmeldeprüfung (inkl. Sperr-Logik) wiederverwendet. Abgeschlossene Bewegungen zeigen auf der Detailseite (`/movements/{id}`) das Merkmal „Elektronische Signatur verwendet“.
 
 Die elektronische Signatur ist ein **Opt-in je Benutzer**: Nur Benutzer mit aktivierter Checkbox „Elektronische Signatur“ in der Benutzerverwaltung (`can_sign_electronically`, Standard: deaktiviert) dürfen die Desktop-Erfassung nutzen. Ohne Freischaltung wird mit einem Hinweis auf die Assetliste zurückgeleitet.
 

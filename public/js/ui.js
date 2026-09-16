@@ -135,6 +135,17 @@
         }
     });
 
+    // Dialoge, die anhand eines Query-Parameters automatisch geöffnet werden (z. B. Scan-Overlay)
+    document.querySelectorAll("dialog[data-auto-open-if-query]").forEach(function (dialog) {
+        const param = dialog.getAttribute("data-auto-open-if-query");
+        const url = new URL(window.location.href);
+        if (url.searchParams.get(param) === "1") {
+            openDialog(dialog.id);
+            url.searchParams.delete(param);
+            window.history.replaceState({}, "", url.pathname + (url.searchParams.toString() ? "?" + url.searchParams.toString() : "") + url.hash);
+        }
+    });
+
     // Sidebar-Backdrop einfügen
     if (document.querySelector(".sidebar")) {
         const backdrop = document.createElement("div");

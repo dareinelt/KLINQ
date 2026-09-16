@@ -44,8 +44,9 @@ final class MobileController extends BaseController
 
     public function scan(Request $request): Response
     {
-        if (($guard = $this->requireMobileDevice($request, '/assets')) !== null) {
-            return $guard;
+        if (!$request->isMobile()) {
+            // Kein Ziel (Entnahme/Retoure) bekannt: Overlay auf der Assetliste lässt es auswählen.
+            return $this->redirect('/assets?scan=1');
         }
 
         return $this->render('mobile.scan', [
