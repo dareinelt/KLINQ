@@ -82,6 +82,11 @@
     document.addEventListener("click", function (event) {
         const opener = event.target.closest("[data-dialog-open]");
         if (opener) {
+            const validateFormId = opener.getAttribute("data-dialog-validate");
+            const formToValidate = validateFormId ? document.getElementById(validateFormId) : null;
+            if (formToValidate && !formToValidate.reportValidity()) {
+                return;
+            }
             openDialog(opener.getAttribute("data-dialog-open"));
         }
         const closer = event.target.closest("[data-dialog-close]");

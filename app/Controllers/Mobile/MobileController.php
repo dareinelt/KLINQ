@@ -44,6 +44,10 @@ final class MobileController extends BaseController
 
     public function scan(Request $request): Response
     {
+        if (($guard = $this->requireMobileDevice($request, '/assets')) !== null) {
+            return $guard;
+        }
+
         return $this->render('mobile.scan', [
             'title' => 'Scannen',
             'activeNav' => 'scan',
@@ -56,6 +60,9 @@ final class MobileController extends BaseController
     /** Scan/Eingabe auflösen → Assetkarte. */
     public function lookup(Request $request): Response
     {
+        if (($guard = $this->requireMobileDevice($request, '/assets')) !== null) {
+            return $guard;
+        }
         $code = $request->queryString('code');
         $asset = $this->service->resolveAsset($code);
         if ($asset === null) {
@@ -73,7 +80,11 @@ final class MobileController extends BaseController
 
     public function asset(Request $request): Response
     {
-        $asset = $this->assetOrFail((string) $request->param('inventory'));
+        $inventory = (string) $request->param('inventory');
+        if (($guard = $this->requireMobileDevice($request, '/assets?q=' . rawurlencode($inventory))) !== null) {
+            return $guard;
+        }
+        $asset = $this->assetOrFail($inventory);
 
         return $this->render('mobile.asset', [
             'title' => $asset['inventory_number'],
@@ -87,6 +98,9 @@ final class MobileController extends BaseController
 
     public function checkoutForm(Request $request): Response
     {
+        if (($guard = $this->requireMobileDevice($request, '/movements/checkout?asset=' . rawurlencode($request->queryString('asset')))) !== null) {
+            return $guard;
+        }
         $this->currentUser->require('movements.checkout');
         $asset = $this->assetOrFail($request->queryString('asset'));
         if ($asset['employee_id'] !== null) {
@@ -120,6 +134,9 @@ final class MobileController extends BaseController
 
     public function checkout(Request $request): Response
     {
+        if (($guard = $this->requireMobileDevice($request, '/movements/checkout?asset=' . rawurlencode((string) $request->input('inventory_number', '')))) !== null) {
+            return $guard;
+        }
         $input = $request->all();
         try {
             $movement = $this->service->checkout($input, 'mobile');
@@ -138,6 +155,9 @@ final class MobileController extends BaseController
 
     public function returnForm(Request $request): Response
     {
+        if (($guard = $this->requireMobileDevice($request, '/movements/return?asset=' . rawurlencode($request->queryString('asset')))) !== null) {
+            return $guard;
+        }
         $this->currentUser->require('movements.return');
         $asset = $this->assetOrFail($request->queryString('asset'));
         if ($asset['employee_id'] === null && !in_array($asset['status_code'], ['issued', 'return_expected'], true)) {
@@ -169,6 +189,9 @@ final class MobileController extends BaseController
 
     public function returnAsset(Request $request): Response
     {
+        if (($guard = $this->requireMobileDevice($request, '/movements/return?asset=' . rawurlencode((string) $request->input('inventory_number', '')))) !== null) {
+            return $guard;
+        }
         $input = $request->all();
         $photos = MovementController::normalizeUploads($request->files()['photos'] ?? null);
         try {
@@ -197,6 +220,9 @@ final class MobileController extends BaseController
 
     public function done(Request $request): Response
     {
+        if (($guard = $this->requireMobileDevice($request, '/movements/' . $request->paramInt('id'))) !== null) {
+            return $guard;
+        }
         $movement = $this->findOrFail($this->movements->find($request->paramInt('id')), 'Vorgang nicht gefunden');
 
         return $this->render('mobile.done', [
@@ -210,6 +236,9 @@ final class MobileController extends BaseController
     /** Kompakte Liste offener Vorgänge für unterwegs. */
     public function open(Request $request): Response
     {
+        if (($guard = $this->requireMobileDevice($request, '/movements/open')) !== null) {
+            return $guard;
+        }
         $this->currentUser->require('movements.view');
 
         return $this->render('mobile.open', [
@@ -223,5 +252,19 @@ final class MobileController extends BaseController
     private function assetOrFail(string $inventory): array
     {
         return $this->findOrFail($this->service->resolveAsset($inventory), 'Asset „' . $inventory . '“ nicht gefunden');
+    }
+
+    /**
+     * Die Kamera-Scan-Erfassung (`/m`) ist auf Mobilgeräte beschränkt (Kamera, Touch-Bedienung).
+     * Auf dem Desktop wird stattdessen die manuelle Erfassung mit elektronischer Signatur verwendet.
+     */
+    private function requireMobileDevice(Request $request, string $desktopRedirect): ?Response
+    {
+        if ($request->isMobile()) {
+            return null;
+        }
+        $this->flash('info', 'Die Scan-Funktion ist nur auf Mobilgeräten verfügbar. Für den Desktop bitte die manuelle Erfassung nutzen.');
+
+        return $this->redirect($desktopRedirect);
     }
 }

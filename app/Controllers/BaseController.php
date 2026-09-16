@@ -44,7 +44,7 @@ abstract class BaseController
     protected function withOldInput(Request $request, array $errors): void
     {
         $input = $request->all();
-        unset($input['_csrf'], $input['password'], $input['password_confirmation']);
+        unset($input['_csrf'], $input['password'], $input['password_confirmation'], $input['signature_password']);
         $_SESSION['_old_input'] = $input;
         $_SESSION['_errors'] = $errors;
     }

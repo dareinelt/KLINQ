@@ -6,7 +6,13 @@ Der Ablauf ist für das Lager auf dem Smartphone optimiert: Etikett scannen → 
 
 ## Mobile Erfassung (`/m`)
 
-Die mobile Oberfläche liegt unter `/m` und nutzt ein eigenes Layout mit großen Touch-Zielen (mind. 44 px), unterer Navigationsleiste und Offline-Hinweis. Sie ist auf dem Desktop unter „Scannen“ im Menü erreichbar.
+Die mobile Oberfläche liegt unter `/m` und nutzt ein eigenes Layout mit großen Touch-Zielen (mind. 44 px), unterer Navigationsleiste und Offline-Hinweis. **Der gesamte Bereich `/m` (inkl. Scanner) ist ausschließlich auf Mobilgeräten nutzbar.** Erkennt der Server anhand des User-Agents (`Request::isMobile()`) ein Desktop-Gerät, wird auf die passende Desktop-Erfassungsseite (`/movements/checkout` bzw. `/movements/return`) umgeleitet.
+
+### Desktop-Erfassung mit elektronischer Signatur (`/movements/checkout`, `/movements/return`)
+
+Auf dem Desktop gibt es statt des Kamera-Scanners ein manuelles Formular (Asset wird vorab über die Assetliste/-detailseite ausgewählt). Anstelle einer Unterschrift bestätigt der angemeldete Benutzer den Vorgang durch **erneute Eingabe des eigenen Passworts** („elektronische Signatur“); dafür wird die bestehende Anmeldeprüfung (inkl. Sperr-Logik) wiederverwendet. Abgeschlossene Bewegungen zeigen auf der Detailseite (`/movements/{id}`) das Merkmal „Elektronische Signatur verwendet“.
+
+Die elektronische Signatur ist ein **Opt-in je Benutzer**: Nur Benutzer mit aktivierter Checkbox „Elektronische Signatur“ in der Benutzerverwaltung (`can_sign_electronically`, Standard: deaktiviert) dürfen die Desktop-Erfassung nutzen. Ohne Freischaltung wird mit einem Hinweis auf die Assetliste zurückgeleitet.
 
 | Scannen | Asset | Entnahme |
 |---|---|---|
@@ -108,6 +114,8 @@ Zeitstempel werden in UTC gespeichert und in der Oberfläche in Europe/Berlin an
 | `movements.complete` | Vorgänge bearbeiten, abschließen, stornieren |
 | `assets.retire` | Zielstatus *Ausmustern* bei der Retoure |
 | `documents.manage` | Fotos löschen |
+
+Zusätzlich steuert die Benutzerverwaltung je Benutzer das Opt-in **„Elektronische Signatur“** (`can_sign_electronically`), das die Desktop-Erfassung mit Passwort-Bestätigung freischaltet (siehe oben).
 
 Die Rollen *Administrator*, *Assetmanagement* und *Lager* besitzen alle `movements.*`-Rechte; *Lager* darf nicht ausmustern.
 

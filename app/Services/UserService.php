@@ -21,7 +21,7 @@ final class UserService
     public const USERNAME_PATTERN = '/^[a-zA-Z0-9][a-zA-Z0-9._\-@]{2,63}$/';
 
     /** Felder, die im Audit-Log erscheinen dürfen */
-    private const AUDIT_FIELDS = ['username', 'display_name', 'email', 'role', 'is_active', 'auth_source', 'groups'];
+    private const AUDIT_FIELDS = ['username', 'display_name', 'email', 'role', 'is_active', 'auth_source', 'groups', 'can_sign_electronically'];
 
     public function __construct(
         private readonly UserRepository $users,
@@ -45,6 +45,7 @@ final class UserService
             'role_id' => $this->users->roleId($data['role']),
             'auth_source' => 'local',
             'is_active' => $data['is_active'],
+            'can_sign_electronically' => $data['can_sign_electronically'],
         ]);
         $this->users->syncGroups($id, $data['group_ids']);
         $this->audit->log('create', 'user', $id, $data['username'], null, $this->auditData($data + ['auth_source' => 'local']));
@@ -66,6 +67,7 @@ final class UserService
             'email' => $data['email'],
             'role_id' => $this->users->roleId($data['role']),
             'is_active' => $data['is_active'],
+            'can_sign_electronically' => $data['can_sign_electronically'],
         ]);
         $this->users->syncGroups($id, $data['group_ids']);
         $this->audit->log('update', 'user', $id, (string) $existing['username'], $this->auditData($existing), $this->auditData($data + ['username' => $existing['username'], 'auth_source' => $existing['auth_source']]));
@@ -119,7 +121,8 @@ final class UserService
             ->string('display_name', 'Anzeigename', true, 150, 2)
             ->email('email', 'E-Mail')
             ->in('role', 'Rolle', $roles, true)
-            ->bool('is_active');
+            ->bool('is_active')
+            ->bool('can_sign_electronically');
         if ($existing === null) {
             $v->pattern('username', 'Benutzername', self::USERNAME_PATTERN, 'Benutzername: 3–64 Zeichen, Buchstaben, Ziffern sowie . _ - @ (muss mit Buchstabe oder Ziffer beginnen).', true);
         }
@@ -129,6 +132,7 @@ final class UserService
             throw ValidationException::single('username', 'Dieser Benutzername ist bereits vergeben.');
         }
         $data['is_active'] = $data['is_active'] ? 1 : 0;
+        $data['can_sign_electronically'] = $data['can_sign_electronically'] ? 1 : 0;
 
         // Berechtigungsgruppen (z. B. „Statistik“): einem Benutzer können mehrere zugeordnet werden.
         // Unbekannte/fremde IDs werden stillschweigend verworfen.

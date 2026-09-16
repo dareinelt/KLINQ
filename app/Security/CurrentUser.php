@@ -27,6 +27,7 @@ final class CurrentUser
             'display_name' => (string) ($user['display_name'] ?? $user['username']),
             'role' => (string) $user['role'],
             'groups' => self::normalizeGroups($user['groups'] ?? []),
+            'can_sign_electronically' => (bool) ($user['can_sign_electronically'] ?? false),
             'logged_in_at' => time(),
         ];
     }
@@ -48,6 +49,7 @@ final class CurrentUser
         $_SESSION[self::SESSION_KEY]['role'] = (string) $user['role'];
         $_SESSION[self::SESSION_KEY]['groups'] = self::normalizeGroups($user['groups'] ?? []);
         $_SESSION[self::SESSION_KEY]['display_name'] = (string) ($user['display_name'] ?? $user['username']);
+        $_SESSION[self::SESSION_KEY]['can_sign_electronically'] = (bool) ($user['can_sign_electronically'] ?? false);
     }
 
     public function isAuthenticated(): bool
@@ -109,6 +111,12 @@ final class CurrentUser
     public function role(): string
     {
         return (string) ($this->user()['role'] ?? '');
+    }
+
+    /** Opt-in aus der Benutzerverwaltung: darf Entnahme/Rückgabe am Desktop elektronisch signieren (Passwort-Bestätigung). */
+    public function canSignElectronically(): bool
+    {
+        return (bool) ($this->user()['can_sign_electronically'] ?? false);
     }
 
     /** Zugewiesene Berechtigungsgruppen (zusätzlich zur Rolle). @return array<int,string> */

@@ -16,6 +16,7 @@ use App\Repositories\EmployeeRepository;
 use App\Repositories\LocationRepository;
 use App\Repositories\MovementRepository;
 use App\Security\CurrentUser;
+use App\Services\AuthService;
 use App\Services\DocumentService;
 use App\Services\LocationService;
 use App\Services\MovementService;
@@ -34,9 +35,132 @@ final class MovementController extends BaseController
         private readonly EmployeeRepository $employees,
         private readonly LocationRepository $locations,
         private readonly CostCenterRepository $costCenters,
-        private readonly AssetTypeRepository $types
+        private readonly AssetTypeRepository $types,
+        private readonly AuthService $auth
     ) {
         parent::__construct($view, $currentUser);
+    }
+
+    /**
+     * Manuelle Entnahme am Desktop (kein Kamera-Scan, siehe /m). Der Vorgang wird erst nach
+     * erneuter Eingabe des eigenen Passworts (elektronische Signatur) gespeichert.
+     */
+    public function checkoutCaptureForm(Request $request): Response
+    {
+        $this->currentUser->require('movements.checkout');
+        if (($guard = $this->requireSignatureOptIn()) !== null) {
+            return $guard;
+        }
+        $asset = $this->assetOrFail($request->queryString('asset'));
+        if ($asset['employee_id'] !== null) {
+            $this->flash('warning', 'Das Asset ist bereits an ' . $asset['employee_name'] . ' ausgegeben. Bitte zuerst die Rückgabe erfassen.');
+
+            return $this->redirect('/assets/' . (int) $asset['id']);
+        }
+        if ((int) $asset['status_final'] === 1) {
+            $this->flash('error', 'Das Asset ist ' . mb_strtolower((string) $asset['status_name']) . ' und kann nicht ausgegeben werden.');
+
+            return $this->redirect('/assets/' . (int) $asset['id']);
+        }
+        $old = $_SESSION['_old_input'] ?? [];
+        $costCenterId = $old['cost_center_id'] ?? ($asset['cost_center_id'] ?? null);
+
+        return $this->render('movements.checkout_capture', array_merge($this->formOptions(), [
+            'title' => 'Entnahme ' . $asset['inventory_number'],
+            'activeNav' => 'assets',
+            'asset' => $asset,
+            'costCenterId' => $costCenterId,
+            'today' => date('Y-m-d'),
+        ]));
+    }
+
+    public function checkoutCaptureSubmit(Request $request): Response
+    {
+        $this->currentUser->require('movements.checkout');
+        if (($guard = $this->requireSignatureOptIn()) !== null) {
+            return $guard;
+        }
+        $input = $request->all();
+        if (!$this->verifySignaturePassword($request)) {
+            $this->withOldInput($request, ['signature_password' => 'Passwort falsch. Bitte das eigene Passwort zur elektronischen Signatur erneut eingeben.']);
+
+            return $this->redirect('/movements/checkout?asset=' . rawurlencode((string) ($input['inventory_number'] ?? '')));
+        }
+        try {
+            $movement = $this->service->checkout($input, 'web', true);
+        } catch (ValidationException $e) {
+            $this->withOldInput($request, $e->errors());
+
+            return $this->redirect('/movements/checkout?asset=' . rawurlencode((string) ($input['inventory_number'] ?? '')));
+        } catch (ConflictException $e) {
+            $this->flash('error', $e->getMessage());
+
+            return $this->redirect('/assets?q=' . rawurlencode((string) ($input['inventory_number'] ?? '')));
+        }
+        $this->flash('success', 'Entnahme gespeichert und elektronisch signiert.');
+
+        return $this->redirect('/movements/' . (int) $movement['id']);
+    }
+
+    public function returnCaptureForm(Request $request): Response
+    {
+        $this->currentUser->require('movements.return');
+        if (($guard = $this->requireSignatureOptIn()) !== null) {
+            return $guard;
+        }
+        $asset = $this->assetOrFail($request->queryString('asset'));
+        if ($asset['employee_id'] === null && !in_array($asset['status_code'], ['issued', 'return_expected'], true)) {
+            $this->flash('warning', 'Das Asset ist derzeit nicht ausgegeben (' . $asset['status_name'] . ').');
+
+            return $this->redirect('/assets/' . (int) $asset['id']);
+        }
+        $old = $_SESSION['_old_input'] ?? [];
+        $locationId = $old['to_location_id'] ?? null;
+        if (empty($locationId) && empty($old)) {
+            $last = $this->movements->lastCheckoutForAsset((int) $asset['id']);
+            $locationId = $last['from_location_id'] ?? null;
+        }
+
+        return $this->render('movements.return_capture', array_merge($this->formOptions(), [
+            'title' => 'Rückgabe ' . $asset['inventory_number'],
+            'activeNav' => 'assets',
+            'asset' => $asset,
+            'locationId' => $locationId,
+            'canRetire' => $this->currentUser->can('assets.retire'),
+            'today' => date('Y-m-d'),
+        ]));
+    }
+
+    public function returnCaptureSubmit(Request $request): Response
+    {
+        $this->currentUser->require('movements.return');
+        if (($guard = $this->requireSignatureOptIn()) !== null) {
+            return $guard;
+        }
+        $input = $request->all();
+        if (!$this->verifySignaturePassword($request)) {
+            $this->withOldInput($request, ['signature_password' => 'Passwort falsch. Bitte das eigene Passwort zur elektronischen Signatur erneut eingeben.']);
+
+            return $this->redirect('/movements/return?asset=' . rawurlencode((string) ($input['inventory_number'] ?? '')));
+        }
+        $photos = self::normalizeUploads($request->files()['photos'] ?? null);
+        try {
+            $movement = $this->service->returnAsset($input, 'web', true);
+            foreach ($photos as $photo) {
+                $this->documentService->store('movement', (int) $movement['id'], 'photo', $photo, null, $this->documentService->imageExtensions(), 'photos');
+            }
+        } catch (ValidationException $e) {
+            $this->withOldInput($request, $e->errors());
+
+            return $this->redirect('/movements/return?asset=' . rawurlencode((string) ($input['inventory_number'] ?? '')));
+        } catch (ConflictException $e) {
+            $this->flash('error', $e->getMessage());
+
+            return $this->redirect('/assets?q=' . rawurlencode((string) ($input['inventory_number'] ?? '')));
+        }
+        $this->flash('success', 'Rückgabe gespeichert und elektronisch signiert.');
+
+        return $this->redirect('/movements/' . (int) $movement['id']);
     }
 
     /** Bewegungen mit Zeitraum – Standard: heute. */
@@ -208,5 +332,39 @@ final class MovementController extends BaseController
     private function photoUploads(Request $request): array
     {
         return self::normalizeUploads($request->files()['photos'] ?? null);
+    }
+
+    /** @return array<string,mixed> */
+    private function assetOrFail(string $inventory): array
+    {
+        return $this->findOrFail($this->service->resolveAsset($inventory), 'Asset „' . $inventory . '“ nicht gefunden');
+    }
+
+    /**
+     * Die digitale Signatur (Passwort-Bestätigung) ist ein Opt-in je Benutzer, das in der
+     * Benutzerverwaltung von einem Administrator freigeschaltet werden muss.
+     */
+    private function requireSignatureOptIn(): ?Response
+    {
+        if ($this->currentUser->canSignElectronically()) {
+            return null;
+        }
+        $this->flash('error', 'Die digitale Signatur für Entnahme/Rückgabe ist für Ihr Konto nicht freigeschaltet. Bitte eine Administratorin oder einen Administrator bitten, dies in der Benutzerverwaltung zu aktivieren.');
+
+        return $this->redirect('/assets');
+    }
+
+    /**
+     * Elektronische Signatur: der angemeldete Benutzer bestätigt Entnahme/Rückgabe durch erneute
+     * Eingabe seines eigenen Passworts (kein Kamera-Scan/keine Unterschrift wie im mobilen Bereich).
+     */
+    private function verifySignaturePassword(Request $request): bool
+    {
+        $password = (string) $request->input('signature_password', '');
+        if ($password === '') {
+            return false;
+        }
+
+        return $this->auth->attempt($this->currentUser->username(), $password) !== null;
     }
 }
