@@ -16,13 +16,27 @@ Modul **Assetverwaltung** – Inventar- und Assetverwaltung für IT-Hardware (PC
 Netzwerkkomponenten, Zubehör) mit:
 
 - Assetstamm inkl. automatisch vergebener Inventarnummern, Historie und optimistischer Sperre
-- Entnahme/Retoure („Bewegungen“) am Desktop und mobil per QR-/Barcode-Scan, auch offline (PWA)
+- Entnahme/Retoure („Bewegungen“) am Desktop und mobil per QR-/Barcode-Scan, auch offline (PWA); am
+  Desktop optional mit elektronischer Signatur (Passwort-Bestätigung, je Benutzer freizuschalten)
 - Übergabeprotokolle je Mitarbeiter mit digitaler Unterschrift, Vorlagen-Baukasten und PDF-Archiv
 - Einkauf: Bestellungen, Vorlagen, Bedarfsmeldungen, Nachbestellung von Verbrauchsmaterial, Wareneingang
 - Lizenzverwaltung mit Zuordnung zu Assets, Dokumentenablage außerhalb des Webroots
 - QR-Etikettendruck, Berichte/CSV-Export, CSV-Import von Altbeständen
-- Active-Directory-Synchronisation der Mitarbeiter und optionale LDAP-Anmeldung
-- Rollenbasierte Rechte, lückenloses Audit-Log, Benutzerverwaltung
+- Active-Directory-Synchronisation der Mitarbeiter und optionale LDAP-Anmeldung, Windows-SSO per Kerberos
+- Rollenbasierte Rechte plus zusätzliche Berechtigungsgruppen (`config/permissions.php`), lückenloses
+  Audit-Log, Benutzerverwaltung
+
+Modul **Help Desk** (per `HELPDESK_ENABLED` abschaltbar) – IT-Ticketsystem mit:
+
+- Ticket-Lebenszyklus inkl. Status-Workflow, SLA-Fristen/Eskalation, Zusammenführen, Verknüpfungen,
+  Watcher, Arbeitszeiterfassung und Asset-Verknüpfung je Ticket
+- Ticketregeln (automatische Zuweisung/Kategorisierung), Vorlagen, Tags, Kategorien/Gruppen
+- Benutzerportal (`/portal`) für eigene Tickets sowie ein anonymes Störungsmeldeformular (`/stoerung`)
+  ohne Anmeldung (Melder/Rechner/AD-Daten werden serverseitig ermittelt)
+- E-Mail-Eingang per IMAP (neues Ticket oder Kommentar per Threading) und E-Mail-Benachrichtigungen
+- Wissensdatenbank mit Verknüpfung zu Tickets
+- Ticket-Berichte/CSV-Export (Recht nur über die Berechtigungsgruppe „Statistik“ oder Admin-Rolle)
+- Eigene Scheduler-Jobs für Eskalation/Auto-Close und Mailabholung (`bin/helpdesk.php`)
 
 ## 2. Technologie und Rahmenbedingungen
 
@@ -49,18 +63,18 @@ Netzwerkkomponenten, Zubehör) mit:
 | `app/Core/` | `Application`, `ApplicationFactory`, `Container`, `Config`, `Env`, `Database`, `Router`/`Route`, `Request`/`Response`, `View`, `SessionManager`, `Logger`, `Providers/` |
 | `app/Middleware/` | `SecurityHeadersMiddleware`, `RequestLogMiddleware`, `CsrfMiddleware`, `AuthorizationMiddleware` (in dieser Reihenfolge) |
 | `app/Security/` | `CurrentUser`, `Permissions`, `PasswordHasher` (Argon2id), `CsrfTokenManager`, `HtmlEscaper` |
-| `app/Controllers/` | HTTP-Schicht; `CrudController`/`BaseController` als Basis, `Mobile/` (Scan-UI), `Api/` (JSON) |
-| `app/Services/` | Geschäftslogik und Validierung je Fachbereich; `Ad/` (Sync), `Ldap/` (Client, Fake-Client, Auth) |
+| `app/Controllers/` | HTTP-Schicht; `CrudController`/`BaseController` als Basis, `Mobile/` (Scan-UI), `Api/` (JSON), `Helpdesk/` (Agent, Portal, API, Wissensdatenbank, Admin, Berichte, Störungsmeldung, Anhänge) |
+| `app/Services/` | Geschäftslogik und Validierung je Fachbereich; `Ad/` (Sync), `Ldap/` (Client, Fake-Client, Auth), `Sso/` (Kerberos), `Helpdesk/` (Ticket-, SLA-, Regel-, Mail-, Wissensdatenbank-Logik, `Helpdesk/Mail/` für IMAP/Datei-Postfachclients) |
 | `app/Repositories/` | Datenzugriff; `BaseRepository` kapselt `fetchOne/fetchAll/insertRow/updateRow` |
-| `app/Support/` | Fachlogikfreie Helfer: `Validator`, `Paginator`, `CsvReader`/`CsvWriter`, `QrCode`, `ColognePhonetic`, `Url`, `ModuleNavigation` |
+| `app/Support/` | Fachlogikfreie Helfer: `Validator`, `Paginator`, `CsvReader`/`CsvWriter`, `QrCode`, `ColognePhonetic`, `Url`, `ModuleNavigation`, `IpRange`, `Kerberos`, `Secret` (Verschlüsselung gespeicherter Zugangsdaten) |
 | `app/Exceptions/` | `HttpException`, `NotFoundException`, `ForbiddenException`, `ValidationException`, `ConflictException` |
-| `routes/web.php`, `routes/modules/*.php` | Routen je Modul, **jede Route trägt ihre Berechtigung** |
-| `resources/views/` | PHP-Templates je Modul, `partials/` (Layouts, Helfer, Filterleiste, Pagination, Flash, Icons) |
-| `config/` | `app.php`, `database.php`, `ldap.php`, `kerberos.php`, `mail.php`, `uploads.php`, `permissions.php` – gespeist aus Umgebungsvariablen |
-| `database/migrations/` | Nummerierte SQL-Migrationen (001–007), genau einmal angewendet über `schema_migrations` |
-| `database/seeders/`, `database/fixtures/` | Stammdaten (Rollen, Assettypen, Status) bzw. Fake-AD-Daten |
-| `bin/` | CLI: `migrate.php`, `sync-ad.php`, `kerberos-setup.php` (Windows-SSO), `build-docs-pdf.py` (Handbuch-PDF) |
-| `storage/` | `uploads/`, `logs/`, `labels/`, `tmp/` – außerhalb des Webroots, als Docker-Volumes eingebunden |
+| `routes/web.php`, `routes/modules/*.php` | Routen je Modul (u. a. `helpdesk.php` für Agentenbereich/Portal/API), **jede Route trägt ihre Berechtigung** |
+| `resources/views/` | PHP-Templates je Modul (u. a. `helpdesk/`), `partials/` (Layouts, Helfer, Filterleiste, Pagination, Flash, Icons) |
+| `config/` | `app.php`, `database.php`, `ldap.php`, `kerberos.php`, `mail.php`, `uploads.php`, `permissions.php` (Rollen **und** zusätzlich zuweisbare Berechtigungsgruppen) – gespeist aus Umgebungsvariablen |
+| `database/migrations/` | Nummerierte SQL-Migrationen (001–014), genau einmal angewendet über `schema_migrations`; u. a. Help-Desk-Kernschema (008), Mail-Eingang (009), Störungsmeldung (010), Berechtigungsgruppen (011), Mail-Postfacheinstellungen (012), elektronische Signatur bei Bewegungen (013) und deren Opt-in je Benutzer (014) |
+| `database/seeders/`, `database/fixtures/` | Stammdaten (Rollen, Assettypen, Status, Help-Desk-Standardwerte, Berechtigungsgruppen) bzw. Fake-AD-Daten |
+| `bin/` | CLI: `migrate.php`, `sync-ad.php`, `kerberos-setup.php` (Windows-SSO), `helpdesk.php` (Eskalation/Auto-Close/Mailabholung), `install.sh` (Docker-freie Installation), `build-docs-pdf.py` (Handbuch-PDF) |
+| `storage/` | `uploads/`, `logs/`, `labels/`, `tmp/`, `mail-inbox/` (Help-Desk-Dateipostfach für Tests) – außerhalb des Webroots, als Docker-Volumes eingebunden |
 | `tests/` | Eigener Runner `tests/run.php`, `Unit/`, `Integration/`, `Support/` |
 | `docker/` | `php/` (Dockerfile, vHost, php.ini, Entrypoint, Scheduler), `pdf/`, `mail/`, `mysql/init/` |
 | `docs/` | Fachdokumentation (Markdown) + `handbuch.pdf` + `screenshots/` |
@@ -112,6 +126,7 @@ Jedes Modul folgt demselben Schnitt: **Routendatei → Controller → Service �
 | Import | `routes/modules/imports.php` | `ImportController` | `ImportService`, `Support\CsvReader` | `imports/` | [import](docs/import.md) |
 | Benutzer/Profil | `routes/modules/users.php` | `UserController`, `ProfileController`, `AuthController` | `UserService`, `AuthService` | `users/`, `profile/`, `auth/` | [audit](docs/audit.md) |
 | Audit & Admin | `routes/modules/audit.php`, `admin.php` | `AuditController`, `AdminController`, `HelpdeskMailboxController` | `AuditLogService`, `SettingsService`, `Helpdesk\MailboxSettingsService`, `Support\Secret` | `audit/`, `admin/` | [audit](docs/audit.md), [helpdesk](docs/helpdesk.md) |
+| Help Desk (Agent/Portal/API) | `routes/modules/helpdesk.php` | `Helpdesk\{HelpdeskDashboardController, TicketController, TicketAttachmentController, KnowledgeBaseController, HelpdeskReportController, HelpdeskAdminController, HelpdeskApiController, PortalController, QuickReportController}` | `Helpdesk\{TicketService, TicketWorkflowService, TicketSlaService, TicketRuleService, TicketRuleEvaluator, TicketMergeService, TicketNumberService, TicketNotificationService, TicketPriorityMatrix, TicketReportService, TicketMailIngestionService, HelpdeskAdminService, HelpdeskSchedulerService, KnowledgeBaseService, MailboxSettingsService, ReporterIdentityService}`, `Helpdesk\Mail\{ImapMailboxClient, FileMailboxClient, MailboxClientFactory, MimeMessageParser}` | `helpdesk/` | [helpdesk](docs/helpdesk.md) |
 
 ### Fachliche Kernregeln (häufige Fehlerquellen)
 
@@ -129,18 +144,42 @@ Jedes Modul folgt demselben Schnitt: **Routendatei → Controller → Service �
   unterschriebene Protokoll gilt, ältere bleiben als PDF archiviert.
 - **AD-Sync löscht nie**: fehlende/deaktivierte Konten werden inaktiv gesetzt; Identifikation nur über `objectGUID`.
 - **PDF- und E-Mail-Versand sind optional und rein informativ** – Fehler dürfen den Fachworkflow nie abbrechen.
+- **Elektronische Signatur bei Bewegungen**: Am Desktop (nicht mobil/Scan) kann ein Benutzer eine Entnahme/
+  Retoure durch erneute Eingabe des eigenen Passworts signieren (`movements.signed_electronically/signed_at`).
+  Nutzbar nur, wenn `users.can_sign_electronically` für den Benutzer gesetzt ist.
+- **Help Desk ist per `HELPDESK_ENABLED` abschaltbar**, ohne Routen zu entfernen – die Berechtigungsprüfung
+  bleibt aktiv, nur Navigation/Dashboard/Scheduler werden ausgeblendet.
+- **Ticketnummern** folgen `HELPDESK_TICKET_PREFIX-JJJJ-NNNNNN`, vergeben über `ticket_sequences` analog zu
+  den Inventarnummern (`TicketNumberService`).
+- **SLA/Eskalation**: Fristen aus `ticket_slas` (je Kategorie/Priorität), Warn-/Eskalationsschwellen aus
+  `HELPDESK_SLA_WARNING_PERCENT`/`HELPDESK_ESCALATION_PERCENT`; `HelpdeskSchedulerService` prüft periodisch
+  Eskalation, Auto-Close (`HELPDESK_AUTO_CLOSE_DAYS`) und ruft die Mailabholung.
+- **Mail-Ingestion ist idempotent**: eingehende Nachrichten werden über `ticket_inbound_mails` (Message-ID)
+  verfolgt; Antworten werden per Ticketnummer/`In-Reply-To` dem richtigen Ticket als Kommentar zugeordnet.
+- **Störungsmeldeformular** (`/stoerung`) ist ohne Anmeldung erreichbar; Melder/Rechnername/AD-Daten werden
+  serverseitig ermittelt, CSRF-Schutz und optionale Netz-/Ratenbegrenzung (`HELPDESK_QUICK_REPORT_*`) greifen
+  im Controller, nie im Client.
+- **Gespeicherte Zugangsdaten** (z. B. Help-Desk-Postfachpasswort) werden über `Support\Secret` mit `APP_KEY`
+  verschlüsselt abgelegt, nie im Klartext.
 
 ## 6. Berechtigungen
 
 Rechte folgen der Konvention `<bereich>.<aktion>` und stehen samt Rollenzuordnung in
 [`config/permissions.php`](config/permissions.php). Rollen: **admin**, **assetmanagement**, **lager**,
-**einkauf**, **readonly** (alle `*.view` außer `audit.view`).
+**einkauf**, **helpdesk_admin**, **helpdesk_lead**, **helpdesk_agent**, **readonly** (alle `*.view` außer
+`audit.view` und `helpdesk.view`, fremde Tickets sehen nur Help-Desk-Rollen).
+
+Zusätzlich zur Rolle können einem Benutzer **Berechtigungsgruppen** zugewiesen werden (`permission_groups`,
+`user_permission_groups`), die einzelne Rechte unabhängig von der Rolle freischalten – aktuell die Gruppe
+„Statistik“ für `helpdesk.reports` (Ticket-Berichte), damit z. B. ein Assetmanagement-Benutzer Zugriff auf
+Help-Desk-Auswertungen erhält, ohne eine Help-Desk-Rolle zu bekommen.
 
 Prüfebenen:
 
-1. `AuthorizationMiddleware` erzwingt Anmeldung und das an der Route hinterlegte Recht.
+1. `AuthorizationMiddleware` erzwingt Anmeldung und das an der Route hinterlegte Recht (Rolle **oder**
+   zusätzliche Berechtigungsgruppe).
 2. Services prüfen sicherheitsrelevante Vorgänge erneut über `CurrentUser::require` (z. B. Ausmusterung,
-   Storno, Offline-Sync je Vorgang).
+   Storno, Offline-Sync je Vorgang, Ticket-Löschung).
 3. Die Oberfläche blendet nur aus, was serverseitig ohnehin verweigert wird.
 
 `RouteInventoryTest` stellt sicher, dass keine Route ohne Berechtigung existiert; `PermissionsTest` sichert die
@@ -160,7 +199,14 @@ Alle Zeitstempel liegen in **UTC** (DB-Sitzung auf `+00:00`), reine Datumsfelder
 - **Lizenzen/Dokumente**: `licenses`, `license_assignments`, `documents`
 - **Übergabe**: `handover_templates`, `handover_protocols`
 - **Import/Sync**: `import_runs`, `import_rows`, `sync_transactions`, `ad_sync_runs`
-- **Betrieb**: `users`, `roles`, `audit_logs`, `system_settings`, `schema_migrations`
+- **Betrieb**: `users`, `roles`, `permission_groups`, `user_permission_groups`, `audit_logs`,
+  `system_settings`, `schema_migrations`
+- **Help Desk**: `tickets`, `ticket_sequences`, `ticket_types`, `ticket_statuses`, `ticket_priorities`,
+  `ticket_groups`, `ticket_group_members`, `ticket_categories`, `ticket_slas`, `ticket_tags`,
+  `ticket_tag_relations`, `ticket_assets`, `ticket_comments`, `ticket_attachments`, `ticket_events`,
+  `ticket_relations`, `ticket_watchers`, `ticket_worklogs`, `ticket_templates`, `ticket_rules`,
+  `ticket_notifications`, `ticket_inbound_mails`, `knowledge_articles`, `knowledge_article_tags`,
+  `knowledge_article_tickets`
 
 ER-Diagramm und Feldbeschreibungen: [`docs/datenmodell.md`](docs/datenmodell.md)
 
@@ -180,12 +226,18 @@ ER-Diagramm und Feldbeschreibungen: [`docs/datenmodell.md`](docs/datenmodell.md)
 ## 9. Konfiguration und Betrieb
 
 - Konfiguration ausschließlich über Umgebungsvariablen (`.env`, Vorlage: `.env.example`) → `config/*.php`.
-  Wichtige Gruppen: `APP_*`, `DB_*`, `SESSION_*`, `ADMIN_*`, `PDF_SERVICE_*`, `MAIL_*`/`SMTP_*`,
-  `MAX_UPLOAD_BYTES`/`ALLOWED_UPLOAD_EXTENSIONS`, `AD_*` (inkl. Attribut-Mapping und `AD_DRIVER=fake` für Tests).
+  Wichtige Gruppen: `APP_*` (inkl. `APP_KEY` zur Verschlüsselung gespeicherter Zugangsdaten), `DB_*`,
+  `SESSION_*`, `ADMIN_*`, `PDF_SERVICE_*`, `MAIL_*`/`SMTP_*`, `MAX_UPLOAD_BYTES`/`ALLOWED_UPLOAD_EXTENSIONS`,
+  `AD_*` (inkl. Attribut-Mapping und `AD_DRIVER=fake` für Tests), `KERBEROS_*` (Windows-SSO),
+  `HELPDESK_*` (Modul-Schalter, SLA-Schwellen, Eskalation/Auto-Close, Mail-Eingang per IMAP,
+  Störungsmeldeformular `/stoerung`).
 - Start: `cp .env.example .env && docker compose up --build -d` → <http://localhost:8080>.
   Migrationen laufen im Entrypoint; `docker-compose.override.yml` bindet den Quellcode live ein (Entwicklung).
-- Scheduler im App-Container (`docker/php/scheduler.sh`) startet den AD-Sync, wenn
-  `AD_SYNC_INTERVAL_MINUTES > 0`; alternativ `php bin/sync-ad.php` per Cron.
+  Alternativ ohne Docker: `sudo bin/install.sh` (Debian/Ubuntu, inkl. SSL-Zertifikat).
+- Scheduler im App-Container (`docker/php/scheduler.sh`) startet den AD-Sync
+  (`AD_SYNC_INTERVAL_MINUTES > 0`) sowie die Help-Desk-Jobs für Eskalation/Auto-Close
+  (`HELPDESK_ESCALATION_INTERVAL_MINUTES`) und Mailabholung (`HELPDESK_MAIL_INTERVAL_MINUTES`); alternativ
+  per Cron auf dem Host: `php bin/sync-ad.php`, `php bin/helpdesk.php process`.
 - Migrationen manuell: `php bin/migrate.php`.
 - Handbuch-PDF neu bauen: `python3 bin/build-docs-pdf.py` (benötigt `weasyprint`, `markdown`).
 
@@ -238,6 +290,10 @@ docker compose exec app php tests/run.php # alle Tests inkl. Integration (Test-D
 | PDF/E-Mail | `PdfClient`, `MailClient`, `docker/pdf/server.py`, `docker/mail/server.py` |
 | AD-Anbindung | `Ad/EmployeeSyncService`, `Ad/AdUserMapper`, `Ldap/*`, `AD_*`-Variablen, `docs/ad-sync.md` |
 | Windows-Benutzererkennung | `Security/WindowsIdentity`, `Sso/KerberosSetupService`, `bin/kerberos-setup.php`, `KERBEROS_*`-Variablen, `docs/windows-sso.md` |
+| Neues Ticketfeld/-verhalten | `database/migrations/0XX_*.sql` → `TicketService`/`TicketWorkflowService` → `routes/modules/helpdesk.php` (Recht!) → `resources/views/helpdesk/` → `docs/helpdesk.md` |
+| Help-Desk-Regeln/SLA/Eskalation | `Helpdesk/TicketRuleService`, `Helpdesk/TicketRuleEvaluator`, `Helpdesk/TicketSlaService`, `Helpdesk/HelpdeskSchedulerService`, `HELPDESK_*`-Variablen, `docs/helpdesk.md` |
+| Help-Desk-Mail-Eingang | `Helpdesk/TicketMailIngestionService`, `Helpdesk/Mail/*`, `Helpdesk/MailboxSettingsService`, `HelpdeskMailboxController`, `HELPDESK_MAIL_*`/`HELPDESK_IMAP_*`-Variablen |
+| Neue Berechtigungsgruppe | `config/permissions.php` (`groups`/`group_labels`) → Recht an Route/Service prüfen → `UserService` (Zuordnung) |
 
 ---
 
