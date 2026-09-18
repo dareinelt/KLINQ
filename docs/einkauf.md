@@ -76,6 +76,8 @@ Wiederkehrende Bestellungen – Standard-Notebook, Monitorpaket, Verbrauchsmater
 
 Die Übersicht listet Name, Lieferant, Kostenstelle und Positionsanzahl. `Entwurf erstellen` legt eine neue Bestellung im Status *Entwurf* an – mit neuer Bestellnummer – und fügt die Positionen über die normalen Positionsregeln ein (Assettyp aus dem Artikel, Verbrauchsmaterial ohne Assets). Anschließend wird direkt auf den Entwurf verzweigt, der wie jede andere Bestellung geprüft, ergänzt und als *bestellt* markiert wird. Vorlagen ohne Lieferant lassen sich nicht verwenden; der Aufruf wird mit einem Hinweis abgebrochen.
 
+![Bestellvorlagen](screenshots/orders-templates.png)
+
 ## Bedarfsmeldungen (`/orders/requests`)
 
 Bedarfsmeldungen sind der Weg für alle, die selbst nicht bestellen dürfen: Jede Rolle mit `orders.view` kann melden, was gebraucht wird, ohne Zugriff auf Lieferanten und Preise.
@@ -98,6 +100,8 @@ Der Statuswechsel erfolgt als atomare Reservierung (`open → converted`); eine 
 | `converted` | in einen Bestellentwurf übernommen (`purchase_order_id` gesetzt) |
 | `cancelled` | verworfen |
 
+![Bedarfsmeldungen](screenshots/orders-requests.png)
+
 ## Verbrauchsmaterial und Bestellvorschläge (`/orders/replenishment`)
 
 Artikel, die nicht inventarisiert werden (Toner, Kabel, Batterien), lassen sich im Artikelstamm als **Verbrauchsmaterial** kennzeichnen und erhalten dann *Mindestbestand* und *Aktuellen Bestand*. Wird der Haken entfernt, setzt die Anwendung Mindestbestand und Bestand zurück.
@@ -107,6 +111,8 @@ Artikel, die nicht inventarisiert werden (Toner, Kabel, Batterien), lassen sich 
 - Die Artikelliste zeigt `Bestand / Mindestbestand`, gelb markiert, sobald der Mindestbestand erreicht ist.
 
 Die Seite **Bestellvorschläge** listet alle aktiven Verbrauchsartikel mit gepflegtem Mindestbestand, deren Bestand kleiner oder gleich dem Mindestbestand ist, samt Vorschlagsmenge (Auffüllen bis zum doppelten Mindestbestand, mindestens 1 Stück). Nach Auswahl eines Lieferanten erzeugt `Bestellentwurf erzeugen` eine Bestellung im Status *Entwurf* mit der Bemerkung *Automatisch aus Bestandsunterschreitungen erstellt* und je Vorschlag eine Position. Sind alle Mindestbestände erfüllt, bleibt die Seite leer.
+
+![Bestellvorschläge](screenshots/orders-replenishment.png)
 
 ## Wareneingang
 

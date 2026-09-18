@@ -2,6 +2,8 @@
 
 Für jeden Mitarbeiter wird ein **Übergabeprotokoll** über die ihm ausgegebenen, protokollrelevanten Arbeitsmittel geführt. Der Mitarbeiter unterschreibt digital auf einem iPhone oder iPad; jede Unterschrift erzeugt eine neue **Version**, die als PDF archiviert wird. Es gilt immer die zuletzt unterschriebene Version. Der Aufbau des Protokolls ist für Administratoren im **Baukasten** anpassbar.
 
+![Übergabeprotokolle: Stand je Mitarbeiter](screenshots/handover-dashboard.png)
+
 ## Voraussetzung: Artikelstamm
 
 Assets verweisen verpflichtend auf einen Stammartikel (Stammdaten → Artikel). Nur Artikel mit gesetzter Checkbox **„Relevant für Übergabeprotokoll“** erscheinen im Protokoll – typischerweise Notebooks, Smartphones, Token oder Schlüssel, nicht aber Verbrauchsmaterial oder Zubehör.
@@ -31,6 +33,10 @@ flowchart LR
 3. **Unterschrift auf dem Mobilgerät** (`handover.sign`): Auf iPhone/iPad erscheinen unter dem Tab **„Protokolle“** (`/m/handover`) alle offenen Entwürfe. Die Seite zeigt das vollständige Protokoll, Pflichtbestätigungen als Checkboxen und ein Unterschriftsfeld (Finger oder Apple Pencil, `public/js/signature-pad.js` – nach dem Vorbild von [PatSign](https://github.com/dareinelt/PatSign)). Beim Öffnen wird der Entwurf automatisch auf den aktuellen Bestand gebracht, damit nie ein veralteter Stand unterschrieben wird.
 4. **Speichern**: Die Unterschrift wird als PNG-Dokument abgelegt (`documents`, Typ `signature`), das gerenderte HTML wird im Protokoll eingefroren, Gerät und IP werden protokolliert, alle bisher gültigen Versionen des Mitarbeiters werden auf **abgelöst** gesetzt und das PDF wird erzeugt (Typ `handover_protocol`). Alles wird im Audit-Log festgehalten (`create`, `sign`, `pdf`, `cancel`).
 
+![Offene Entwürfe auf dem Mobilgerät (/m/handover)](screenshots/mobile-handover.png)
+
+![Unterschriftsseite mit Pflichtbestätigungen und Unterschriftsfeld](screenshots/mobile-handover-sign.png)
+
 ### Versionierung
 
 | Status | Bedeutung |
@@ -42,9 +48,15 @@ flowchart LR
 
 Die Protokollnummer lautet `UP-<Personalnummer>-<Version>` (ohne Personalnummer `UP-E<Mitarbeiter-ID>-<Version>`). Alle Versionen eines Mitarbeiters sind unter `/handover/employee/{id}` einsehbar; das PDF (oder ersatzweise eine Druckansicht) liegt unter `/handover/{id}/pdf`.
 
+![Mitarbeiteransicht mit Bestand, Abweichungen und allen Versionen](screenshots/handover-employee.png)
+
+![Übergabeprotokoll anzeigen (/handover/{id})](screenshots/handover-detail.png)
+
 ## Vorlage anpassen (Baukasten)
 
 Administration → **Übergabeprotokoll-Vorlage** (`/admin/handover-template`, Recht `handover.template`). Die Vorlage ist eine Liste von Blöcken, die hinzugefügt, sortiert, dupliziert, entfernt und einzeln konfiguriert werden; rechts zeigt eine Live-Vorschau mit Beispieldaten das Ergebnis.
+
+![Vorlagen-Baukasten mit Live-Vorschau](screenshots/handover-template.png)
 
 | Block | Einstellungen |
 |---|---|
