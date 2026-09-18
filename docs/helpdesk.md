@@ -16,6 +16,8 @@ Das Help-Desk-Modul ergänzt KLINQ um ein vollständiges IT-Ticketsystem: Störu
 
 Der Modulschalter `HELPDESK_ENABLED=false` blendet Navigation, Dashboard-Kacheln, Ticket-Treffer in der globalen Suche und den Scheduler-Job aus; die Routen selbst bleiben durch ihre Berechtigungen geschützt.
 
+![Help-Desk-Dashboard: Kennzahlen, Schnellansichten, Tickets und Auswertungen](screenshots/helpdesk-dashboard.png)
+
 ### Bereichswechsel in der Oberfläche
 
 Help Desk und Assetverwaltung sind zwei eigenständige Module mit je eigenem Dashboard (`/dashboard` bzw. `/helpdesk`, für reine Portalnutzer `/portal`). In der Topbar steht mittig zwischen Suchfeld und Benutzeranzeige ein Dropdown, über das der Bereich gewechselt wird; die Seitenleiste zeigt immer nur die Navigationseinträge des gewählten Moduls. Das Dropdown erscheint nur, wenn der Benutzer beide Bereiche betreten darf (`helpdesk.view` oder `portal.view` bei aktivem Modulschalter).
@@ -97,13 +99,35 @@ Routen: `POST /helpdesk/support-shift/claim` (Berechtigung `helpdesk.view`), `PO
 - **Beschreibungstext**: nach dem Anlegen nur noch mit `helpdesk.admin` änderbar. Für alle anderen Bearbeiter ist das Feld im Bearbeitungsformular schreibgeschützt; ein übermittelter Wert wird serverseitig verworfen (`TicketService::canEditDescription()`). Ergänzungen gehören in Kommentare bzw. interne Notizen.
 - **Historie**: alle Ereignisse chronologisch mit Feldänderungen (alt → neu).
 
+![Ticketdetail mit Kopf, Kommunikation, Arbeitszeiten und Verknüpfungen](screenshots/helpdesk-ticket-detail.png)
+
 ### Liste (`/helpdesk/tickets`)
 
 Ansichten *Meine*, *Meine Gruppe*, *Nicht zugewiesen*, *Alle offenen*, *SLA-kritisch*, *Gelöst*, *Alle*, dazu Volltext (Nummer, Betreff, Beschreibung, Melder), Filter nach Status, Priorität, Typ, Kategorie, Gruppe, Agent, Tag, Asset, Zeitraum; Sortierung nach Fälligkeit, Priorität, Aktualisierung, Nummer. CSV-Export (`helpdesk.export`) respektiert die aktiven Filter.
 
+![Ticketliste mit Ansichten, Filtern und Sortierung](screenshots/helpdesk-tickets.png)
+
+![Neues Ticket anlegen](screenshots/helpdesk-ticket-new.png)
+
+### Ticket-Berichte & Administration
+
+![Ticket-Berichte](screenshots/helpdesk-reports.png)
+
+Unter **Help-Desk-Einstellungen** (`/helpdesk/admin`) werden Typen, Status, Prioritäten, Kategorien, SLA-Regeln, Gruppen, Vorlagen, Regeln und das Benachrichtigungsprotokoll gepflegt.
+
+![Help-Desk-Einstellungen](screenshots/helpdesk-admin.png)
+
 ## Serviceportal (`/portal`)
 
 Jeder angemeldete Benutzer mit `portal.view`/`portal.create` sieht ausschließlich **eigene** Tickets (als Melder oder betroffene Person, gematcht über `users.employee_id`). Neue Anfrage: Vorlage wählen (füllt Typ/Kategorie/Betreff/Beschreibung vor), Auswirkung/Dringlichkeit in Alltagssprache, eigene Geräte als Auswahl, Anhang. Im Detail: Kommentare schreiben, Anhänge hochladen, gelöste Tickets bestätigen oder innerhalb der Frist wieder öffnen. Interne Notizen und interne Anhänge sind für Portalnutzer unsichtbar (`TicketService::getVisible` filtert serverseitig).
+
+![Serviceportal: eigene Tickets und Wissensartikel](screenshots/portal-dashboard.png)
+
+![Meine Tickets im Portal](screenshots/portal-tickets.png)
+
+![Eigene Anfrage im Portal verfolgen](screenshots/portal-ticket-detail.png)
+
+![Neue Anfrage im Portal](screenshots/portal-ticket-new.png)
 
 ## Störungsmeldung für Anwender (`/stoerung`)
 
@@ -123,9 +147,19 @@ Bewusst minimales Formular für Personen, die sich **nicht** anmelden sollen ode
 
 Tickets aus dem Formular tragen die Quelle `form` (Filter in der Ticketliste) und werden nach dem Absenden mit ihrer Ticketnummer bestätigt. Den Link zum Verteilen (z. B. als Verknüpfung auf dem Desktop oder als Startseite) zeigt die Administration unter **Help Desk → Administration → Störungsformular für Anwender**.
 
+![Störungsformular für Anwender (/stoerung)](screenshots/stoerung.png)
+
 ## Wissensdatenbank
 
 `knowledge_articles` mit Titel, Zusammenfassung, Inhalt (Markdown-light: Absätze, Listen, `**fett**`, Code), Kategorie, Tags, Sichtbarkeit (`internal` = nur Agenten, `public` = auch Portal), Status (`draft`/`published`/`archived`), Aufrufzähler. Artikel lassen sich mit Tickets verknüpfen (`knowledge_article_tickets`); die Suche schlägt beim Anlegen im Portal und im Ticketdetail passende Artikel vor.
+
+![Wissensdatenbank im Agentenbereich](screenshots/helpdesk-knowledge.png)
+
+![Wissensartikel anzeigen](screenshots/helpdesk-knowledge-detail.png)
+
+![Wissensdatenbank im Serviceportal](screenshots/portal-knowledge.png)
+
+![Wissensartikel im Serviceportal](screenshots/portal-knowledge-detail.png)
 
 ## Automatisierung
 
