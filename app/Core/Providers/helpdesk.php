@@ -46,6 +46,7 @@ use App\Services\Helpdesk\HelpdeskAdminService;
 use App\Services\Helpdesk\HelpdeskSchedulerService;
 use App\Services\Helpdesk\KnowledgeBaseService;
 use App\Services\Helpdesk\ReporterIdentityService;
+use App\Services\Helpdesk\SecondLevelReminderService;
 use App\Services\Helpdesk\SupportShiftService;
 use App\Services\Helpdesk\Mail\FileMailboxClient;
 use App\Services\Helpdesk\Mail\ImapMailboxClient;
@@ -180,6 +181,13 @@ return static function (Container $c): void {
         $c->get(AuditLogService::class),
         $c->get(Config::class)
     ));
+    $c->singleton(SecondLevelReminderService::class, static fn (Container $c): SecondLevelReminderService => new SecondLevelReminderService(
+        $c->get(HelpdeskSupportShiftRepository::class),
+        $c->get(TicketRepository::class),
+        $c->get(TicketCommentRepository::class),
+        $c->get(Config::class),
+        $c->get(Logger::class)
+    ));
     $c->singleton(HelpdeskSchedulerService::class, static fn (Container $c): HelpdeskSchedulerService => new HelpdeskSchedulerService(
         $c->get(TicketRepository::class),
         $c->get(TicketSlaRepository::class),
@@ -188,6 +196,7 @@ return static function (Container $c): void {
         $c->get(TicketNotificationService::class),
         $c->get(TicketRuleService::class),
         $c->get(SupportShiftService::class),
+        $c->get(SecondLevelReminderService::class),
         $c->get(Config::class),
         $c->get(Logger::class)
     ));

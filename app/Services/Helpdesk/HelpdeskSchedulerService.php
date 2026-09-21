@@ -16,6 +16,7 @@ use App\Repositories\TicketSlaRepository;
  *  - Eskalation an Eskalationsgruppe bzw. Gruppenleitung bei Schwellenüberschreitung
  *  - Gelöste Tickets nach Frist automatisch schließen
  *  - Tagesweise 1st-/2nd-Level-Zuständigkeit automatisch beenden (täglich 19:00 Uhr, APP_TIMEZONE)
+ *  - 2nd-Level-Tagesabschluss (23:59 Uhr): „kein Kommentar erfolgt“-Kommentare für offene Tickets
  * Läuft ohne angemeldeten Benutzer; alle Aktionen werden als „System“ protokolliert.
  */
 final class HelpdeskSchedulerService
@@ -30,6 +31,7 @@ final class HelpdeskSchedulerService
         private readonly TicketNotificationService $notifications,
         private readonly TicketRuleService $rules,
         private readonly SupportShiftService $supportShifts,
+        private readonly SecondLevelReminderService $reminders,
         private readonly Config $config,
         private readonly Logger $logger
     ) {}
@@ -38,10 +40,11 @@ final class HelpdeskSchedulerService
     public function run(?\DateTimeImmutable $now = null): array
     {
         $now ??= new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $summary = ['checked' => 0, 'warnings' => 0, 'breaches' => 0, 'escalated' => 0, 'auto_closed' => 0, 'shifts_ended' => 0];
+        $summary = ['checked' => 0, 'warnings' => 0, 'breaches' => 0, 'escalated' => 0, 'auto_closed' => 0, 'shifts_ended' => 0, 'reminders_created' => 0];
         $summary = $this->evaluateSla($now, $summary);
         $summary['auto_closed'] = $this->autoClose($now);
         $summary['shifts_ended'] = $this->supportShifts->endExpiredShifts($now);
+        $summary['reminders_created'] = $this->reminders->createMissedComments($now);
         $this->logger->info('Help-Desk-Scheduler ausgeführt', $summary);
 
         return $summary;

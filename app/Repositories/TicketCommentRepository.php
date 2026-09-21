@@ -52,4 +52,13 @@ final class TicketCommentRepository extends BaseRepository
 
         return (int) $this->fetchValue($sql, $params);
     }
+
+    /** Ob der Benutzer das Ticket im Zeitfenster [startUtc, endUtc) kommentiert hat (2nd-Level-Erinnerung). */
+    public function hasCommentByUserBetween(int $ticketId, int $userId, string $startUtc, string $endUtc): bool
+    {
+        return (int) $this->fetchValue(
+            'SELECT COUNT(*) FROM ticket_comments WHERE ticket_id = :t AND author_user_id = :u AND created_at >= :s AND created_at < :e',
+            ['t' => $ticketId, 'u' => $userId, 's' => $startUtc, 'e' => $endUtc]
+        ) > 0;
+    }
 }
