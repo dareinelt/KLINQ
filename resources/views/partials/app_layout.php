@@ -17,6 +17,9 @@ $can = $can ?? static fn (string $p): bool => false;
 $roleLabels = $roleLabels ?? [];
 $openCounts = $openCounts ?? ['checkouts' => 0, 'returns' => 0];
 $helpdeskEnabled = $helpdeskEnabled ?? false;
+$helpdeskNotifications = $helpdeskNotifications ?? null;
+$showNotifications = $helpdeskNotifications !== null && $helpdeskNotifications->visible();
+$notificationItems = $showNotifications ? $helpdeskNotifications->all() : [];
 
 $modules = \App\Support\ModuleNavigation::modules($can, $helpdeskEnabled);
 $activeModule = $activeModule ?? \App\Support\ModuleNavigation::moduleFor($activeNav);
@@ -114,6 +117,27 @@ ob_start();
         <?php endif; ?>
         <div class="topbar-spacer"></div>
         <span class="offline-indicator" id="offline-indicator" hidden><?= icon('offline') ?> Offline</span>
+        <?php if ($showNotifications): ?>
+        <details class="notification-bell" data-notification-bell>
+            <summary class="notification-bell-toggle" title="Benachrichtigungen" aria-label="Benachrichtigungen">
+                <?= icon('bell') ?>
+                <?php if ($notificationItems !== []): ?><span class="notification-badge"><?= count($notificationItems) ?></span><?php endif; ?>
+            </summary>
+            <div class="notification-menu" role="menu" aria-label="Offene Tickets (2nd Level)">
+                <div class="notification-menu-header">Offene Tickets (2nd Level)</div>
+                <?php if ($notificationItems === []): ?>
+                    <div class="notification-empty">Keine offenen Tickets.</div>
+                <?php else: ?>
+                    <?php foreach ($notificationItems as $n): ?>
+                        <a class="notification-item" href="<?= e($n['url']) ?>" role="menuitem">
+                            <span class="notification-number"><?= e($n['number']) ?></span>
+                            <span class="notification-subject"><?= e($n['subject']) ?></span>
+                        </a>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </details>
+        <?php endif; ?>
         <a class="topbar-user" href="/profile/password" title="Passwort ändern">
             <span class="topbar-user-name"><?= e($user['display_name'] ?? $user['username'] ?? '') ?> · <?= e($roleLabels[$user['role'] ?? ''] ?? ($user['role'] ?? '')) ?></span>
             <span class="avatar" aria-hidden="true"><?= e(mb_substr((string) ($user['display_name'] ?? $user['username'] ?? '?'), 0, 1)) ?></span>

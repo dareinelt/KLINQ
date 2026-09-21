@@ -477,6 +477,15 @@ final class TicketRepository extends BaseRepository
         return $this->fetchAll(self::SELECT . " WHERE t.merged_into_ticket_id IS NULL AND st.category IN ('new','open','pending') AND (t.created_at < :start OR t.created_at >= :end) ORDER BY t.created_at LIMIT {$limit}", ['start' => $dayStartUtc, 'end' => $dayEndUtc]);
     }
 
+    /**
+     * Offene Tickets, die vor $dayStartUtc erstellt wurden (2nd-Level-Erinnerung: alle offenen Tickets,
+     * die nicht vom betreffenden Tag stammen). @return array<int,array<string,mixed>>
+     */
+    public function openCreatedBefore(string $dayStartUtc, int $limit = 2000): array
+    {
+        return $this->fetchAll(self::SELECT . " WHERE t.merged_into_ticket_id IS NULL AND st.category IN ('new','open','pending') AND t.created_at < :start ORDER BY t.created_at LIMIT {$limit}", ['start' => $dayStartUtc]);
+    }
+
     /** Gelöste Tickets, deren Lösung länger als n Tage zurückliegt (automatisches Schließen). @return array<int,array<string,mixed>> */
     public function resolvedOlderThan(int $days, ?string $now = null, int $limit = 200): array
     {

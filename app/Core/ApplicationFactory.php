@@ -22,6 +22,7 @@ use App\Security\Permissions;
 use App\Services\AuditLogService;
 use App\Services\AuthService;
 use App\Services\DashboardService;
+use App\Services\Helpdesk\SecondLevelReminderService;
 use App\Services\Ldap\LdapAuthenticator;
 use App\Services\Ldap\FakeLdapClient;
 use App\Services\Ldap\LdapClient;
@@ -64,6 +65,7 @@ final class ApplicationFactory
         $view->share('roleLabels', $permissions->roleLabels());
         $view->share('openCounts', self::lazyOpenCounts($container, $currentUser));
         $view->share('helpdeskEnabled', (bool) $config->get('helpdesk.enabled', true));
+        $view->share('helpdeskNotifications', self::lazyHelpdeskNotifications($container, $currentUser));
 
         if (isset($_SERVER['REMOTE_ADDR'])) {
             $container->get(AuditLogService::class)->setIpAddress((string) $_SERVER['REMOTE_ADDR']);
@@ -168,6 +170,78 @@ final class ApplicationFactory
         }
 
         return $c;
+    }
+
+    /**
+     * In-App-Benachrichtigungen des 2nd-Level-Supports (Glocke in der Kopfzeile). Wie bei openCounts
+     * werden die Daten nur berechnet, wenn ein Layout sie anfordert (lazy), damit JSON-Antworten
+     * keine unnötigen Abfragen auslösen.
+     */
+    private static function lazyHelpdeskNotifications(Container $container, CurrentUser $currentUser): object
+    {
+        return new class($container, $currentUser) {
+            private ?bool $responsible = null;
+            /** @var array<int,array{id:int,number:string,subject:string,url:string}>|null */
+            private ?array $items = null;
+
+            public function __construct(private readonly Container $container, private readonly CurrentUser $currentUser) {}
+
+            /** Ob der angemeldete Benutzer der heutige 2nd Level Support ist (Glocke sichtbar). */
+            public function visible(): bool
+            {
+                return $this->responsible();
+            }
+
+            /** @return array<int,array{id:int,number:string,subject:string,url:string}> */
+            public function all(): array
+            {
+                if (!$this->responsible()) {
+                    return [];
+                }
+                if ($this->items === null) {
+                    $this->items = $this->resolveItems();
+                }
+
+                return $this->items;
+            }
+
+            public function count(): int
+            {
+                return count($this->all());
+            }
+
+            private function responsible(): bool
+            {
+                if ($this->responsible === null) {
+                    $this->responsible = $this->resolveResponsible();
+                }
+
+                return $this->responsible;
+            }
+
+            private function resolveResponsible(): bool
+            {
+                $userId = $this->currentUser->id();
+                if ($userId === null || !(bool) $this->container->get(Config::class)->get('helpdesk.enabled', true)) {
+                    return false;
+                }
+                try {
+                    return $this->container->get(SecondLevelReminderService::class)->secondLevelUserIdToday() === (int) $userId;
+                } catch (\Throwable) {
+                    return false;
+                }
+            }
+
+            /** @return array<int,array{id:int,number:string,subject:string,url:string}> */
+            private function resolveItems(): array
+            {
+                try {
+                    return $this->container->get(SecondLevelReminderService::class)->notificationsFor((int) $this->currentUser->id());
+                } catch (\Throwable) {
+                    return [];
+                }
+            }
+        };
     }
 
     /**

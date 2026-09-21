@@ -30,6 +30,34 @@ final class HelpdeskSupportShiftRepository extends BaseRepository
     }
 
     /**
+     * Neuester 2nd-Level-Eintrag für ein Datum (unabhängig vom Aktivstatus). Die Zuständigkeit endet
+     * zwar um 19:00 Uhr (is_active = 0), die Kommentar-Erinnerung gilt aber bis 23:59 Uhr – daher wird
+     * hier bewusst nicht nach is_active gefiltert. @return array<string,mixed>|null
+     */
+    public function secondLevelEntryForDate(string $shiftDate): ?array
+    {
+        return $this->fetchOne(
+            self::SELECT . ' WHERE s.shift_date = :d AND s.level = 2 ORDER BY s.claimed_at DESC, s.id DESC LIMIT 1',
+            ['d' => $shiftDate]
+        );
+    }
+
+    /** 2nd-Level-Einträge, deren Tagesabschluss-Erinnerung noch nicht verarbeitet wurde. @return array<int,array<string,mixed>> */
+    public function unfinalizedSecondLevelShifts(): array
+    {
+        return $this->fetchAll(self::SELECT . ' WHERE s.level = 2 AND s.reminder_finalized_at IS NULL ORDER BY s.shift_date, s.claimed_at, s.id');
+    }
+
+    /** Markiert alle 2nd-Level-Einträge eines Datums als erledigt; liefert die Anzahl betroffener Zeilen. */
+    public function finalizeReminder(string $shiftDate, \DateTimeImmutable $nowUtc): int
+    {
+        return $this->execute(
+            'UPDATE helpdesk_support_shifts SET reminder_finalized_at = :now WHERE shift_date = :d AND level = 2 AND reminder_finalized_at IS NULL',
+            ['now' => $nowUtc->format('Y-m-d H:i:s'), 'd' => $shiftDate]
+        );
+    }
+
+    /**
      * Übernimmt die Zuständigkeit: beendet einen ggf. aktiven Eintrag für Datum/Level und legt einen neuen an.
      * @return array<string,mixed> Der neue (aktive) Eintrag
      */

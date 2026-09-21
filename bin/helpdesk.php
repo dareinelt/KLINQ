@@ -5,7 +5,8 @@
  *
  * Aufruf: php bin/helpdesk.php <befehl> [--quiet] [--limit=N] [--due]
  *   process  SLA-Zustände neu bewerten (Warnung/Verletzung), Eskalationen ausführen,
- *            gelöste Tickets nach HELPDESK_AUTO_CLOSE_DAYS automatisch schließen.
+ *            gelöste Tickets nach HELPDESK_AUTO_CLOSE_DAYS automatisch schließen,
+ *            Zuständigkeiten beenden und 2nd-Level-Tagesabschluss (23:59) verarbeiten.
  *   mail     E-Mail-Eingang abholen (IMAP oder .eml-Verzeichnis) und Nachrichten als neues Ticket
  *            bzw. als Kommentar (Antwort per Ticketnummer/In-Reply-To) verarbeiten. Die Konfiguration
  *            stammt aus der Administration („Auswertung & System → Administration → E-Mail-Postfach“).
@@ -110,13 +111,14 @@ try {
 
 if (!$quiet) {
     printf(
-        "OK: %d Tickets geprüft, %d Warnungen, %d SLA-Verletzungen, %d Eskalationen, %d automatisch geschlossen, %d Zuständigkeiten beendet.\n",
+        "OK: %d Tickets geprüft, %d Warnungen, %d SLA-Verletzungen, %d Eskalationen, %d automatisch geschlossen, %d Zuständigkeiten beendet, %d Erinnerungskommentare.\n",
         $summary['checked'] ?? 0,
         $summary['warnings'] ?? 0,
         $summary['breaches'] ?? 0,
         $summary['escalated'] ?? 0,
         $summary['auto_closed'] ?? 0,
-        $summary['shifts_ended'] ?? 0
+        $summary['shifts_ended'] ?? 0,
+        $summary['reminders_created'] ?? 0
     );
 }
 exit(0);
