@@ -33,7 +33,7 @@ $all = [
     'helpdesk.view', 'helpdesk.create', 'helpdesk.update', 'helpdesk.assign',
     'helpdesk.comment', 'helpdesk.internal_note', 'helpdesk.close', 'helpdesk.reopen',
     'helpdesk.merge', 'helpdesk.escalate', 'helpdesk.sla', 'helpdesk.worklog', 'helpdesk.delete',
-    'helpdesk.reports', 'helpdesk.export',
+    'helpdesk.reports', 'helpdesk.export', 'helpdesk.view_history',
     'helpdesk.categories', 'helpdesk.templates', 'helpdesk.admin',
     'knowledgebase.view', 'knowledgebase.manage',
 ];
@@ -101,12 +101,14 @@ return [
     ],
     // Berechtigungsgruppen: zusätzlich zur Rolle zuweisbare Rechte, einem Benutzer können
     // mehrere Gruppen zugeordnet werden. "Statistik" gewährt Zugriff auf die
-    // Help-Desk-Ticket-Berichte (helpdesk.reports); Admins haben dieses Recht ohnehin über
-    // ihre Rolle.
+    // Help-Desk-Ticket-Berichte (helpdesk.reports); "ticketaufruf" erlaubt das Auswerten der
+    // Ticketaufrufe (helpdesk.view_history). Admins haben diese Rechte ohnehin über ihre Rolle.
     'groups' => [
         'statistik' => ['helpdesk.reports'],
+        'ticketaufruf' => ['helpdesk.view_history'],
     ],
     'group_labels' => [
         'statistik' => 'Statistik',
+        'ticketaufruf' => 'Darf Ticketaufruf auswerten',
     ],
 ];

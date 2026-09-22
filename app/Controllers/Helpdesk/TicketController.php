@@ -200,6 +200,7 @@ final class TicketController extends HelpdeskBaseController
     {
         $ticket = $this->service->getVisible($request->paramInt('id'));
         $id = (int) $ticket['id'];
+        $this->service->recordView($id);
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $shift = $this->supportShifts->today();
         $sla = !empty($ticket['sla_id']) ? $this->slas->find((int) $ticket['sla_id']) : null;
@@ -238,7 +239,7 @@ final class TicketController extends HelpdeskBaseController
             'worklogTotal' => $this->worklogs->totalMinutes($id),
             'relations' => $this->relations->forTicket($id),
             'merged' => $this->tickets->mergedInto($id),
-            'timeline' => $this->service->timeline($id),
+            'timeline' => $this->service->timelineVisible($id),
             'transitions' => $this->service->availableTransitions($ticket),
             'articles' => $this->knowledge->suggestionsFor($ticket),
             'linkedArticles' => $this->currentUser->can('knowledgebase.view') ? $this->knowledge->articlesForTicket($id) : [],

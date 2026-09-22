@@ -14,6 +14,7 @@ $eventLabels = [
     'worklog_added' => 'Arbeitszeit erfasst', 'worklog_removed' => 'Arbeitszeit gelöscht', 'relation_added' => 'Beziehung angelegt', 'relation_removed' => 'Beziehung entfernt',
     'merged' => 'Zusammengeführt', 'merge_received' => 'Ticket aufgenommen', 'escalated' => 'Eskaliert', 'sla_warning' => 'SLA-Warnung', 'sla_breached' => 'SLA verletzt',
     'knowledge_linked' => 'Wissensartikel verknüpft', 'knowledge_created' => 'Wissensartikel erstellt', 'rule_applied' => 'Regel angewendet', 'notification' => 'Benachrichtigung',
+    'viewed' => 'Ticket angesehen',
 ];
 $eventClass = static fn (string $t): string => match ($t) { 'sla_breached', 'escalated', 'cancelled' => ' is-danger', 'resolved', 'closed' => ' is-success', 'sla_warning', 'reopened' => ' is-warning', default => '' };
 $percentBar = static function (?int $percent, string $state): string {
