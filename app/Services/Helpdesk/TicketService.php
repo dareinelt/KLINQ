@@ -134,6 +134,19 @@ final class TicketService
         return $this->currentUser->can('helpdesk.view');
     }
 
+    /**
+     * Verlaufseintrag „viewed“: Ticket wurde von einem Agenten angesehen. Nur Agenten lösen
+     * den Eintrag aus; sichtbar ist er nur mit der Berechtigung „Darf Ticketaufruf auswerten“
+     * (Berechtigungsgruppe „ticketaufruf“) bzw. für Admins (siehe timelineVisible()).
+     */
+    public function recordView(int $ticketId): void
+    {
+        if (!$this->isAgent()) {
+            return;
+        }
+        $this->event($ticketId, 'viewed', null, null, null);
+    }
+
     public function currentEmployeeId(): ?int
     {
         $userId = $this->currentUser->id();
@@ -991,6 +1004,22 @@ final class TicketService
     public function timeline(int $ticketId): array
     {
         return $this->tickets->events($ticketId);
+    }
+
+    /**
+     * Verlauf für die Anzeige: „viewed“-Ereignisse (Ticketaufrufe) sind nur mit der Berechtigung
+     * „Darf Ticketaufruf auswerten“ (Berechtigungsgruppe „ticketaufruf“) sichtbar; Admins haben
+     * das Recht über ihre Rolle.
+     * @return array<int,array<string,mixed>>
+     */
+    public function timelineVisible(int $ticketId): array
+    {
+        $events = $this->timeline($ticketId);
+        if ($this->currentUser->can('helpdesk.view_history')) {
+            return $events;
+        }
+
+        return array_values(array_filter($events, static fn (array $e): bool => ($e['type'] ?? null) !== 'viewed'));
     }
 
     /** Zulässige Folgestatus für die Aktionsleiste (inkl. Berechtigungsprüfung). @return array<int,array<string,mixed>> */

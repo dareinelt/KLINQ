@@ -170,9 +170,10 @@ Rechte folgen der Konvention `<bereich>.<aktion>` und stehen samt Rollenzuordnun
 `audit.view` und `helpdesk.view`, fremde Tickets sehen nur Help-Desk-Rollen).
 
 Zusätzlich zur Rolle können einem Benutzer **Berechtigungsgruppen** zugewiesen werden (`permission_groups`,
-`user_permission_groups`), die einzelne Rechte unabhängig von der Rolle freischalten – aktuell die Gruppe
-„Statistik“ für `helpdesk.reports` (Ticket-Berichte), damit z. B. ein Assetmanagement-Benutzer Zugriff auf
-Help-Desk-Auswertungen erhält, ohne eine Help-Desk-Rolle zu bekommen.
+`user_permission_groups`), die einzelne Rechte unabhängig von der Rolle freischalten: die Gruppe
+„Statistik“ für `helpdesk.reports` (Ticket-Berichte) und die Gruppe „Darf Ticketaufruf auswerten“ für
+`helpdesk.view_history` (macht die Ereignisse `viewed` in der Ticket-Historie sichtbar, die beim Aufruf
+eines Tickets durch einen Agenten geschrieben werden).
 
 Prüfebenen:
 

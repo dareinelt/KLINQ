@@ -48,9 +48,10 @@ final class TicketServiceIntegrationTest extends DatabaseTestCase
         return (int) $this->pdo->lastInsertId();
     }
 
-    private function loginAs(int $userId, string $role): void
+    /** @param array<int,string> $groups */
+    private function loginAs(int $userId, string $role, array $groups = []): void
     {
-        $this->c->get(CurrentUser::class)->login(['id' => $userId, 'username' => 'u' . $userId, 'display_name' => 'User ' . $userId, 'role' => $role]);
+        $this->c->get(CurrentUser::class)->login(['id' => $userId, 'username' => 'u' . $userId, 'display_name' => 'User ' . $userId, 'role' => $role, 'groups' => $groups]);
     }
 
     private function service(): TicketService
@@ -325,5 +326,54 @@ final class TicketServiceIntegrationTest extends DatabaseTestCase
         $this->assertCount(1, $found);
         $this->assertSame($t['number'], $found[0]['number']);
         $this->assertCount(1, $this->tickets()->quickSearch((string) $t['number'], 5));
+    }
+
+    // ------------------------------------------------------------------ Ticketaufruf (viewed)
+
+    public function testRecordViewAddsViewedEventForAgentsOnly(): void
+    {
+        $ticket = $this->createTicket();
+        $id = (int) $ticket['id'];
+
+        // Portalnutzer löst keinen „viewed“-Eintrag aus
+        $this->loginAs($this->portalUserId, 'lager');
+        $this->service()->recordView($id);
+        $this->assertSame([], $this->viewedEvents($id));
+
+        // Agent löst den Eintrag aus
+        $this->loginAs($this->agentId, 'helpdesk_agent');
+        $this->service()->recordView($id);
+        $this->assertCount(1, $this->viewedEvents($id));
+    }
+
+    public function testViewedEventsRequireTicketaufrufGroupExceptAdmin(): void
+    {
+        $ticket = $this->createTicket();
+        $id = (int) $ticket['id'];
+        $this->service()->recordView($id);
+
+        // Help-Desk-Agent ohne Gruppe „ticketaufruf“ sieht den Aufruf nicht
+        $this->loginAs($this->agentId, 'helpdesk_agent');
+        $this->assertSame([], $this->viewedEventsIn($this->service()->timelineVisible($id)));
+
+        // Mit Gruppe „ticketaufruf“ wird der Aufruf sichtbar
+        $this->loginAs($this->agentId, 'helpdesk_agent', ['ticketaufruf']);
+        $this->assertCount(1, $this->viewedEventsIn($this->service()->timelineVisible($id)));
+
+        // Admin sieht den Aufruf unabhängig von Gruppen
+        $this->loginAs($this->agentId, 'admin');
+        $this->assertCount(1, $this->viewedEventsIn($this->service()->timelineVisible($id)));
+    }
+
+    /** @return array<int,array<string,mixed>> */
+    private function viewedEvents(int $ticketId): array
+    {
+        return $this->viewedEventsIn($this->service()->timeline($ticketId));
+    }
+
+    /** @param array<int,array<string,mixed>> $events @return array<int,array<string,mixed>> */
+    private function viewedEventsIn(array $events): array
+    {
+        return array_values(array_filter($events, static fn (array $e): bool => ($e['type'] ?? null) === 'viewed'));
     }
 }
