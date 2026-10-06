@@ -88,7 +88,7 @@ $barList = static function (array $rows): void {
     <div class="card">
         <div class="card-header"><h2>Letzte 14 Tage</h2></div>
         <ul class="bar-list">
-            <?php $maxDay = max(1, ...array_map(static fn (array $r): int => max((int) ($r['created_count'] ?? 0), (int) ($r['resolved_count'] ?? 0)), $data['per_day'] ?? [['created_count' => 1, 'resolved_count' => 1]])); ?>
+            <?php $maxDay = max(1, ...array_map(static fn (array $r): int => max((int) ($r['created_count'] ?? 0), (int) ($r['resolved_count'] ?? 0)), $data['per_day'] ?: [['created_count' => 1, 'resolved_count' => 1]])); ?>
             <?php foreach (($data['per_day'] ?? []) as $r): ?>
                 <li><label><?= fmt_date($r['day'] ?? null) ?></label><progress class="bar-progress" value="<?= (int) ($r['created_count'] ?? 0) ?>" max="<?= (int) $maxDay ?>"></progress><span class="mono">+<?= (int) ($r['created_count'] ?? 0) ?> / ✓<?= (int) ($r['resolved_count'] ?? 0) ?></span></li>
             <?php endforeach; ?>
