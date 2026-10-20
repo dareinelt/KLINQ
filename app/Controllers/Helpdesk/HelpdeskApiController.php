@@ -15,6 +15,7 @@ use App\Repositories\TicketRepository;
 use App\Repositories\TicketTagRepository;
 use App\Repositories\TicketTemplateRepository;
 use App\Security\CurrentUser;
+use App\Services\Helpdesk\HelpdeskAiService;
 use App\Services\Helpdesk\KnowledgeBaseService;
 use App\Services\Helpdesk\TicketService;
 
@@ -32,6 +33,7 @@ final class HelpdeskApiController extends HelpdeskBaseController
         private readonly TicketTemplateRepository $templates,
         private readonly KnowledgeBaseService $knowledge,
         private readonly KnowledgeBaseRepository $articles,
+        private readonly HelpdeskAiService $ai,
         private readonly Config $config
     ) {
         parent::__construct($view, $currentUser);
@@ -154,6 +156,32 @@ final class HelpdeskApiController extends HelpdeskBaseController
         $rows = $this->articles->suggestForTicket($subject, $categoryId, $request->int('subcategory_id'), $this->currentUser->can('helpdesk.view'), 5);
 
         return $this->json(['items' => array_map(static fn (array $a): array => ['id' => (int) $a['id'], 'name' => $a['title'], 'label' => $a['title'], 'meta' => $a['summary'] ?? '', 'url' => '/helpdesk/knowledge/' . (int) $a['id']], array_values(array_filter($rows, fn (array $a): bool => $this->knowledge->isVisible($a))))]);
+    }
+
+    /**
+     * Markierten Text per KI umformulieren („Mit KI verbessern“).
+     *
+     * Gespeichert wird nichts – die Antwort geht direkt an den Editor zurück.
+     */
+    public function improve(Request $request): Response
+    {
+        $result = $this->ai->improve(
+            $request->string('text'),
+            $request->string('prompt'),
+            $request->string('mode', 'generic'),
+            $request->stringOrNull('previous'),
+            [
+                'subject' => $request->string('subject'),
+                'ticket' => $request->string('ticket'),
+            ]
+        );
+
+        return $this->json([
+            'ok' => true,
+            'text' => $result['text'],
+            'model' => $result['model'],
+            'usage' => $result['usage'],
+        ]);
     }
 
     /** Sichtbare Vorlagen (Agent: alle aktiven, Portal: nur portalsichtbare). */

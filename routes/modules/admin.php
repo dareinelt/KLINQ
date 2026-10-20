@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Controllers\AdminController;
+use App\Controllers\HelpdeskAiController;
 use App\Controllers\HelpdeskMailboxController;
 use App\Core\Container;
 use App\Core\Request;
@@ -18,4 +19,11 @@ return static function (Router $router, Container $c): void {
     $router->post('/admin/helpdesk-mail', static fn (Request $r): Response => $mailbox()->save($r), 'settings.manage');
     $router->post('/admin/helpdesk-mail/test', static fn (Request $r): Response => $mailbox()->test($r), 'settings.manage');
     $router->post('/admin/helpdesk-mail/run', static fn (Request $r): Response => $mailbox()->run($r), 'settings.manage');
+
+    // Help-Desk-KI: Endpunkt, Schlüssel und Modell pflegen, Verbindung testen, Modelle ermitteln
+    $ai = static fn (): HelpdeskAiController => $c->get(HelpdeskAiController::class);
+    $router->get('/admin/helpdesk-ai', static fn (Request $r): Response => $ai()->index($r), 'settings.manage');
+    $router->post('/admin/helpdesk-ai', static fn (Request $r): Response => $ai()->save($r), 'settings.manage');
+    $router->post('/admin/helpdesk-ai/test', static fn (Request $r): Response => $ai()->test($r), 'settings.manage');
+    $router->post('/admin/helpdesk-ai/models', static fn (Request $r): Response => $ai()->models($r), 'settings.manage');
 };

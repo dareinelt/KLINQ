@@ -12,6 +12,7 @@ use App\Controllers\Helpdesk\HelpdeskSupportShiftController;
 use App\Controllers\Helpdesk\QuickReportController;
 use App\Controllers\Helpdesk\TicketAttachmentController;
 use App\Controllers\Helpdesk\TicketController;
+use App\Controllers\HelpdeskAiController;
 use App\Controllers\HelpdeskMailboxController;
 use App\Core\Config;
 use App\Core\Container;
@@ -42,7 +43,11 @@ use App\Security\WindowsIdentity;
 use App\Services\Ad\AdUserLookupService;
 use App\Services\AuditLogService;
 use App\Services\DocumentService;
+use App\Services\Helpdesk\Ai\AiTransportInterface;
+use App\Services\Helpdesk\Ai\CurlAiTransport;
+use App\Services\Helpdesk\AiSettingsService;
 use App\Services\Helpdesk\HelpdeskAdminService;
+use App\Services\Helpdesk\HelpdeskAiService;
 use App\Services\Helpdesk\HelpdeskSchedulerService;
 use App\Services\Helpdesk\KnowledgeBaseService;
 use App\Services\Helpdesk\ReporterIdentityService;
@@ -219,6 +224,22 @@ return static function (Container $c): void {
         $c->get(Permissions::class),
         $c->get(TicketMasterDataRepository::class)
     ));
+    // KI-Unterstützung: OpenAI-kompatibler Endpunkt (Adresse, Modell und Schlüssel aus der Administration)
+    $c->singleton(AiTransportInterface::class, static fn (): AiTransportInterface => new CurlAiTransport());
+    $c->singleton(AiSettingsService::class, static fn (Container $c): AiSettingsService => new AiSettingsService(
+        $c->get(SettingsService::class),
+        $c->get(Config::class),
+        $c->get(Secret::class),
+        $c->get(AuditLogService::class),
+        $c->get(CurrentUser::class),
+        $c->get(AiTransportInterface::class)
+    ));
+    $c->singleton(HelpdeskAiService::class, static fn (Container $c): HelpdeskAiService => new HelpdeskAiService(
+        $c->get(AiSettingsService::class),
+        $c->get(AiTransportInterface::class),
+        dirname(__DIR__, 3) . '/storage/tmp/helpdesk-ai-availability.json'
+    ));
+
     // Postfach-Client je Konfiguration aus der Administration (imap = Socket-IMAP-Client, file = .eml-Verzeichnis)
     $c->singleton(MailboxClientInterface::class, static function (Container $c): MailboxClientInterface {
         return MailboxClientFactory::create($c->get(MailboxSettingsService::class)->mailboxOptions(), dirname(__DIR__, 3));
@@ -271,7 +292,8 @@ return static function (Container $c): void {
         $c->get(LocationRepository::class),
         $c->get(CostCenterRepository::class),
         $c->get(Config::class),
-        $c->get(SupportShiftService::class)
+        $c->get(SupportShiftService::class),
+        $c->get(HelpdeskAiService::class)
     ));
     $c->singleton(TicketAttachmentController::class, static fn (Container $c): TicketAttachmentController => new TicketAttachmentController(
         $c->get(View::class),
@@ -355,6 +377,12 @@ return static function (Container $c): void {
         $c->get(Config::class),
         dirname(__DIR__, 3)
     ));
+    $c->singleton(HelpdeskAiController::class, static fn (Container $c): HelpdeskAiController => new HelpdeskAiController(
+        $c->get(View::class),
+        $c->get(CurrentUser::class),
+        $c->get(AiSettingsService::class),
+        $c->get(HelpdeskAiService::class)
+    ));
     $c->singleton(HelpdeskApiController::class, static fn (Container $c): HelpdeskApiController => new HelpdeskApiController(
         $c->get(View::class),
         $c->get(CurrentUser::class),
@@ -366,6 +394,7 @@ return static function (Container $c): void {
         $c->get(TicketTemplateRepository::class),
         $c->get(KnowledgeBaseService::class),
         $c->get(KnowledgeBaseRepository::class),
+        $c->get(HelpdeskAiService::class),
         $c->get(Config::class)
     ));
     $c->singleton(HelpdeskSupportShiftController::class, static fn (Container $c): HelpdeskSupportShiftController => new HelpdeskSupportShiftController(

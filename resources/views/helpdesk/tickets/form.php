@@ -25,6 +25,7 @@ foreach ($employees as $emp) {
     }
 }
 ?>
+<span hidden data-hd-ai-config data-enabled="<?= !empty($aiEnabled) ? '1' : '0' ?>"></span>
 <div class="page-header">
     <div>
         <div class="breadcrumb"><a href="/helpdesk/tickets">Tickets</a><?php if ($isEdit): ?> › <a href="/helpdesk/tickets/<?= (int) $ticket['id'] ?>"><?= e($ticket['number']) ?></a><?php endif; ?></div>
@@ -51,14 +52,14 @@ foreach ($employees as $emp) {
         <legend>Anliegen</legend>
         <div class="form-group<?= has_error('subject') ? ' has-error' : '' ?>">
             <label for="f-subject">Betreff *</label>
-            <input id="f-subject" name="subject" required minlength="3" maxlength="255" value="<?= e(form_value($row, 'subject')) ?>" data-hd-kb-suggest="#kb-suggest" autofocus>
+            <input id="f-subject" name="subject" required minlength="3" maxlength="255" value="<?= e(form_value($row, 'subject')) ?>" data-hd-kb-suggest="#kb-suggest" data-hd-field="ticket_subject" autofocus>
             <?= field_error('subject') ?>
         </div>
         <?php if ($can('knowledgebase.view')): ?><div id="kb-suggest" class="kb-suggest" hidden></div><?php endif; ?>
         <?php $canEditDescription = !$isEdit || $can('helpdesk.admin'); ?>
         <div class="form-group<?= has_error('description') ? ' has-error' : '' ?>">
             <label for="f-description">Beschreibung<?= $canEditDescription ? ' *' : '' ?></label>
-            <textarea id="f-description" name="description" rows="8" required maxlength="20000"<?= $canEditDescription ? '' : ' readonly aria-readonly="true"' ?>><?= e(form_value($row, 'description')) ?></textarea>
+            <textarea id="f-description" name="description" rows="8" required maxlength="20000" data-hd-field="ticket_description"<?= $canEditDescription ? '' : ' readonly aria-readonly="true"' ?>><?= e(form_value($row, 'description')) ?></textarea>
             <?php if ($canEditDescription): ?>
             <p class="form-hint">Was ist passiert, seit wann, welche Fehlermeldung, was wurde bereits versucht?</p>
             <?php else: ?>

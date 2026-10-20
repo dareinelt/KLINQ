@@ -71,5 +71,18 @@ return [
         // Meldungen je Browsersitzung und Stunde (0 = unbegrenzt)
         'rate_limit_per_hour' => max(0, Env::int('HELPDESK_QUICK_REPORT_RATE_LIMIT', 10)),
     ],
+    // KI-Unterstützung in den Ticket-Textfeldern („Mit KI verbessern“).
+    // Angesprochen wird ein OpenAI-kompatibler Endpunkt; die Werte hier sind Startwerte,
+    // gepflegt wird die Konfiguration unter „Auswertung & System → Administration → Help-Desk-KI“.
+    'ai' => [
+        'enabled' => Env::bool('HELPDESK_AI_ENABLED', false),
+        'name' => trim((string) Env::get('HELPDESK_AI_NAME', '')),
+        // Adresse inklusive /v1, z. B. http://ki-server:11434/v1
+        'url' => trim((string) Env::get('HELPDESK_AI_URL', '')),
+        'model' => trim((string) Env::get('HELPDESK_AI_MODEL', '')),
+        'timeout' => max(5, Env::int('HELPDESK_AI_TIMEOUT', 60)),
+        // Nur als Rückfall gedacht: der Schlüssel gehört verschlüsselt in die Datenbank.
+        'api_key' => (string) Env::get('HELPDESK_AI_API_KEY', ''),
+    ],
     'list_per_page' => 25,
 ];

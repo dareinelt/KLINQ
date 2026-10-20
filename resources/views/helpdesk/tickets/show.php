@@ -26,6 +26,7 @@ $percentBar = static function (?int $percent, string $state): string {
     return '<progress class="sla-bar' . ($state === 'breached' ? ' is-breached' : ($state === 'warning' ? ' is-warning' : '')) . '" max="100" value="' . $p . '" aria-label="SLA-Verbrauch ' . $p . '%"></progress>';
 };
 ?>
+<span hidden data-hd-ai-config data-enabled="<?= !empty($aiEnabled) ? '1' : '0' ?>"></span>
 <div class="page-header ticket-page-header">
     <div>
         <div class="breadcrumb"><a href="/helpdesk/tickets">Tickets</a> › <span class="ticket-number"><?= e($ticket['number']) ?></span></div>
@@ -130,7 +131,7 @@ $percentBar = static function (?int $percent, string $state): string {
             </div>
             <div class="form-group">
                 <label for="comment-body" class="sr-only">Kommentar</label>
-                <textarea id="comment-body" name="body" rows="4" placeholder="Antwort oder Notiz eingeben …" maxlength="20000"></textarea>
+                <textarea id="comment-body" name="body" rows="4" placeholder="Antwort oder Notiz eingeben …" maxlength="20000" data-hd-field="ticket_comment"></textarea>
             </div>
             <div class="comment-form-footer">
                 <label class="file-label"><?= icon('paperclip', 'icon icon-xs') ?> Anhang <input type="file" name="file"></label>
@@ -489,7 +490,7 @@ $percentBar = static function (?int $percent, string $state): string {
         <div class="dialog-body">
             <div class="form-group" data-show-for="resolved,closed">
                 <label for="st-resolution">Lösung <span class="text-muted">(Pflicht bei Gelöst/Geschlossen)</span></label>
-                <textarea id="st-resolution" name="resolution" rows="4" data-required-when-visible><?= e($ticket['resolution'] ?? '') ?></textarea>
+                <textarea id="st-resolution" name="resolution" rows="4" data-required-when-visible data-hd-field="ticket_resolution"><?= e($ticket['resolution'] ?? '') ?></textarea>
             </div>
             <div class="form-group" data-show-for="cancelled">
                 <label for="st-reason">Grund</label>
@@ -497,7 +498,7 @@ $percentBar = static function (?int $percent, string $state): string {
             </div>
             <div class="form-group">
                 <label for="st-note">Kommentar an den Melder <span class="text-muted">(optional)</span></label>
-                <textarea id="st-note" name="note" rows="3"></textarea>
+                <textarea id="st-note" name="note" rows="3" data-hd-field="ticket_comment"></textarea>
             </div>
         </div>
         <div class="dialog-footer"><button type="button" class="btn btn-secondary" data-dialog-close>Abbrechen</button><button type="submit" class="btn btn-primary">Status setzen</button></div>
@@ -514,7 +515,7 @@ $percentBar = static function (?int $percent, string $state): string {
             <p class="text-muted text-sm">Das Ticket wird <strong><?= e($secondLevelSupport['user_display_name']) ?></strong> (2nd Level Support von heute) zugewiesen.</p>
             <div class="form-group">
                 <label for="sl-note">Kommentar <span class="text-muted">(Pflicht)</span></label>
-                <textarea id="sl-note" name="note" rows="4" required></textarea>
+                <textarea id="sl-note" name="note" rows="4" required data-hd-field="second_level_note"></textarea>
             </div>
         </div>
         <div class="dialog-footer"><button type="button" class="btn btn-secondary" data-dialog-close>Abbrechen</button><button type="submit" class="btn btn-primary">Zuweisen</button></div>
