@@ -197,3 +197,82 @@ progress.is-info::-moz-progress-bar { background: var(--color-info); }
 @media (max-width: 720px) {
     .impact-grid { grid-template-columns: 1fr; }
 }
+
+/* App-eigenes Kontextmenü für Agenten-Textfelder */
+.hd-ctx-menu {
+    position: fixed;
+    z-index: 3000;
+    min-width: 220px;
+    padding: var(--space-1);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    font-size: var(--font-size-sm);
+    animation: hd-ctx-in var(--duration-fast) var(--ease-standard);
+}
+@keyframes hd-ctx-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: none; }
+}
+.hd-ctx-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.hd-ctx-item:hover, .hd-ctx-item.is-active { background: var(--color-surface-alt); }
+.hd-ctx-item:focus-visible { outline: 2px solid var(--color-focus); outline-offset: -2px; }
+.hd-ctx-item[aria-disabled="true"] { color: var(--color-text-muted); opacity: 0.55; cursor: default; }
+.hd-ctx-item[aria-disabled="true"]:hover { background: transparent; }
+.hd-ctx-item.is-ai { color: var(--color-primary); font-weight: 600; }
+.hd-ctx-item.is-ai:hover, .hd-ctx-item.is-ai.is-active { background: var(--color-primary-soft); }
+.hd-ctx-label { flex: 1; }
+.hd-ctx-key { color: var(--color-text-muted); font-size: var(--font-size-xs); font-variant-numeric: tabular-nums; }
+.hd-ctx-sep { height: 1px; margin: var(--space-1) var(--space-2); background: var(--color-border); }
+
+/* KI-Dialog „Mit KI verbessern“ */
+.hd-ai-dialog .dialog-body { display: grid; gap: var(--space-3); }
+.hd-ai-excerpt {
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-surface-alt);
+    border-left: 3px solid var(--color-primary);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    font-style: italic;
+}
+.hd-ai-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.hd-ai-note { margin: 0; }
+
+/* Administration: KI-Endpunkt */
+.ai-model-field { display: flex; gap: var(--space-2); align-items: center; }
+.ai-model-field input { flex: 1; min-width: 0; }
+.ai-model-picker { margin-top: var(--space-2); }
+.ai-test-result { display: grid; gap: var(--space-3); margin-top: var(--space-4); }
+.ai-test-steps { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-5); font-size: var(--font-size-sm); }
+.ai-step.is-ok { color: var(--color-success); }
+.ai-step.is-fail { color: var(--color-danger); }
+.ai-step strong { font-weight: 600; }
+.ai-test-bubbles { display: grid; gap: var(--space-2); }
+.ai-test-bubble {
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.ai-test-question { background: var(--color-surface-alt); border: 1px solid var(--color-border); }
+.ai-test-answer { background: var(--color-primary-soft); border: 1px solid var(--color-primary); }
+.ai-test-meta { margin: 0; }
+

@@ -23,6 +23,7 @@ use App\Repositories\TicketTagRepository;
 use App\Repositories\TicketTemplateRepository;
 use App\Repositories\TicketWorklogRepository;
 use App\Security\CurrentUser;
+use App\Services\Helpdesk\HelpdeskAiService;
 use App\Services\Helpdesk\KnowledgeBaseService;
 use App\Services\Helpdesk\SupportShiftService;
 use App\Services\Helpdesk\TicketMergeService;
@@ -59,7 +60,8 @@ final class TicketController extends HelpdeskBaseController
         private readonly LocationRepository $locations,
         private readonly CostCenterRepository $costCenters,
         private readonly Config $config,
-        private readonly SupportShiftService $supportShifts
+        private readonly SupportShiftService $supportShifts,
+        private readonly HelpdeskAiService $ai
     ) {
         parent::__construct($view, $currentUser);
     }
@@ -258,7 +260,8 @@ final class TicketController extends HelpdeskBaseController
             'now' => $now,
             'isFirstLevelSupport' => $shift['first'] !== null && (int) $shift['first']['user_id'] === (int) $this->currentUser->id(),
             'secondLevelSupport' => $shift['second'],
-            'scripts' => ['/js/helpdesk.js'],
+            'aiEnabled' => $this->ai->isEnabled(),
+            'scripts' => ['/js/helpdesk.js', '/js/helpdesk-ai.js'],
         ]);
     }
 
@@ -459,7 +462,8 @@ final class TicketController extends HelpdeskBaseController
             'tags' => $ticket !== null ? $this->tags->forTicket((int) $ticket['id']) : [],
             'impactLabels' => TicketPriorityMatrix::IMPACT_LABELS,
             'urgencyLabels' => TicketPriorityMatrix::URGENCY_LABELS,
-            'scripts' => ['/js/picker.js', '/js/helpdesk.js'],
+            'aiEnabled' => $this->ai->isEnabled(),
+            'scripts' => ['/js/picker.js', '/js/helpdesk.js', '/js/helpdesk-ai.js'],
         ]);
     }
 }

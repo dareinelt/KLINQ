@@ -51,6 +51,38 @@ services:
       - "8025"
     restart: unless-stopped
 
+  # Kleines Sprachmodell (Ollama) für „Mit KI verbessern“ im Helpdesk – nur für Entwicklung/Tests.
+  # Start: docker compose --profile ai up -d   (Endpunkt im Admin: http://ai:11434/v1)
+  ai:
+    image: ollama/ollama:latest
+    container_name: assets-ai
+    profiles: ["ai"]
+    environment:
+      OLLAMA_KEEP_ALIVE: ${AI_KEEP_ALIVE:-10m}
+    volumes:
+      - assets_ai:/root/.ollama
+    ports:
+      - "${AI_PORT:-11434}:11434"
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+    restart: unless-stopped
+
+  # Einmaliger Modell-Download, damit der Start mit dem Profil ohne Handarbeit auskommt.
+  ai-model:
+    image: ollama/ollama:latest
+    container_name: assets-ai-model
+    profiles: ["ai"]
+    depends_on:
+      ai:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ai:11434
+    entrypoint: ["/bin/sh", "-c", "ollama pull ${AI_MODEL:-qwen3.5:0.8b}"]
+    restart: "no"
+
   mysql:
     image: mysql:8.4
     container_name: assets-mysql
@@ -75,3 +107,4 @@ volumes:
   assets_uploads:
   assets_logs:
   assets_labels:
+  assets_ai:
